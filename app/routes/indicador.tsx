@@ -1,4 +1,9 @@
-import type { ColumnDef } from "@tanstack/react-table"
+import {
+  createColumnHelper,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
 import { EyeOff, Filter, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react"
 import {
   Bar,
@@ -38,7 +43,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "~/components/ui/combobox"
-import { DataTable } from "~/components/ui/data-table"
+import { DataTable, DataTableColumnHeader } from "~/components/data-table"
 import { Field, FieldGroup, FieldLabel } from "~/components/ui/field"
 import {
   Select,
@@ -57,6 +62,7 @@ import {
   SheetTrigger,
 } from "~/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
+import { TableCell } from "~/components/ui/table"
 import {
   Tooltip,
   TooltipContent,
@@ -197,34 +203,54 @@ function HeatContent({ value }: { value: CellValue }) {
   return <>{formatPercent(value)}</>
 }
 
-function periodCellClass(value: CellValue) {
-  if (value === null) return "text-right text-muted-foreground last:pr-6"
-  if (value === "hidden") return "bg-muted/40 last:pr-6"
-  return cn("text-right font-medium last:pr-6", heatmapClass(value))
-}
+const columnHelper = createColumnHelper<IndicatorRow>()
 
-const periodColumns: ColumnDef<IndicatorRow, CellValue>[] = periods.map(
-  (p) => ({
-    accessorKey: p.key,
-    header: p.label,
-    cell: ({ getValue }) => <HeatContent value={getValue()} />,
-    meta: {
-      headClassName: "text-right last:pr-6",
-      getCellClassName: periodCellClass,
-    },
-  })
-)
+const indicatorColumns = [
+  columnHelper.accessor("name", {
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Indicador" />
+    ),
+    cell: (info) => <TableCell>{info.getValue() as string}</TableCell>,
+  }),
+  ...periods.map((p) =>
+    columnHelper.accessor((row) => row[p.key] as CellValue, {
+      id: p.key,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={p.label} align="right" />
+      ),
+      cell: (info) => {
+        const value = info.getValue()
 
-const indicatorColumns: ColumnDef<IndicatorRow, unknown>[] = [
-  {
-    accessorKey: "name",
-    header: "Indicador",
-    meta: {
-      className: "pl-6 font-medium",
-      headClassName: "pl-6",
-    },
-  },
-  ...(periodColumns as ColumnDef<IndicatorRow, unknown>[]),
+        if (value === null) {
+          return (
+            <TableCell align="right" className="text-muted-foreground last:pr-6">
+              -
+            </TableCell>
+          )
+        }
+
+        if (value === "hidden") {
+          return (
+            <TableCell align="right" className="bg-muted/40 last:pr-6">
+              <HeatContent value={value} />
+            </TableCell>
+          )
+        }
+
+        return (
+          <TableCell
+            align="right"
+            className={cn(
+              "font-medium tabular-nums last:pr-6",
+              heatmapClass(value)
+            )}
+          >
+            <HeatContent value={value} />
+          </TableCell>
+        )
+      },
+    })
+  ),
 ]
 
 function NumberedDot({
@@ -434,6 +460,20 @@ function HeaderActions() {
 }
 
 export default function IndicadorPage() {
+  const indicatorTable = useReactTable({
+    data: indicatorRows,
+    columns: indicatorColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
+
+  const demographicTable = useReactTable({
+    data: demographicRows,
+    columns: indicatorColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
+
   return (
     <>
       <PageHeader title="Bem-Estar" actions={<HeaderActions />} />
@@ -602,7 +642,7 @@ export default function IndicadorPage() {
             <CardTitle>Indicadores que compõem o Índice de Bem-Estar</CardTitle>
           </CardHeader>
           <CardContent className="px-0">
-            <DataTable columns={indicatorColumns} data={indicatorRows} />
+            <DataTable table={indicatorTable} />
           </CardContent>
         </Card>
 
@@ -651,7 +691,7 @@ export default function IndicadorPage() {
               </Field>
             </FieldGroup>
 
-            <DataTable columns={indicatorColumns} data={demographicRows} />
+            <DataTable table={demographicTable} />
           </CardContent>
         </Card>
 
