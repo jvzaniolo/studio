@@ -3,6 +3,7 @@ import {
   Building2,
   ChevronRight,
   ChevronsUpDown,
+  ClipboardCheck,
   Settings2,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
@@ -58,6 +59,9 @@ export default function SidebarLayout() {
     location.pathname.startsWith("/indicador") &&
     !location.pathname.startsWith("/criar-indicador")
   const isCriarIndicador = location.pathname.startsWith("/criar-indicador")
+  const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
+  const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
+    location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
 
   return (
     <TooltipProvider>
@@ -182,6 +186,40 @@ export default function SidebarLayout() {
                             isActive={isCriarIndicador}
                           >
                             Criar Indicador
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton tooltip="Avaliação de Fornecedores">
+                          <ClipboardCheck />
+                          <span>Avaliação de Fornecedores</span>
+                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/avaliacao-fornecedores/visao-geral" />}
+                            isActive={isVisaoGeral}
+                          >
+                            Visão Geral
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/avaliacao-fornecedores/acompanhamento" />}
+                            isActive={isAcompanhamento}
+                          >
+                            Acompanhamento
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
