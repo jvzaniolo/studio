@@ -5,6 +5,18 @@ import { PageHeader } from "~/components/page-header"
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { Button } from "~/components/ui/button"
 import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  useComboboxAnchor,
+} from "~/components/ui/combobox"
+import {
   Card,
   CardContent,
   CardHeader,
@@ -85,6 +97,43 @@ type NovoFilho = {
   unidade: string
   perspectiva: string
 }
+
+type Option = { value: string; label: string }
+
+type IndicadorExistente = Option & {
+  codigo: string
+  perspectiva: string
+  unidade: string
+}
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
+const workspaceOptions: Option[] = [
+  { value: "geral", label: "Geral" },
+  { value: "rh", label: "RH" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "operacoes", label: "Operações" },
+  { value: "comercial", label: "Comercial" },
+  { value: "tecnologia", label: "Tecnologia" },
+]
+
+const membroOptions: Option[] = [
+  { value: "m1", label: "Ana Souza" },
+  { value: "m2", label: "Carlos Lima" },
+  { value: "m3", label: "Fernanda Rocha" },
+  { value: "m4", label: "Marcos Alves" },
+  { value: "m5", label: "Paula Mendes" },
+  { value: "m6", label: "Ricardo Nunes" },
+]
+
+const indicadoresExistentes: IndicadorExistente[] = [
+  { value: "ind-1", label: "Índice de Bem-Estar", codigo: "PES-1001", perspectiva: "Pessoas", unidade: "%" },
+  { value: "ind-2", label: "Segurança Psicológica", codigo: "PES-1002", perspectiva: "Pessoas", unidade: "%" },
+  { value: "ind-3", label: "Receita Bruta", codigo: "FIN-2001", perspectiva: "Financeiro", unidade: "R$" },
+  { value: "ind-4", label: "NPS Clientes", codigo: "CLI-3001", perspectiva: "Clientes", unidade: "%" },
+  { value: "ind-5", label: "Tempo Médio de Resolução", codigo: "PRO-4001", perspectiva: "Processos", unidade: "dias" },
+  { value: "ind-6", label: "Taxa de Retenção", codigo: "PES-1003", perspectiva: "Pessoas", unidade: "%" },
+]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -178,6 +227,11 @@ export default function CriarIndicadorPage() {
     governanca: false,
   })
 
+  const [workspacesAcesso, setWorkspacesAcesso] = useState<Option[]>([])
+  const [membrosAcesso, setMembrosAcesso] = useState<Option[]>([])
+  const anchorWorkspaces = useComboboxAnchor()
+  const anchorMembros = useComboboxAnchor()
+
   const [showNovoFilhoModal, setShowNovoFilhoModal] = useState(false)
   const [novoFilho, setNovoFilho] = useState<NovoFilho>({
     nome: "",
@@ -226,6 +280,19 @@ export default function CriarIndicadorPage() {
       }
       return updated
     })
+  }
+
+  function associarFilhoExistente(ind: IndicadorExistente) {
+    if (formData.filhos.find((f) => f.id === ind.value)) return
+    const novo: Filho = {
+      id: ind.value,
+      codigo: ind.codigo,
+      nome: ind.label,
+      perspectiva: ind.perspectiva,
+      unidade: ind.unidade,
+      isNew: false,
+    }
+    updateField("filhos", [...formData.filhos, novo])
   }
 
   function removerFilho(id: string) {
@@ -657,15 +724,45 @@ export default function CriarIndicadorPage() {
                           Nenhum indicador filho adicionado.
                         </p>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => setShowNovoFilhoModal(true)}
-                      >
-                        <Plus className="size-3.5" />
-                        Adicionar Filho
-                      </Button>
+                      <div className="mt-2 flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => setShowNovoFilhoModal(true)}
+                        >
+                          <Plus className="size-3.5" />
+                          Criar Novo
+                        </Button>
+
+                        <Combobox
+                          items={indicadoresExistentes.filter(
+                            (ind) => !formData.filhos.find((f) => f.id === ind.value)
+                          )}
+                          onValueChange={(item) => {
+                            if (item) associarFilhoExistente(item as IndicadorExistente)
+                          }}
+                        >
+                          <ComboboxInput
+                            placeholder="Associar indicador existente..."
+                            className="w-full"
+                            showClear
+                          />
+                          <ComboboxContent>
+                            <ComboboxEmpty>Nenhum indicador encontrado.</ComboboxEmpty>
+                            <ComboboxList>
+                              {(item: IndicadorExistente) => (
+                                <ComboboxItem key={item.value} value={item}>
+                                  <span className="flex-1">{item.label}</span>
+                                  <span className="font-mono text-xs text-muted-foreground">
+                                    {item.codigo}
+                                  </span>
+                                </ComboboxItem>
+                              )}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
+                      </div>
                     </Field>
 
                     <Field>
@@ -721,44 +818,108 @@ export default function CriarIndicadorPage() {
               expanded={expandedSections.governanca}
               onToggle={() => toggleSection("governanca")}
             >
-              <FieldSet>
-                <FieldLegend variant="label">Quem pode visualizar este indicador?</FieldLegend>
-                <RadioGroup
-                  value={formData.controleAcesso}
-                  onValueChange={(v) =>
-                    updateField("controleAcesso", v as FormData["controleAcesso"])
-                  }
-                  className="gap-2"
-                >
-                  <Field orientation="horizontal">
-                    <RadioGroupItem value="organizacao" id="acesso-org" />
-                    <FieldContent>
-                      <FieldLabel htmlFor="acesso-org">Toda a organização</FieldLabel>
-                      <FieldDescription>
-                        Todos os membros do workspace podem visualizar
-                      </FieldDescription>
-                    </FieldContent>
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLegend variant="label">Quem pode visualizar este indicador?</FieldLegend>
+                  <RadioGroup
+                    value={formData.controleAcesso}
+                    onValueChange={(v) =>
+                      updateField("controleAcesso", v as FormData["controleAcesso"])
+                    }
+                    className="gap-2"
+                  >
+                    <Field orientation="horizontal">
+                      <RadioGroupItem value="organizacao" id="acesso-org" />
+                      <FieldContent>
+                        <FieldLabel htmlFor="acesso-org">Toda a organização</FieldLabel>
+                        <FieldDescription>
+                          Todos os membros do workspace podem visualizar
+                        </FieldDescription>
+                      </FieldContent>
+                    </Field>
+                    <Field orientation="horizontal">
+                      <RadioGroupItem value="workspaces" id="acesso-ws" />
+                      <FieldContent>
+                        <FieldLabel htmlFor="acesso-ws">Workspaces específicos</FieldLabel>
+                        <FieldDescription>
+                          Visível apenas nos workspaces selecionados
+                        </FieldDescription>
+                      </FieldContent>
+                    </Field>
+                    <Field orientation="horizontal">
+                      <RadioGroupItem value="membros" id="acesso-membros" />
+                      <FieldContent>
+                        <FieldLabel htmlFor="acesso-membros">Membros específicos</FieldLabel>
+                        <FieldDescription>
+                          Visível apenas para os membros selecionados
+                        </FieldDescription>
+                      </FieldContent>
+                    </Field>
+                  </RadioGroup>
+                </FieldSet>
+
+                {formData.controleAcesso === "workspaces" && (
+                  <Field>
+                    <FieldLabel>Workspaces com acesso</FieldLabel>
+                    <Combobox
+                      multiple
+                      items={workspaceOptions}
+                      value={workspacesAcesso}
+                      onValueChange={(v) => setWorkspacesAcesso(v as Option[])}
+                    >
+                      <ComboboxChips ref={anchorWorkspaces} className="w-full">
+                        {workspacesAcesso.map((ws) => (
+                          <ComboboxChip key={ws.value}>
+                            {ws.label}
+                          </ComboboxChip>
+                        ))}
+                        <ComboboxChipsInput placeholder="Pesquisar workspaces..." />
+                      </ComboboxChips>
+                      <ComboboxContent anchor={anchorWorkspaces} align="start">
+                        <ComboboxEmpty>Nenhum workspace encontrado.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(item: Option) => (
+                            <ComboboxItem key={item.value} value={item}>
+                              {item.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
                   </Field>
-                  <Field orientation="horizontal">
-                    <RadioGroupItem value="workspaces" id="acesso-ws" />
-                    <FieldContent>
-                      <FieldLabel htmlFor="acesso-ws">Workspaces específicos</FieldLabel>
-                      <FieldDescription>
-                        Visível apenas nos workspaces selecionados
-                      </FieldDescription>
-                    </FieldContent>
+                )}
+
+                {formData.controleAcesso === "membros" && (
+                  <Field>
+                    <FieldLabel>Membros com acesso</FieldLabel>
+                    <Combobox
+                      multiple
+                      items={membroOptions}
+                      value={membrosAcesso}
+                      onValueChange={(v) => setMembrosAcesso(v as Option[])}
+                    >
+                      <ComboboxChips ref={anchorMembros} className="w-full">
+                        {membrosAcesso.map((m) => (
+                          <ComboboxChip key={m.value}>
+                            {m.label}
+                          </ComboboxChip>
+                        ))}
+                        <ComboboxChipsInput placeholder="Pesquisar membros..." />
+                      </ComboboxChips>
+                      <ComboboxContent anchor={anchorMembros} align="start">
+                        <ComboboxEmpty>Nenhum membro encontrado.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(item: Option) => (
+                            <ComboboxItem key={item.value} value={item}>
+                              {item.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
                   </Field>
-                  <Field orientation="horizontal">
-                    <RadioGroupItem value="membros" id="acesso-membros" />
-                    <FieldContent>
-                      <FieldLabel htmlFor="acesso-membros">Membros específicos</FieldLabel>
-                      <FieldDescription>
-                        Visível apenas para os membros selecionados
-                      </FieldDescription>
-                    </FieldContent>
-                  </Field>
-                </RadioGroup>
-              </FieldSet>
+                )}
+              </FieldGroup>
             </FormSection>
 
             <Button size="lg" className="w-full">
