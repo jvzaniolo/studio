@@ -128,3 +128,85 @@
     @apply font-sans;
   }
 }
+
+/* =========================================================
+   Hu360 Materialidade design tokens
+   ========================================================= */
+:root {
+  --hu-font-display: 'Lato', system-ui, sans-serif;
+  --hu-font-body: 'Open Sans Variable', system-ui, sans-serif;
+
+  --hu-purple-deep:   #3C0366;
+  --hu-purple:        #7401C3;
+  --hu-purple-active: #5A0992;
+  --hu-purple-light:  #EFE3F8;
+  --hu-purple-faint:  #F6EDFB;
+
+  --hu-bg:     #FEF7FF;
+  --hu-border: #E7E0EB;
+  --hu-text:   #0A0A0A;
+  --hu-muted:  #737373;
+  --hu-faint:  #AA95BE;
+
+  --hu-green:  #00A970;
+  --hu-yellow: #F59E0B;
+  --hu-red:    #E03131;
+  --hu-blue:   #2563EB;
+
+  --hu-sent-vneg: #E03131;
+  --hu-sent-neg:  #F59E0B;
+  --hu-sent-lpos: #A8D85E;
+  --hu-sent-pos:  #00A970;
+  --hu-sent-na:   #AA95BE;
+}
+
+/* Materialidade animations */
+@keyframes hu-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hu-fade { animation: hu-fade-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+@keyframes hu-slide-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.hu-slide { animation: hu-slide-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+/* Materialidade responsive grid classes */
+.mat-scorecard {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+.mat-overview-grid-v2 {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+.mat-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1280px) {
+  .mat-scorecard { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+}
+@media (max-width: 1180px) {
+  .mat-overview-grid-v2 { grid-template-columns: minmax(0, 1fr) !important; }
+  .mat-overview-sticky { position: static !important; }
+}
+@media (max-width: 880px) {
+  .mat-page-actions { width: 100%; justify-content: flex-start; }
+}
+
+/* Materialidade custom scrollbar */
+.mat-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.mat-scroll::-webkit-scrollbar-track { background: transparent; }
+.mat-scroll::-webkit-scrollbar-thumb { background: #E0D3F2; border-radius: 8px; border: 2px solid var(--hu-bg); }
+.mat-scroll::-webkit-scrollbar-thumb:hover { background: #AA95BE; }

@@ -4,6 +4,8 @@ import {
   ChevronRight,
   ChevronsUpDown,
   ClipboardCheck,
+  Layers,
+  Map,
   Settings2,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
@@ -63,6 +65,10 @@ export default function SidebarLayout() {
   const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
   const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
     location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
+  const isMaterialidade =
+    location.pathname === "/materialidade" ||
+    location.pathname.startsWith("/materialidade/tema")
+  const isMapeamentos = location.pathname.startsWith("/materialidade/mapeamentos")
 
   return (
     <TooltipProvider>
@@ -229,6 +235,41 @@ export default function SidebarLayout() {
                             isActive={isAcompanhamento}
                           >
                             Acompanhamento
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton tooltip="Materialidade">
+                          <Layers />
+                          <span>Materialidade</span>
+                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/materialidade" />}
+                            isActive={isMaterialidade}
+                          >
+                            Matriz
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/materialidade/mapeamentos" />}
+                            isActive={isMapeamentos}
+                          >
+                            <Map className="size-3.5" />
+                            Mapeamentos
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
