@@ -764,8 +764,7 @@ export function Overview({ onPickTheme }: OverviewProps) {
         {/* LEFT column: AI insight + cobertura */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 16,
-          position: 'sticky', top: 80,
-          maxHeight: 'calc(100vh - 100px)', overflowY: 'auto',
+          maxHeight: 'calc(100vh - 140px)', overflowY: 'auto',
           paddingRight: 4,
         }} className="mat-overview-sticky">
           <AIInsight
