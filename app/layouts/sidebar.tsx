@@ -59,6 +59,7 @@ export default function SidebarLayout() {
     location.pathname.startsWith("/indicador") &&
     !location.pathname.startsWith("/criar-indicador")
   const isCriarIndicador = location.pathname.startsWith("/criar-indicador")
+  const isIndicadoresAtivos = location.pathname.startsWith("/indicadores-ativos")
   const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
   const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
     location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
@@ -180,6 +181,14 @@ export default function SidebarLayout() {
                     />
                     <CollapsibleContent>
                       <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/indicadores-ativos" />}
+                            isActive={isIndicadoresAtivos}
+                          >
+                            Indicadores Ativos
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton
                             render={<Link to="/criar-indicador" />}
