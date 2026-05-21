@@ -7,6 +7,22 @@ import {
   PUBLICOS, PUBLICO_BY_ID, getDimValue, sentColor, fmtSent, fmtShortMonth,
   FONTES, type Theme, type Sinal,
 } from './data';
+import { cn } from '~/lib/utils';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table';
+import { Textarea } from '~/components/ui/textarea';
+import {
+  Card as ShadCard,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card';
 
 /* ============================================================
    EVOLUÇÃO DO SENTIMENTO
@@ -132,52 +148,41 @@ export function EvolucaoBlock({ theme, sinais }: EvolucaoBlockProps) {
   const blockTitle = isSent ? 'Linha do tempo do sentimento' : 'Evolução da relevância';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-            textTransform: 'uppercase', color: 'var(--hu-muted)',
-          }}>Filtrar por público</span>
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-center gap-3.5 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-bold tracking-[0.10em] uppercase text-muted-foreground">
+            Filtrar por público
+          </span>
           <PubFilterDropdown value={pubFilter} onChange={setPubFilter}/>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-            textTransform: 'uppercase', color: 'var(--hu-muted)',
-          }}>Dimensão</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-bold tracking-[0.10em] uppercase text-muted-foreground">
+            Dimensão
+          </span>
           <DimensionRadio value={dim} onChange={setDim}/>
         </div>
         {pubFilter !== 'all' && (
-          <span style={{ fontSize: 11.5, color: '#5A0992' }}>
+          <span className="text-[11.5px] text-primary">
             Recorte: <b>{PUB_FILTERS.find(f => f.id === pubFilter)?.label}</b>
           </span>
         )}
       </div>
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="mat-evolucao-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: '320px minmax(0, 1fr)',
-          gap: 0,
-        }}>
+        <div className="mat-evolucao-grid grid gap-0" style={{ gridTemplateColumns: '320px minmax(0, 1fr)' }}>
           <AIAnalysePanel theme={theme} dim={dim}/>
-          <div style={{
-            padding: '20px 24px 22px',
-            borderLeft: '1px solid var(--hu-border)',
-            display: 'flex', flexDirection: 'column', gap: 12,
-            minWidth: 0,
-          }}>
+          <div className="p-5 border-l border-border flex flex-col gap-3 min-w-0" style={{ padding: '20px 24px 22px' }}>
             <SectionTitle eyebrow="Evolução"
               action={
-                <span style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--hu-muted)' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 999, background: '#7401C3' }}/>
+                <span className="flex items-center gap-3.5 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary"/>
                     Matriz
                   </span>
                   {isSent && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 999, background: '#F59E0B' }}/>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#F59E0B' }}/>
                       Sinal operacional
                     </span>
                   )}
@@ -212,7 +217,7 @@ interface AIAnalysePanelProps {
   dim?: string;
 }
 
-function AIAnalysePanel({ theme, dim = 'sentimento' }: AIAnalysePanelProps) {
+export function AIAnalysePanel({ theme, dim = 'sentimento' }: AIAnalysePanelProps) {
   const defaults = getAIDefaults(theme, dim);
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(defaults);
@@ -230,86 +235,70 @@ function AIAnalysePanel({ theme, dim = 'sentimento' }: AIAnalysePanelProps) {
   const regen = () => { setDraft(getAIDefaults(theme, dim)); };
 
   const TextLinkButton = ({ icon, color, onClick, children }: { icon?: string; color: string; onClick: () => void; children: React.ReactNode }) => (
-    <button onClick={onClick} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-      color: color, fontSize: 12.5, fontWeight: 600,
-    }}>
+    <button onClick={onClick} style={{ color }}
+      className="inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0 text-[12.5px] font-semibold">
       {icon && <Icon name={icon} size={12} color={color}/>}
       {children}
     </button>
   );
 
   return (
-    <div style={{
-      padding: '18px 20px',
-      background: '#FAFAFA',
-      display: 'flex', flexDirection: 'column', gap: 14,
-      minWidth: 0,
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 8, paddingBottom: 10, borderBottom: '1px solid #E5E5E5',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon name="sparkles" size={14} color="#525252"/>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#525252' }}>Análise IA</span>
+    <ShadCard className="rounded-none border-0 shadow-none bg-[#FAFAFA] flex flex-col gap-3.5 min-w-0 p-0">
+      <CardContent className="p-[18px_20px] flex flex-col gap-3.5">
+        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Icon name="sparkles" size={14} color="#525252"/>
+            <span className="text-[13px] font-semibold text-foreground" style={{ color: '#525252' }}>Análise IA</span>
+          </div>
+          {!editing && (
+            <TextLinkButton color="var(--primary)" onClick={() => setEditing(true)}>Editar tudo</TextLinkButton>
+          )}
         </div>
-        {!editing && (
-          <TextLinkButton color="#7401C3" onClick={() => setEditing(true)}>Editar tudo</TextLinkButton>
+
+        <EditableField
+          eyebrow="Diagnóstico"
+          value={editing ? draft.diagnostico : values.diagnostico}
+          editing={editing}
+          rows={4}
+          onChange={(v) => setDraft(d => ({ ...d, diagnostico: v }))}
+        />
+        <EditableField
+          eyebrow="Estado atual"
+          value={editing ? draft.estado : values.estado}
+          editing={editing}
+          rows={3}
+          onChange={(v) => setDraft(d => ({ ...d, estado: v }))}
+        />
+        <EditableField
+          eyebrow="Prioridades de evolução"
+          value={editing ? draft.prioridades : values.prioridades}
+          editing={editing}
+          rows={4}
+          onChange={(v) => setDraft(d => ({ ...d, prioridades: v }))}
+          formatList
+        />
+
+        {editing && (
+          <div className="flex items-center gap-[18px] flex-wrap pt-2.5 border-t border-border">
+            <TextLinkButton icon="check" color="var(--primary)" onClick={save}>Salvar</TextLinkButton>
+            <TextLinkButton icon="x" color="#525252" onClick={discard}>Descartar</TextLinkButton>
+            <TextLinkButton icon="sparkles" color="var(--primary)" onClick={regen}>Regenerar com IA</TextLinkButton>
+          </div>
         )}
-      </div>
 
-      <EditableField
-        eyebrow="Diagnóstico"
-        value={editing ? draft.diagnostico : values.diagnostico}
-        editing={editing}
-        rows={4}
-        onChange={(v) => setDraft(d => ({ ...d, diagnostico: v }))}
-      />
-      <EditableField
-        eyebrow="Estado atual"
-        value={editing ? draft.estado : values.estado}
-        editing={editing}
-        rows={3}
-        onChange={(v) => setDraft(d => ({ ...d, estado: v }))}
-      />
-      <EditableField
-        eyebrow="Prioridades de evolução"
-        value={editing ? draft.prioridades : values.prioridades}
-        editing={editing}
-        rows={4}
-        onChange={(v) => setDraft(d => ({ ...d, prioridades: v }))}
-        formatList
-      />
-
-      {editing && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
-          paddingTop: 10, borderTop: '1px solid #E5E5E5',
-        }}>
-          <TextLinkButton icon="check" color="#7401C3" onClick={save}>Salvar</TextLinkButton>
-          <TextLinkButton icon="x" color="#525252" onClick={discard}>Descartar</TextLinkButton>
-          <TextLinkButton icon="sparkles" color="#7401C3" onClick={regen}>Regenerar com IA</TextLinkButton>
-        </div>
-      )}
-
-      {!editing && (
-        <div style={{
-          fontSize: 12, color: '#737373',
-          paddingTop: 8, borderTop: '1px solid #E5E5E5',
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <span>Esta informação foi útil?</span>
-          <Icon name="thumbs-up" size={13} color="#AA95BE"/>
-          <Icon name="thumbs-down" size={13} color="#AA95BE"/>
-        </div>
-      )}
-    </div>
+        {!editing && (
+          <div className="flex items-center gap-2.5 pt-2 border-t border-border text-[12px] text-muted-foreground">
+            <span>Esta informação foi útil?</span>
+            <Icon name="thumbs-up" size={13} color="#AA95BE"/>
+            <Icon name="thumbs-down" size={13} color="#AA95BE"/>
+          </div>
+        )}
+      </CardContent>
+    </ShadCard>
   );
 }
 
-function EditableField({ eyebrow, value, editing, rows = 3, onChange, formatList }: {
+export function EditableField({ eyebrow, value, editing, rows = 3, onChange, formatList }: {
   eyebrow: string;
   value: string;
   editing: boolean;
@@ -319,30 +308,19 @@ function EditableField({ eyebrow, value, editing, rows = 3, onChange, formatList
 }) {
   return (
     <div>
-      <div style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
-        textTransform: 'uppercase', color: '#525252', marginBottom: 6,
-      }}>{eyebrow}</div>
+      <div className="text-[11px] font-bold tracking-[0.04em] uppercase mb-1.5" style={{ color: '#525252' }}>
+        {eyebrow}
+      </div>
       {editing ? (
-        <textarea
+        <Textarea
           value={value}
           rows={rows}
           onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: '100%', resize: 'vertical',
-            padding: '8px 10px',
-            fontSize: 13, lineHeight: 1.55, color: '#1a1a1a',
-            background: '#fff', border: '1px solid #E5E5E5',
-            borderRadius: 8, outline: 'none',
-            fontFamily: 'inherit',
-            transition: 'border-color 150ms',
-            boxSizing: 'border-box',
-          }}
-          onFocus={e => { e.target.style.borderColor = '#7401C3'; }}
-          onBlur={e => { e.target.style.borderColor = '#E5E5E5'; }}
+          className="resize-y text-[13px] leading-[1.55] text-foreground bg-white border-border rounded-lg outline-none font-[inherit] transition-colors focus-visible:ring-0 focus-visible:border-primary"
+          style={{ boxSizing: 'border-box' }}
         />
       ) : formatList && /^\s*\d+\./m.test(value) ? (
-        <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#1a1a1a' }}>
+        <div className="text-[13.5px] leading-[1.55] text-foreground" style={{ color: '#1a1a1a' }}>
           {(() => {
             const items = value.split('\n').filter(l => l.trim()).map(l => l.replace(/^\s*\d+\.\s*/, ''));
             return items.map((t, i) => (
@@ -353,10 +331,9 @@ function EditableField({ eyebrow, value, editing, rows = 3, onChange, formatList
           })()}
         </div>
       ) : (
-        <div style={{
-          fontSize: 13.5, lineHeight: 1.55, color: '#1a1a1a',
-          whiteSpace: 'pre-wrap',
-        }}>{value}</div>
+        <div className="text-[13.5px] leading-[1.55] whitespace-pre-wrap" style={{ color: '#1a1a1a' }}>
+          {value}
+        </div>
       )}
     </div>
   );
@@ -375,41 +352,26 @@ function PubFilterDropdown({ value, onChange }: { value: string; onChange: (v: s
   const current = PUB_FILTERS.find(f => f.id === value) || PUB_FILTERS[0];
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 240 }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '7px 12px', borderRadius: 8,
-        border: '1px solid var(--hu-border)', background: '#fff',
-        cursor: 'pointer',
-        fontSize: 12.5, fontWeight: 600, color: '#3C0366',
-        width: '100%',
-      }}>
+    <div ref={ref} className="relative min-w-60">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3 py-[7px] rounded-lg border border-border bg-white cursor-pointer text-[12.5px] font-semibold text-primary/80 w-full">
         <Icon name="users" size={13} color="#737373"/>
-        <span style={{ flex: 1, textAlign: 'left' }}>{current.label}</span>
+        <span className="flex-1 text-left">{current.label}</span>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#AA95BE"/>
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-          background: '#fff', borderRadius: 10, border: '1px solid var(--hu-border)',
-          boxShadow: '0 12px 28px rgba(60,3,102,0.12)',
-          padding: 6, zIndex: 30, minWidth: '100%',
-          display: 'flex', flexDirection: 'column', gap: 2,
-        }}>
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-white rounded-[10px] border border-border shadow-[0_12px_28px_rgba(60,3,102,0.12)] p-1.5 z-30 min-w-full flex flex-col gap-0.5">
           {PUB_FILTERS.map(f => {
             const isActive = f.id === value;
             return (
               <div key={f.id}
                 onClick={() => { onChange(f.id); setOpen(false); }}
-                style={{
-                  padding: '7px 10px', borderRadius: 6, cursor: 'pointer',
-                  background: isActive ? '#EFE3F8' : 'transparent',
-                  color: isActive ? '#3C0366' : '#525252',
-                  fontWeight: isActive ? 700 : 500, fontSize: 12.5,
-                  transition: 'background 120ms',
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#FAFAFA'; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                className={cn(
+                  'px-2.5 py-[7px] rounded-md cursor-pointer text-[12.5px] transition-colors duration-[120ms]',
+                  isActive
+                    ? 'bg-primary/10 text-primary/80 font-bold'
+                    : 'bg-transparent text-foreground font-medium hover:bg-muted/50',
+                )}>
                 {f.label}
               </div>
             );
@@ -430,7 +392,7 @@ interface TimelinePoint {
   n?: number;
 }
 
-function TimelineSVG({ points, range = [-100, 100] as [number, number], dim = 'sentimento' }: {
+export function TimelineSVG({ points, range = [-100, 100] as [number, number], dim = 'sentimento' }: {
   points: TimelinePoint[];
   range?: [number, number];
   dim?: string;
@@ -453,13 +415,13 @@ function TimelineSVG({ points, range = [-100, 100] as [number, number], dim = 's
   const zeroVal = isSent ? 0 : null;
 
   const pointColor = (p: TimelinePoint) => {
-    if (p.kind === 'matrix') return '#7401C3';
+    if (p.kind === 'matrix') return 'var(--primary)';
     return sentColor(p.value);
   };
 
   return (
-    <div style={{ position: 'relative' }}>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+    <div className="relative">
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
         {axisTicks.map(t => (
           <g key={t}>
             <line x1={ML} y1={py(t)} x2={W - MR} y2={py(t)}
@@ -472,7 +434,7 @@ function TimelineSVG({ points, range = [-100, 100] as [number, number], dim = 's
         <line x1={ML} y1={H - MB} x2={W - MR} y2={H - MB} stroke="#E7E0EB" strokeWidth="1"/>
 
         <path d={points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${px(p.data)} ${py(p.value)}`).join(' ')}
-          fill="none" stroke="#7401C3" strokeWidth="1.8" opacity="0.4"/>
+          fill="none" stroke="var(--primary)" strokeWidth="1.8" opacity="0.4"/>
 
         {points.map((p, i) => {
           const isMatrix = p.kind === 'matrix';
@@ -554,7 +516,7 @@ export function PercepcaoBlock({ theme }: PercepcaoBlockProps) {
   const minPub = theme.por_publico.find(p => p.relevancia === minRel);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className="flex flex-col gap-3.5">
       {gap >= 12 && maxPub && minPub && (
         <AIFlat tone="warning" footer={false}
           title="Divergência entre públicos"
@@ -567,79 +529,63 @@ export function PercepcaoBlock({ theme }: PercepcaoBlockProps) {
       )}
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 110px 130px 90px 36px',
-          fontSize: 12, fontWeight: 500,
-          color: '#737373', background: '#FAFAFA',
-          padding: '12px 24px',
-          borderBottom: '1px solid #F0F0F0',
-        }}>
-          <span>Público</span>
-          <span style={{ textAlign: 'right' }}>Relevância</span>
-          <span style={{ textAlign: 'right' }}>Sentimento</span>
-          <span style={{ textAlign: 'right' }}>n</span>
-          <span/>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#FAFAFA] hover:bg-[#FAFAFA]">
+              <TableHead className="text-[12px] font-medium text-muted-foreground px-6 py-3">Público</TableHead>
+              <TableHead className="text-[12px] font-medium text-muted-foreground px-6 py-3 text-right">Relevância</TableHead>
+              <TableHead className="text-[12px] font-medium text-muted-foreground px-6 py-3 text-right">Sentimento</TableHead>
+              <TableHead className="text-[12px] font-medium text-muted-foreground px-6 py-3 text-right">n</TableHead>
+              <TableHead className="w-9 px-6 py-3"/>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {/* Alta Liderança row */}
+            <TableRow className="bg-primary/10 hover:bg-primary/10 border-b border-border">
+              <TableCell className="px-6 py-3.5">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg shrink-0 bg-primary text-white flex items-center justify-center font-black text-[12px] tracking-tight" style={{ fontFamily: 'var(--hu-font-display)' }}>
+                    AL
+                  </span>
+                  <div>
+                    <div className="text-[13.5px] font-bold text-foreground">Alta Liderança</div>
+                    <div className="text-[11px] text-primary">Pesquisa direta com C-Level</div>
+                  </div>
+                  <Pill tone="brand" size="sm" style={{ marginLeft: 8 }}>Eixo X</Pill>
+                </div>
+              </TableCell>
+              <TableCell className="text-right px-6 py-3.5 font-black text-[18px] text-primary/80 tabular-nums" style={{ fontFamily: 'var(--hu-font-display)' }}>
+                {theme.x}%
+              </TableCell>
+              <TableCell className="text-right px-6 py-3.5 text-[13px] text-muted-foreground">—</TableCell>
+              <TableCell className="text-right px-6 py-3.5 text-[11.5px] text-muted-foreground">direta</TableCell>
+              <TableCell/>
+            </TableRow>
 
-        {/* Alta Liderança row */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 110px 130px 90px 36px',
-          alignItems: 'center',
-          padding: '14px 24px',
-          background: '#FAF5FE',
-          borderBottom: '1px solid var(--hu-border)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{
-              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-              background: '#7401C3', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 12, letterSpacing: '-0.02em',
-            }}>AL</span>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0A0A0A' }}>Alta Liderança</div>
-              <div style={{ fontSize: 11, color: '#5A0992' }}>Pesquisa direta com C-Level</div>
-            </div>
-            <Pill tone="brand" size="sm" style={{ marginLeft: 8 }}>Eixo X</Pill>
-          </div>
-          <div style={{ textAlign: 'right', fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 18, color: '#3C0366', fontVariantNumeric: 'tabular-nums' }}>
-            {theme.x}%
-          </div>
-          <div style={{ textAlign: 'right', color: 'var(--hu-muted)', fontSize: 13 }}>—</div>
-          <div style={{ textAlign: 'right', fontSize: 11.5, color: 'var(--hu-muted)' }}>direta</div>
-          <span/>
-        </div>
+            {PUBLICOS.map((pub) => {
+              const pp = theme.por_publico.find(x => x.publico === pub.id);
+              if (!pp) return null;
+              const hasCargo = pub.id === 'interno' && Array.isArray(theme.por_cargo);
+              const isExpanded = expanded.includes(pub.id);
+              const isMax = pp.relevancia === maxRel;
+              const isMin = pp.relevancia === minRel && minRel !== maxRel;
+              return (
+                <React.Fragment key={pub.id}>
+                  <PercepcaoRow pub={pub} pp={pp} hasCargo={hasCargo}
+                    isExpanded={isExpanded}
+                    onExpand={() => hasCargo && toggleExpand(pub.id)}
+                    isMax={isMax} isMin={isMin}/>
+                  {hasCargo && isExpanded && theme.por_cargo?.map(c => (
+                    <CargoRow key={c.cargo} cargo={c}/>
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
 
-        {PUBLICOS.map((pub) => {
-          const pp = theme.por_publico.find(x => x.publico === pub.id);
-          if (!pp) return null;
-          const hasCargo = pub.id === 'interno' && Array.isArray(theme.por_cargo);
-          const isExpanded = expanded.includes(pub.id);
-          const isMax = pp.relevancia === maxRel;
-          const isMin = pp.relevancia === minRel && minRel !== maxRel;
-          return (
-            <React.Fragment key={pub.id}>
-              <PercepcaoRow pub={pub} pp={pp} hasCargo={hasCargo}
-                isExpanded={isExpanded}
-                onExpand={() => hasCargo && toggleExpand(pub.id)}
-                isMax={isMax} isMin={isMin}/>
-              {hasCargo && isExpanded && theme.por_cargo?.map(c => (
-                <CargoRow key={c.cargo} cargo={c}/>
-              ))}
-            </React.Fragment>
-          );
-        })}
-
-        <div style={{
-          background: '#FAFAFA',
-          borderTop: '1px solid var(--hu-border)',
-          padding: '12px 24px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          fontSize: 11.5, color: '#525252',
-        }}>
-          <Icon name="shield" size={14} color="#7401C3"/>
+        <div className="bg-[#FAFAFA] border-t border-border px-6 py-3 flex items-center gap-2.5 text-[11.5px] text-foreground" style={{ color: '#525252' }}>
+          <Icon name="shield" size={14} color="var(--primary)"/>
           <span>
             <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
             <i> "amostra insuficiente"</i> para evitar reidentificação.
@@ -659,111 +605,94 @@ function PercepcaoRow({ pub, pp, hasCargo, isExpanded, onExpand, isMax, isMin }:
   isMax: boolean;
   isMin: boolean;
 }) {
-  const [hov, setHov] = React.useState(false);
   return (
-    <div onClick={() => { if (hasCargo) onExpand(); }}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '2fr 110px 130px 90px 36px',
-        alignItems: 'center',
-        padding: '14px 24px',
-        borderBottom: '1px solid #F4F4F5',
-        cursor: hasCargo ? 'pointer' : 'default',
-        background: hov ? '#FAFAFA' : 'transparent',
-        transition: 'background 120ms',
-      }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-        <span style={{
-          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-          background: '#F4F4F5',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon name={pub.icon} size={15} color="#525252"/>
-        </span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: '#0A0A0A' }}>{pub.label}</div>
-          <div style={{ fontSize: 11, color: 'var(--hu-muted)' }}>
-            peso {pub.peso}× {hasCargo && '· clique para ver por cargo'}
+    <TableRow
+      onClick={() => { if (hasCargo) onExpand(); }}
+      className={cn(
+        'border-b border-[#F4F4F5] transition-colors duration-[120ms]',
+        hasCargo ? 'cursor-pointer hover:bg-muted/50' : 'cursor-default',
+      )}>
+      <TableCell className="px-6 py-3.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-8 h-8 rounded-lg shrink-0 bg-[#F4F4F5] flex items-center justify-center">
+            <Icon name={pub.icon} size={15} color="#525252"/>
+          </span>
+          <div className="min-w-0">
+            <div className="text-[13.5px] font-semibold text-foreground">{pub.label}</div>
+            <div className="text-[11px] text-muted-foreground">
+              peso {pub.peso}× {hasCargo && '· clique para ver por cargo'}
+            </div>
           </div>
+          {isMax && <Pill tone="brand"   size="sm" style={{ marginLeft: 'auto', whiteSpace: 'nowrap', fontWeight: 500 }}>Maior relev.</Pill>}
+          {isMin && <Pill tone="neutral" size="sm" style={{ marginLeft: 'auto', whiteSpace: 'nowrap', fontWeight: 500 }}>Menor</Pill>}
         </div>
-        {isMax && <Pill tone="brand"   size="sm" style={{ marginLeft: 'auto', whiteSpace: 'nowrap', fontWeight: 500 }}>Maior relev.</Pill>}
-        {isMin && <Pill tone="neutral" size="sm" style={{ marginLeft: 'auto', whiteSpace: 'nowrap', fontWeight: 500 }}>Menor</Pill>}
-      </div>
-      <div style={{
-        textAlign: 'right',
-        fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 16,
-        color: '#0A0A0A', fontVariantNumeric: 'tabular-nums',
-      }}>{pp.relevancia}%</div>
-      <div style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
-        <StatusDot size={9} tone={
-          pp.sentimento == null ? 'neutral'
-          : pp.sentimento <= -25 ? 'danger'
-          : pp.sentimento < 0    ? 'warning'
-          : 'success'
-        }/>
-        <span style={{
-          fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 14,
-          color: sentColor(pp.sentimento), fontVariantNumeric: 'tabular-nums',
-        }}>{fmtSent(pp.sentimento)}</span>
-      </div>
-      <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--hu-muted)', fontVariantNumeric: 'tabular-nums' }}>
+      </TableCell>
+      <TableCell className="text-right px-6 py-3.5 font-bold text-[16px] text-foreground tabular-nums" style={{ fontFamily: 'var(--hu-font-display)' }}>
+        {pp.relevancia}%
+      </TableCell>
+      <TableCell className="text-right px-6 py-3.5">
+        <div className="flex justify-end items-center gap-1.5">
+          <StatusDot size={9} tone={
+            pp.sentimento == null ? 'neutral'
+            : pp.sentimento <= -25 ? 'danger'
+            : pp.sentimento < 0    ? 'warning'
+            : 'success'
+          }/>
+          <span className="font-bold text-[14px] tabular-nums" style={{ fontFamily: 'var(--hu-font-display)', color: sentColor(pp.sentimento) }}>
+            {fmtSent(pp.sentimento)}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell className="text-right px-6 py-3.5 text-[12px] text-muted-foreground tabular-nums">
         {pp.n_amostra}
-      </div>
-      <div style={{ textAlign: 'right' }}>
+      </TableCell>
+      <TableCell className="text-right px-6 py-3.5">
         {hasCargo && (
-          <span style={{
-            display: 'inline-flex',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 180ms',
-          }}>
+          <span className={cn(
+            'inline-flex transition-transform duration-[180ms]',
+            isExpanded ? 'rotate-90' : 'rotate-0',
+          )}>
             <Icon name="chevron-right" size={14} color="#AA95BE"/>
           </span>
         )}
-      </div>
-    </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
-function CargoRow({ cargo }: { cargo: { cargo: string; cargo_label: string; relevancia: number | null; sentimento: number | null; n_amostra: number; insuficiente: boolean } }) {
+export function CargoRow({ cargo }: { cargo: { cargo: string; cargo_label: string; relevancia: number | null; sentimento: number | null; n_amostra: number; insuficiente: boolean } }) {
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '2fr 110px 130px 90px 36px',
-      alignItems: 'center',
-      padding: '10px 24px 10px 56px',
-      borderBottom: '1px solid #F4F4F5',
-      background: '#FCFAFD',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ width: 5, height: 5, borderRadius: 999, background: '#AA95BE' }}/>
-        <span style={{ fontSize: 12.5, color: '#525252' }}>{cargo.cargo_label}</span>
-      </div>
-      <div style={{
-        textAlign: 'right',
-        fontSize: 13, fontWeight: 600,
-        color: cargo.insuficiente ? '#AA95BE' : '#0A0A0A',
-        fontVariantNumeric: 'tabular-nums',
-      }}>{cargo.insuficiente ? '—' : `${cargo.relevancia}%`}</div>
-      <div style={{ textAlign: 'right' }}>
+    <TableRow className="border-b border-[#F4F4F5] bg-[#FCFAFD] hover:bg-[#FCFAFD]">
+      <TableCell className="pl-14 pr-6 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <span className="w-[5px] h-[5px] rounded-full bg-[#AA95BE] shrink-0"/>
+          <span className="text-[12.5px] text-foreground" style={{ color: '#525252' }}>{cargo.cargo_label}</span>
+        </div>
+      </TableCell>
+      <TableCell className={cn(
+        'text-right px-6 py-2.5 text-[13px] font-semibold tabular-nums',
+        cargo.insuficiente ? 'text-[#AA95BE]' : 'text-foreground',
+      )}>
+        {cargo.insuficiente ? '—' : `${cargo.relevancia}%`}
+      </TableCell>
+      <TableCell className="text-right px-6 py-2.5">
         {cargo.insuficiente ? (
-          <i style={{ fontSize: 11, color: '#C81E1E' }}>amostra insuficiente</i>
+          <i className="text-[11px] text-destructive">amostra insuficiente</i>
         ) : (
-          <span style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 13,
-            color: sentColor(cargo.sentimento), fontVariantNumeric: 'tabular-nums',
-          }}>{fmtSent(cargo.sentimento)}</span>
+          <span className="font-bold text-[13px] tabular-nums" style={{ fontFamily: 'var(--hu-font-display)', color: sentColor(cargo.sentimento) }}>
+            {fmtSent(cargo.sentimento)}
+          </span>
         )}
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        <span style={{
-          fontSize: 12, fontWeight: cargo.insuficiente ? 700 : 400,
-          color: cargo.insuficiente ? '#C81E1E' : 'var(--hu-muted)',
-          fontVariantNumeric: 'tabular-nums',
-        }}>{cargo.n_amostra}</span>
-      </div>
-      <div/>
-    </div>
+      </TableCell>
+      <TableCell className="text-right px-6 py-2.5">
+        <span className={cn(
+          'text-[12px] tabular-nums',
+          cargo.insuficiente ? 'font-bold text-destructive' : 'font-normal text-muted-foreground',
+        )}>
+          {cargo.n_amostra}
+        </span>
+      </TableCell>
+      <TableCell/>
+    </TableRow>
   );
 }

@@ -3,6 +3,18 @@ import { Icon } from './icons';
 import { AIFlat } from './components';
 import { Card } from './components';
 import { PUBLICOS, PUBLICO_BY_ID, getDimValue, sentColor, type Theme } from './data';
+import { cn } from '~/lib/utils';
+import { Badge } from '~/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
+import { Separator } from '~/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table';
 
 /* ============================================================
    DIMENSÕES
@@ -71,42 +83,42 @@ interface DimensionRadioProps {
 
 export function DimensionRadio({ value, onChange, options = DIMENSOES }: DimensionRadioProps) {
   return (
-    <div role="radiogroup" style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: 3, borderRadius: 999,
-      background: '#FAFAFA', border: '1px solid var(--hu-border)',
-    }}>
+    <RadioGroup
+      value={value}
+      onValueChange={onChange}
+      className="inline-flex items-center gap-1 p-[3px] rounded-full bg-muted/50 border border-border w-auto"
+    >
       {options.map(opt => {
         const isActive = opt.id === value;
         return (
-          <button key={opt.id}
-            role="radio" aria-checked={isActive}
-            onClick={() => onChange(opt.id)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '6px 14px', borderRadius: 999,
-              border: 0, cursor: 'pointer',
-              background: isActive ? '#7401C3' : 'transparent',
-              color: isActive ? '#fff' : '#525252',
-              fontSize: 12.5, fontWeight: isActive ? 700 : 500,
-              transition: 'background 160ms, color 160ms',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#F0EBF4'; }}
-            onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-            <span style={{
-              width: 14, height: 14, borderRadius: 999, flexShrink: 0,
-              background: isActive ? '#fff' : 'transparent',
-              border: isActive ? '0' : '1.5px solid #AA95BE',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {isActive && <span style={{ width: 6, height: 6, borderRadius: 999, background: '#7401C3' }}/>}
+          <label
+            key={opt.id}
+            className={cn(
+              'inline-flex items-center gap-[7px] px-[14px] py-[6px] rounded-full cursor-pointer whitespace-nowrap text-[12.5px] font-medium transition-colors duration-150',
+              isActive
+                ? 'bg-primary text-primary-foreground font-bold'
+                : 'text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <RadioGroupItem
+              value={opt.id}
+              className="sr-only"
+            />
+            <span
+              className={cn(
+                'inline-flex items-center justify-center w-[14px] h-[14px] rounded-full shrink-0',
+                isActive ? 'bg-white border-0' : 'border-[1.5px] border-muted-foreground/50 bg-transparent',
+              )}
+            >
+              {isActive && (
+                <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+              )}
             </span>
             {opt.label}
-          </button>
+          </label>
         );
       })}
-    </div>
+    </RadioGroup>
   );
 }
 
@@ -145,89 +157,84 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
   };
 
   return (
-    <div className="hu-fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-        gap: 18, flexWrap: 'wrap',
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-            textTransform: 'uppercase', color: '#737373', marginBottom: 4,
-          }}>Sentimento por público</div>
-          <h3 style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 18,
-            color: '#0A0A0A', letterSpacing: '-0.01em', margin: 0,
-          }}>Comparação multi-stakeholder em 3 dimensões</h3>
+    <div className="hu-fade flex flex-col gap-[14px]">
+      <div className="flex items-end justify-between gap-[18px] flex-wrap">
+        <div className="min-w-0">
+          <div className="text-[11px] font-bold tracking-[0.10em] uppercase text-muted-foreground mb-1">
+            Sentimento por público
+          </div>
+          <h3 className="font-heading font-bold text-[18px] text-foreground tracking-[-0.01em] m-0">
+            Comparação multi-stakeholder em 3 dimensões
+          </h3>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-            textTransform: 'uppercase', color: '#737373',
-          }}>Dimensão</span>
-          <DimensionRadio value={dim} onChange={setDim}/>
+        <div className="flex items-center gap-[10px] flex-wrap">
+          <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+            Dimensão
+          </span>
+          <DimensionRadio value={dim} onChange={setDim} />
         </div>
       </div>
 
-      <div style={{
-        fontSize: 11.5, color: '#737373',
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      }}>
-        <span>Faixa: <b style={{ color: '#0A0A0A', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-          {dimDef.range[0]} a {dimDef.range[1]}
-        </b></span>
-        <span style={{ width: 1, height: 12, background: 'var(--hu-border)' }}/>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="info" size={12} color="#AA95BE"/>
+      <div className="flex items-center gap-3 flex-wrap text-[11.5px] text-muted-foreground">
+        <span>
+          Faixa:{' '}
+          <b className="text-foreground font-semibold tabular-nums">
+            {dimDef.range[0]} a {dimDef.range[1]}
+          </b>
+        </span>
+        <Separator orientation="vertical" className="h-3" />
+        <span className="inline-flex items-center gap-[6px]">
+          <Icon name="info" size={12} color="#AA95BE" />
           Clique em uma linha para abrir o tema correspondente
         </span>
       </div>
 
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: 1000, borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#FAFAFA' }}>
-                <th style={{
-                  textAlign: 'left', padding: '12px 16px',
-                  fontSize: 11.5, fontWeight: 600, color: '#525252',
-                  borderBottom: '1px solid #F0F0F0', width: 320, minWidth: 280,
-                  letterSpacing: '0.02em',
-                }}>Tema</th>
+      <Card className="p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1000px] border-0 rounded-none max-h-none">
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-left px-4 py-3 text-[11.5px] font-semibold text-muted-foreground border-b border-border w-80 min-w-[280px] tracking-[0.02em]">
+                  Tema
+                </TableHead>
                 {cols.map(c => {
                   const dimmed = isDimmed(c);
                   return (
-                    <th key={c.id} style={{
-                      textAlign: 'center', padding: '12px 8px',
-                      fontSize: 11, fontWeight: 600, color: c.kind === 'al' ? '#5A0992' : '#525252',
-                      borderBottom: '1px solid #F0F0F0',
-                      background: dimmed ? '#F4F4F5' : (c.kind === 'al' ? '#F6EDFB' : '#FAFAFA'),
-                      borderLeft: c.kind === 'al' ? '1px solid #E8D9F2' : 'none',
-                      letterSpacing: '0.02em',
-                      opacity: dimmed ? 0.55 : 1,
-                      whiteSpace: 'nowrap',
-                    }}>{c.label}</th>
+                    <TableHead
+                      key={c.id}
+                      className={cn(
+                        'text-center px-2 py-3 text-[11px] font-semibold border-b border-border tracking-[0.02em] whitespace-nowrap transition-opacity',
+                        c.kind === 'al'
+                          ? 'text-primary border-l border-primary/20 bg-primary/5'
+                          : 'text-muted-foreground',
+                        dimmed && 'bg-muted opacity-55',
+                        !dimmed && c.kind !== 'al' && 'bg-muted/50',
+                      )}
+                    >
+                      {c.label}
+                    </TableHead>
                   );
                 })}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {themes.map(t => (
-                <HeatmapRow key={t.id} theme={t} cols={cols} dim={dim}
-                  onClick={() => onPickTheme(t.id)} isDimmed={isDimmed}/>
+                <HeatmapRow
+                  key={t.id}
+                  theme={t}
+                  cols={cols}
+                  dim={dim}
+                  onClick={() => onPickTheme(t.id)}
+                  isDimmed={isDimmed}
+                />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
-        <div style={{
-          padding: '12px 20px 14px',
-          background: '#FCFAFD',
-          borderTop: '1px solid #F0F0F0',
-          display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-        }}>
-          <ScaleLegend dim={dim}/>
-          <div style={{ flex: 1, minWidth: 200, fontSize: 11, color: '#737373', lineHeight: 1.55 }}>
+        <div className="px-5 py-3 bg-[#FCFAFD] border-t border-border flex items-center gap-4 flex-wrap">
+          <ScaleLegend dim={dim} />
+          <div className="flex-1 min-w-[200px] text-[11px] text-muted-foreground leading-[1.55]">
             {dimDef.nota}
           </div>
         </div>
@@ -243,61 +250,46 @@ function HeatmapRow({ theme, cols, dim, onClick, isDimmed }: {
   onClick: () => void;
   isDimmed: (col: { id: string; kind: string }) => boolean;
 }) {
-  const [hov, setHov] = React.useState(false);
   return (
-    <tr
+    <TableRow
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        cursor: 'pointer',
-        background: hov ? '#FAFAFA' : 'transparent',
-        transition: 'background 120ms',
-      }}>
-      <td style={{
-        padding: '11px 16px',
-        borderBottom: '1px solid #F0F0F0',
-        fontSize: 13, fontWeight: hov ? 700 : 500, color: '#0A0A0A',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-            background: '#EFE3F8', color: '#5A0992',
-            fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 10.5,
-            letterSpacing: '-0.02em',
-          }}>{String(theme.id).padStart(2, '0')}</span>
-          <span style={{
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            display: 'inline-block', maxWidth: 260,
-          }}>{theme.nome}</span>
+      className="cursor-pointer hover:bg-muted/50 transition-colors"
+    >
+      <TableCell className="px-4 py-[11px] border-b border-border text-[13px] font-medium text-foreground hover:font-bold">
+        <div className="flex items-center gap-[10px]">
+          <span className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[6px] shrink-0 bg-primary/10 text-primary font-heading font-black text-[10.5px] tracking-[-0.02em]">
+            {String(theme.id).padStart(2, '0')}
+          </span>
+          <span className="whitespace-nowrap overflow-hidden text-ellipsis inline-block max-w-[260px]">
+            {theme.nome}
+          </span>
         </div>
-      </td>
+      </TableCell>
       {cols.map(c => {
         const v = getDimValue(theme, c.id, dim);
         const dimmed = isDimmed(c);
         const bg = dimmed ? '#FAFAFA' : dimCellBg(dim, v);
         const fg = dimCellFg(dim, v);
         return (
-          <td key={c.id} style={{
-            padding: '0',
-            borderBottom: '1px solid #F0F0F0',
-            borderLeft: c.kind === 'al' ? '1px solid #E8D9F2' : 'none',
-            textAlign: 'center',
-            background: bg,
-            opacity: dimmed ? 0.55 : (hov ? 0.92 : 1),
-            transition: 'opacity 140ms, background 200ms',
-          }}>
-            <div style={{
-              padding: '11px 8px',
-              fontFamily: 'var(--hu-font-display)', fontWeight: 700,
-              fontSize: 13.5, color: fg,
-              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
-            }}>{fmtDimValue(dim, v)}</div>
-          </td>
+          <TableCell
+            key={c.id}
+            className={cn(
+              'p-0 border-b border-border text-center transition-opacity duration-150',
+              c.kind === 'al' && 'border-l border-primary/20',
+              dimmed && 'opacity-55',
+            )}
+            style={{ background: bg }}
+          >
+            <div
+              className="px-2 py-[11px] font-heading font-bold text-[13.5px] tabular-nums tracking-[-0.01em]"
+              style={{ color: fg }}
+            >
+              {fmtDimValue(dim, v)}
+            </div>
+          </TableCell>
         );
       })}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -311,16 +303,18 @@ function ScaleLegend({ dim }: { dim: string }) {
       { v: '+100', bg: '#7AE2AB' },
     ];
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#737373', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Escala</span>
+      <div className="flex items-center gap-[6px]">
+        <span className="text-[10.5px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+          Escala
+        </span>
         {stops.map(s => (
-          <span key={s.v} style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            minWidth: 36, height: 22, borderRadius: 4,
-            background: s.bg, border: '1px solid #F0F0F0',
-            fontSize: 10.5, fontWeight: 700, color: '#525252',
-            fontVariantNumeric: 'tabular-nums',
-          }}>{s.v}</span>
+          <span
+            key={s.v}
+            className="inline-flex items-center justify-center min-w-[36px] h-[22px] rounded border border-border text-[10.5px] font-bold text-muted-foreground tabular-nums"
+            style={{ background: s.bg }}
+          >
+            {s.v}
+          </span>
         ))}
       </div>
     );
@@ -332,16 +326,18 @@ function ScaleLegend({ dim }: { dim: string }) {
     { v: '80-100', bg: '#C29DE3' },
   ];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: 10.5, fontWeight: 700, color: '#737373', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Escala</span>
+    <div className="flex items-center gap-[6px]">
+      <span className="text-[10.5px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+        Escala
+      </span>
       {stops.map(s => (
-        <span key={s.v} style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          minWidth: 56, height: 22, borderRadius: 4,
-          background: s.bg, border: '1px solid #F0F0F0',
-          fontSize: 10.5, fontWeight: 700, color: '#525252',
-          fontVariantNumeric: 'tabular-nums',
-        }}>{s.v}</span>
+        <span
+          key={s.v}
+          className="inline-flex items-center justify-center min-w-[56px] h-[22px] rounded border border-border text-[10.5px] font-bold text-muted-foreground tabular-nums"
+          style={{ background: s.bg }}
+        >
+          {s.v}
+        </span>
       ))}
     </div>
   );
@@ -384,84 +380,68 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
   const alRow = { id: 'alta_lideranca', label: 'Alta Liderança', hint: 'consulta direta · Eixo X' };
 
   return (
-    <div className="hu-fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className="hu-fade flex flex-col gap-[14px]">
       {gapRel >= 12 && maxPub && minPub && (
         <AIFlat tone="warning" footer={false}
           title="Divergência entre públicos"
           sintese={
             <span>
-              Há <b>{gapRel}pp</b> de diferença na relevância entre os públicos. <b>{PUBLICO_BY_ID[maxPub.publico]?.label}</b> avalia em <b>{maxPub.relevancia}%</b>; <b>{PUBLICO_BY_ID[minPub.publico]?.label}</b> em <b>{minPub.relevancia}%</b>. Vale endereçar antes do próximo ciclo.
+              Há <b>{gapRel}pp</b> de diferença na relevância entre os públicos.{' '}
+              <b>{PUBLICO_BY_ID[maxPub.publico]?.label}</b> avalia em <b>{maxPub.relevancia}%</b>;{' '}
+              <b>{PUBLICO_BY_ID[minPub.publico]?.label}</b> em <b>{minPub.relevancia}%</b>. Vale endereçar antes do próximo ciclo.
             </span>
           }
         />
       )}
 
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E5E5E5',
-        borderRadius: 12,
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '18px 24px 14px',
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-          gap: 14, flexWrap: 'wrap',
-        }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#0A0A0A' }}>Visão dos stakeholders sobre o tema</div>
-            <div style={{ fontSize: 13, color: '#737373', marginTop: 4 }}>
+      <div className="bg-white border border-border rounded-xl overflow-hidden">
+        <div className="px-6 pt-[18px] pb-[14px] flex items-start justify-between gap-[14px] flex-wrap">
+          <div className="min-w-0">
+            <div className="text-[16px] font-semibold text-foreground">
+              Visão dos stakeholders sobre o tema
+            </div>
+            <div className="text-[13px] text-muted-foreground mt-1">
               Comparativo dos 5 públicos consultados + leitura direta da Alta Liderança.
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-              textTransform: 'uppercase', color: '#737373',
-            }}>Dimensão</span>
-            <DimensionRadio value={dim} onChange={setDim}/>
+          <div className="flex items-center gap-[10px] flex-wrap">
+            <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+              Dimensão
+            </span>
+            <DimensionRadio value={dim} onChange={setDim} />
           </div>
         </div>
 
-        <div style={{ padding: '6px 24px 8px' }}>
+        <div className="px-6 py-2">
           {stakeholderRows.map(r => (
             <React.Fragment key={r.id}>
-              <VisaoRow row={r} theme={theme} dim={dim}
+              <VisaoRow
+                row={r}
+                theme={theme}
+                dim={dim}
                 expanded={expanded.includes(r.id)}
-                onToggle={r.hasCargo ? () => toggleExpand(r.id) : null}/>
+                onToggle={r.hasCargo ? () => toggleExpand(r.id) : null}
+              />
               {r.hasCargo && expanded.includes(r.id) && theme.por_cargo?.map(c => (
-                <CargoSubRow key={c.cargo} cargo={c} dim={dim}/>
+                <CargoSubRow key={c.cargo} cargo={c} dim={dim} />
               ))}
             </React.Fragment>
           ))}
-          <div style={{
-            margin: '10px 4px 6px',
-            paddingTop: 12, paddingBottom: 4,
-            borderTop: '1px dashed #E8D9F2',
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span style={{
-              fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em',
-              textTransform: 'uppercase', color: '#AA95BE',
-            }}>Consulta direta</span>
+
+          <div className="mx-1 mt-[10px] mb-[6px] pt-3 pb-1 border-t border-dashed border-primary/30 flex items-center gap-2">
+            <span className="text-[10.5px] font-bold tracking-[0.10em] uppercase text-primary/50">
+              Consulta direta
+            </span>
           </div>
-          <VisaoRow row={alRow} theme={theme} dim={dim} isAL/>
+          <VisaoRow row={alRow} theme={theme} dim={dim} isAL />
         </div>
 
-        <div style={{
-          padding: '12px 24px 12px',
-          background: '#FCFAFD',
-          borderTop: '1px solid #F0F0F0',
-          fontSize: 11.5, color: '#525252', lineHeight: 1.55,
-        }}>{dimDef.nota}</div>
+        <div className="px-6 py-3 bg-[#FCFAFD] border-t border-border text-[11.5px] text-muted-foreground leading-[1.55]">
+          {dimDef.nota}
+        </div>
 
-        <div style={{
-          background: '#FAFAFA',
-          borderTop: '1px solid var(--hu-border)',
-          padding: '12px 24px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          fontSize: 11.5, color: '#525252',
-        }}>
-          <Icon name="shield" size={14} color="#7401C3"/>
+        <div className="bg-muted/50 border-t border-border px-6 py-3 flex items-center gap-[10px] text-[11.5px] text-muted-foreground">
+          <Icon name="shield" size={14} color="#7401C3" />
           <span>
             <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
             <i> "amostra insuficiente"</i> para evitar reidentificação.
@@ -492,7 +472,6 @@ interface VisaoRowProps {
 }
 
 function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) {
-  const [hov, setHov] = React.useState(false);
   const v = getDimValue(theme, row.id, dim);
   const isSent = dim === 'sentimento';
   const isHighlight = row.highlight;
@@ -501,12 +480,13 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
   let barRender: React.ReactNode;
   if (v == null) {
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'repeating-linear-gradient(45deg, #F4F4F5, #F4F4F5 4px, #FAFAFA 4px, #FAFAFA 8px)',
-          borderRadius: BAR_H / 2,
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: 'repeating-linear-gradient(45deg, #F4F4F5, #F4F4F5 4px, #FAFAFA 4px, #FAFAFA 8px)',
+          }}
+        />
       </div>
     );
   } else if (isSent) {
@@ -515,38 +495,38 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
     const gradPos = 'linear-gradient(to right, #7AE2AB, #00A970)';
     const gradNeg = 'linear-gradient(to left, #F8B4B4, #E03131)';
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#F4F4F5', borderRadius: BAR_H / 2 }}/>
-        <div style={{
-          position: 'absolute', left: '50%', top: -2, bottom: -2,
-          width: 1, marginLeft: -0.5, background: '#AA95BE',
-        }}/>
-        <div style={{
-          position: 'absolute', top: 0, height: BAR_H,
-          left: pos ? '50%' : (50 - valPct) + '%',
-          width: valPct + '%',
-          background: pos ? gradPos : gradNeg,
-          borderRadius: BAR_H / 2,
-          transition: 'width 240ms cubic-bezier(0.22, 0.61, 0.36, 1), left 240ms',
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div className="absolute inset-0 bg-muted rounded-full" />
+        <div className="absolute left-1/2 -top-0.5 -bottom-0.5 w-px -ml-px bg-primary/30" />
+        <div
+          className="absolute top-0 rounded-full transition-[width,left] duration-240 ease-[cubic-bezier(0.22,0.61,0.36,1)]"
+          style={{
+            height: BAR_H,
+            left: pos ? '50%' : (50 - valPct) + '%',
+            width: valPct + '%',
+            background: pos ? gradPos : gradNeg,
+          }}
+        />
       </div>
     );
   } else {
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#F4F4F5', borderRadius: BAR_H / 2 }}/>
-        <div style={{
-          position: 'absolute', top: 0, height: BAR_H,
-          left: 0, width: v + '%',
-          background: 'linear-gradient(to right, #B280E0, #7401C3)',
-          borderRadius: BAR_H / 2,
-          transition: 'width 240ms cubic-bezier(0.22,0.61,0.36,1)',
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div className="absolute inset-0 bg-muted rounded-full" />
+        <div
+          className="absolute top-0 left-0 rounded-full transition-[width] duration-240 ease-[cubic-bezier(0.22,0.61,0.36,1)]"
+          style={{
+            height: BAR_H,
+            width: v + '%',
+            background: 'linear-gradient(to right, #B280E0, #7401C3)',
+          }}
+        />
         {[25, 50, 75].map(t => (
-          <div key={t} style={{
-            position: 'absolute', left: t + '%', top: -2, bottom: -2,
-            width: 1, background: '#E0CBF1',
-          }}/>
+          <div
+            key={t}
+            className="absolute -top-0.5 -bottom-0.5 w-px bg-primary/20"
+            style={{ left: t + '%' }}
+          />
         ))}
       </div>
     );
@@ -555,72 +535,55 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
   return (
     <div
       onClick={onToggle || undefined}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(180px, 240px) minmax(140px, 1fr) minmax(54px, 60px) minmax(40px, 56px) 20px',
-        gap: 14, alignItems: 'center',
-        padding: '10px 12px',
-        borderRadius: 8,
-        background: isHighlight ? '#FAFAFA' : (isAL ? '#F6EDFB' : (hov ? '#FCFAFD' : 'transparent')),
-        marginBottom: 2,
-        cursor: onToggle ? 'pointer' : 'default',
-        transition: 'background 120ms',
-      }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      className={cn(
+        'grid gap-[14px] items-center px-3 py-[10px] rounded-lg mb-[2px] transition-colors duration-120',
+        'grid-cols-[minmax(180px,240px)_minmax(140px,1fr)_minmax(54px,60px)_minmax(40px,56px)_20px]',
+        isHighlight && 'bg-muted/50',
+        isAL && 'bg-primary/5',
+        !isHighlight && !isAL && 'hover:bg-primary/5',
+        onToggle ? 'cursor-pointer' : 'cursor-default',
+      )}
+    >
+      <div className="flex items-center gap-2 min-w-0">
         {row.icon && (
-          <span style={{
-            width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-            background: '#F4F4F5',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Icon name={row.icon} size={12} color="#525252"/>
+          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-muted inline-flex items-center justify-center">
+            <Icon name={row.icon} size={12} color="#525252" />
           </span>
         )}
         {isAL && (
-          <span style={{
-            width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-            background: '#7401C3', color: '#fff',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 10,
-            letterSpacing: '-0.02em',
-          }}>AL</span>
-        )}
-        {isHighlight && (
-          <span style={{
-            width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-            background: '#EFE3F8',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Icon name="users" size={12} color="#5A0992"/>
+          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary text-primary-foreground inline-flex items-center justify-center font-heading font-black text-[10px] tracking-[-0.02em]">
+            AL
           </span>
         )}
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: 13,
-              fontWeight: isHighlight || isAL ? 700 : 500,
-              color: isAL ? '#3C0366' : '#0A0A0A',
-              whiteSpace: 'nowrap',
-            }}>{row.label}</span>
+        {isHighlight && (
+          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary/10 inline-flex items-center justify-center">
+            <Icon name="users" size={12} color="#5A0992" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-[6px] flex-wrap">
+            <span
+              className={cn(
+                'text-[13px] whitespace-nowrap',
+                isHighlight || isAL ? 'font-bold' : 'font-medium',
+                isAL ? 'text-primary' : 'text-foreground',
+              )}
+            >
+              {row.label}
+            </span>
             {row.isMax && (
-              <span style={{
-                fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                color: '#5A0992', background: '#EFE3F8', padding: '2px 6px', borderRadius: 999,
-                whiteSpace: 'nowrap',
-              }}>Maior relev.</span>
+              <Badge className="text-[9.5px] tracking-[0.06em] uppercase bg-primary/10 text-primary border-0 rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+                Maior relev.
+              </Badge>
             )}
             {row.isMin && (
-              <span style={{
-                fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                color: '#737373', background: '#F4F4F5', padding: '2px 6px', borderRadius: 999,
-                whiteSpace: 'nowrap',
-              }}>Menor</span>
+              <Badge variant="outline" className="text-[9.5px] tracking-[0.06em] uppercase rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+                Menor
+              </Badge>
             )}
           </div>
           {row.hint && (
-            <div style={{ fontSize: 11, color: '#737373' }}>
+            <div className="text-[11px] text-muted-foreground">
               {row.hint}
               {row.hasCargo && <span> · clique para ver por cargo</span>}
             </div>
@@ -630,30 +593,31 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
 
       <div>{barRender}</div>
 
-      <div style={{
-        textAlign: 'right',
-        fontFamily: 'var(--hu-font-display)', fontWeight: 700,
-        fontSize: 15, color: v == null ? '#AA95BE' : (isSent ? sentColor(v) : '#3C0366'),
-        fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
-        whiteSpace: 'nowrap',
-      }}>{fmtDimValue(dim, v)}</div>
+      <div
+        className="text-right font-heading font-bold text-[15px] tabular-nums tracking-[-0.01em] whitespace-nowrap"
+        style={{ color: v == null ? '#AA95BE' : (isSent ? sentColor(v) : '#3C0366') }}
+      >
+        {fmtDimValue(dim, v)}
+      </div>
 
-      <div style={{
-        textAlign: 'right', fontSize: 11.5,
-        color: v == null ? '#AA95BE' : '#737373', fontVariantNumeric: 'tabular-nums',
-        fontStyle: v == null ? 'italic' : 'normal',
-      }}>
+      <div
+        className={cn(
+          'text-right text-[11.5px] tabular-nums',
+          v == null ? 'text-[#AA95BE] italic' : 'text-muted-foreground',
+        )}
+      >
         {v == null ? 'sem quali' : (isAL ? 'direta' : (row.n_amostra ? `n=${row.n_amostra}` : ''))}
       </div>
 
-      <div style={{ textAlign: 'center' }}>
+      <div className="text-center">
         {onToggle && (
-          <span style={{
-            display: 'inline-flex',
-            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 180ms',
-          }}>
-            <Icon name="chevron-right" size={14} color="#AA95BE"/>
+          <span
+            className={cn(
+              'inline-flex transition-transform duration-180',
+              expanded ? 'rotate-90' : 'rotate-0',
+            )}
+          >
+            <Icon name="chevron-right" size={14} color="#AA95BE" />
           </span>
         )}
       </div>
@@ -661,7 +625,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
   );
 }
 
-function CargoSubRow({ cargo, dim }: { cargo: { cargo: string; cargo_label: string; sentimento: number | null; relevancia: number | null; n_amostra: number; insuficiente: boolean }; dim: string }) {
+export function CargoSubRow({ cargo, dim }: { cargo: { cargo: string; cargo_label: string; sentimento: number | null; relevancia: number | null; n_amostra: number; insuficiente: boolean }; dim: string }) {
   const isSent = dim === 'sentimento';
   const v = cargo.insuficiente ? null : (isSent ? cargo.sentimento : cargo.relevancia);
   const BAR_H = 10;
@@ -669,75 +633,71 @@ function CargoSubRow({ cargo, dim }: { cargo: { cargo: string; cargo_label: stri
   let barRender: React.ReactNode;
   if (v == null) {
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'repeating-linear-gradient(45deg, #F4F4F5, #F4F4F5 3px, #FAFAFA 3px, #FAFAFA 6px)',
-          borderRadius: BAR_H / 2,
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: 'repeating-linear-gradient(45deg, #F4F4F5, #F4F4F5 3px, #FAFAFA 3px, #FAFAFA 6px)',
+          }}
+        />
       </div>
     );
   } else if (isSent) {
     const valPct = Math.abs(v) / 100 * 50;
     const pos = v >= 0;
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#F4F4F5', borderRadius: BAR_H / 2 }}/>
-        <div style={{
-          position: 'absolute', left: '50%', top: -1, bottom: -1,
-          width: 1, marginLeft: -0.5, background: '#AA95BE',
-        }}/>
-        <div style={{
-          position: 'absolute', top: 0, height: BAR_H,
-          left: pos ? '50%' : (50 - valPct) + '%',
-          width: valPct + '%',
-          background: pos ? '#7AE2AB' : '#F8B4B4',
-          borderRadius: BAR_H / 2,
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div className="absolute inset-0 bg-muted rounded-full" />
+        <div className="absolute left-1/2 -top-px -bottom-px w-px -ml-px bg-primary/30" />
+        <div
+          className="absolute top-0 rounded-full"
+          style={{
+            height: BAR_H,
+            left: pos ? '50%' : (50 - valPct) + '%',
+            width: valPct + '%',
+            background: pos ? '#7AE2AB' : '#F8B4B4',
+          }}
+        />
       </div>
     );
   } else {
     barRender = (
-      <div style={{ width: '100%', height: BAR_H, position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#F4F4F5', borderRadius: BAR_H / 2 }}/>
-        <div style={{
-          position: 'absolute', top: 0, height: BAR_H,
-          left: 0, width: v + '%',
-          background: '#B280E0', borderRadius: BAR_H / 2,
-        }}/>
+      <div className="w-full relative" style={{ height: BAR_H }}>
+        <div className="absolute inset-0 bg-muted rounded-full" />
+        <div
+          className="absolute top-0 left-0 rounded-full"
+          style={{ height: BAR_H, width: v + '%', background: '#B280E0' }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="hu-fade" style={{
-      display: 'grid',
-      gridTemplateColumns: 'minmax(180px, 240px) minmax(140px, 1fr) minmax(54px, 60px) minmax(40px, 56px) 20px',
-      gap: 14, alignItems: 'center',
-      padding: '6px 12px 6px 40px',
-      borderRadius: 8,
-      background: '#FCFAFD',
-      marginBottom: 2,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ width: 4, height: 4, borderRadius: 999, background: '#AA95BE' }}/>
-        <span style={{ fontSize: 12, color: '#525252' }}>{cargo.cargo_label}</span>
+    <div
+      className="hu-fade grid gap-[14px] items-center px-3 pl-10 py-[6px] rounded-lg bg-primary/5 mb-[2px] grid-cols-[minmax(180px,240px)_minmax(140px,1fr)_minmax(54px,60px)_minmax(40px,56px)_20px]"
+    >
+      <div className="flex items-center gap-2">
+        <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
+        <span className="text-[12px] text-muted-foreground">{cargo.cargo_label}</span>
       </div>
       <div>{barRender}</div>
-      <div style={{
-        textAlign: 'right',
-        fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 12.5,
-        color: cargo.insuficiente ? '#AA95BE' : (isSent ? sentColor(cargo.sentimento) : '#5B21B6'),
-        fontVariantNumeric: 'tabular-nums',
-      }}>{cargo.insuficiente ? '—' : fmtDimValue(dim, v)}</div>
-      <div style={{
-        textAlign: 'right', fontSize: 11,
-        color: cargo.insuficiente ? '#C81E1E' : '#737373',
-        fontVariantNumeric: 'tabular-nums',
-        fontWeight: cargo.insuficiente ? 600 : 400,
-        fontStyle: cargo.insuficiente ? 'italic' : 'normal',
-      }}>{cargo.insuficiente ? 'n<5' : `n=${cargo.n_amostra}`}</div>
-      <div/>
+      <div
+        className="text-right font-heading font-bold text-[12.5px] tabular-nums"
+        style={{ color: cargo.insuficiente ? '#AA95BE' : (isSent ? sentColor(cargo.sentimento) : '#5B21B6') }}
+      >
+        {cargo.insuficiente ? '—' : fmtDimValue(dim, v)}
+      </div>
+      <div
+        className={cn(
+          'text-right text-[11px] tabular-nums',
+          cargo.insuficiente
+            ? 'text-destructive font-semibold italic'
+            : 'text-muted-foreground',
+        )}
+      >
+        {cargo.insuficiente ? 'n<5' : `n=${cargo.n_amostra}`}
+      </div>
+      <div />
     </div>
   );
 }

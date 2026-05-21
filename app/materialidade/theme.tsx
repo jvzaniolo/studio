@@ -11,6 +11,8 @@ import {
   themeStatus, quadrant,
   type Theme, type KPI, type Iniciativa, type Sinal,
 } from './data';
+import { Card, CardContent } from '~/components/ui/card';
+import { cn } from '~/lib/utils';
 
 /* ===========================================================
    ThemeDetail
@@ -51,9 +53,7 @@ export function ThemeDetail({
         eyebrow={`Tema material · ${String(theme.id).padStart(2, '0')}`}
         title={theme.nome}
         titlePill={
-          <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="md" style={{
-            padding: '4px 12px', fontSize: 13, fontWeight: 600,
-          }}>{st.label}</Pill>
+          <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="md" className="px-3 py-1 text-[13px] font-semibold">{st.label}</Pill>
         }
         subtitle={theme.descricao}
         breadcrumbs={[
@@ -63,7 +63,7 @@ export function ThemeDetail({
         ]}
         actions={
           <>
-            <Btn variant="ghost" icon="settings" style={{ color: '#525252' }}>Configurar dados</Btn>
+            <Btn variant="ghost" icon="settings" className="text-foreground/80">Configurar dados</Btn>
             <Btn variant="secondary" icon="edit">Editar tema</Btn>
             <Btn variant="primary" icon="link" onClick={() => scrollTo('sec-iniciativas')}>
               Vincular iniciativa
@@ -124,30 +124,26 @@ function ThemeBlock({
 }) {
   const isAction = tone === 'brand';
   return (
-    <section id={id} style={{ padding: '24px 32px 8px' }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        marginBottom: 18, paddingBottom: 14,
-        borderBottom: isAction ? '2px solid #E8D9F2' : '1px solid var(--hu-border)',
-      }}>
-        <span style={{
-          width: 4, height: 32, borderRadius: 2,
-          background: isAction ? '#7401C3' : '#AA95BE', flexShrink: 0,
-        }}/>
+    <section id={id} className="px-8 pt-6 pb-2">
+      <div className={cn(
+        'flex items-center gap-[14px] mb-[18px] pb-[14px]',
+        isAction ? 'border-b-2 border-primary/20' : 'border-b border-border',
+      )}>
+        <span className={cn(
+          'w-1 h-8 rounded-sm flex-shrink-0',
+          isAction ? 'bg-primary' : 'bg-primary/80',
+        )}/>
         <div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: isAction ? 'var(--hu-purple)' : 'var(--hu-muted)',
-            marginBottom: 2,
-          }}>{eyebrow}</div>
-          <h2 style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 22,
-            color: 'var(--hu-text)', letterSpacing: '-0.01em', lineHeight: 1.2,
-          }}>{title}</h2>
+          <div className={cn(
+            'text-[11px] font-bold tracking-[0.12em] uppercase mb-0.5',
+            isAction ? 'text-primary' : 'text-muted-foreground',
+          )}>{eyebrow}</div>
+          <h2 className="font-display font-bold text-[22px] text-foreground tracking-[-0.01em] leading-[1.2]">
+            {title}
+          </h2>
         </div>
       </div>
-      <div style={{ marginBottom: 32 }}>{children}</div>
+      <div className="mb-8">{children}</div>
     </section>
   );
 }
@@ -191,15 +187,8 @@ function HeroV2({
   const iniStats = iniciativaEmDiaStats(inics);
 
   return (
-    <div style={{ padding: '0 32px 4px' }}>
-      <div
-        className="mat-hero5-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-          gap: 12,
-          marginBottom: 18,
-        }}>
+    <div className="px-8 pb-1">
+      <div className="mat-hero5-grid grid grid-cols-5 gap-3 mb-[18px]">
         <HeroCard
           eyebrow="Relevância"
           sublabel="Alta Liderança"
@@ -207,7 +196,7 @@ function HeroV2({
           tone="brand"
           number={`${theme.x}%`}
           comparativo={
-            <span style={{ color: 'var(--hu-muted)', fontStyle: 'italic' }}>consulta direta · Eixo X</span>
+            <span className="text-muted-foreground italic">consulta direta · Eixo X</span>
           }
         />
 
@@ -225,24 +214,23 @@ function HeroV2({
           icon="thermometer"
           tone={sentTone}
           number={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="flex items-center gap-[10px]">
               <MiniGauge value={theme.sentimento} size={42}/>
-              <span style={{
-                fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 26,
-                color: sentColor(theme.sentimento),
-                letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-              }}>{fmtSent(theme.sentimento)}</span>
+              <span
+                className="font-display font-bold text-[26px] tracking-[-0.02em] tabular-nums leading-none"
+                style={{ color: sentColor(theme.sentimento) }}
+              >{fmtSent(theme.sentimento)}</span>
             </div>
           }
           comparativo={
             trendDelta != null ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ color: trendDelta < 0 ? '#C81E1E' : '#009966', fontWeight: 700 }}>
+              <span className="inline-flex items-center gap-1.5">
+                <span className={cn('font-bold', trendDelta < 0 ? 'text-destructive' : 'text-green-600')}>
                   {trendDelta < 0 ? '↓' : '↑'} {Math.abs(trendDelta)}pp
                 </span>
-                <span style={{ color: 'var(--hu-muted)' }}>em {trendSpan}</span>
+                <span className="text-muted-foreground">em {trendSpan}</span>
               </span>
-            ) : <span style={{ color: 'var(--hu-muted)' }}>Sem evolução medida</span>
+            ) : <span className="text-muted-foreground">Sem evolução medida</span>
           }
         />
 
@@ -252,28 +240,25 @@ function HeroV2({
           icon="bar-chart"
           tone={kpiStats.tone}
           number={
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{
-                fontFamily: 'var(--hu-font-display)', fontWeight: 700,
-                fontSize: 30, lineHeight: 1, color: '#0A0A0A',
-                letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
-              }}>{kpiStats.withMeta === 0 ? '—' : kpiStats.onTrack}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
+                {kpiStats.withMeta === 0 ? '—' : kpiStats.onTrack}
+              </span>
               {kpiStats.withMeta > 0 && (
-                <span style={{
-                  fontFamily: 'var(--hu-font-display)', fontWeight: 600,
-                  fontSize: 16, color: '#737373', fontVariantNumeric: 'tabular-nums',
-                }}>/ {kpiStats.withMeta}</span>
+                <span className="font-display font-semibold text-base text-muted-foreground tabular-nums">
+                  / {kpiStats.withMeta}
+                </span>
               )}
             </div>
           }
           comparativo={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--hu-muted)' }}>
+            <span className="inline-flex items-center gap-2 flex-wrap">
+              <span className="text-muted-foreground">
                 {kpis.length === 0 ? 'sem mensuração'
                   : `de ${kpis.length} indicador${kpis.length === 1 ? '' : 'es'}`}
               </span>
               {kpiStats.semMeta > 0 && (
-                <span style={{ color: '#B45309', fontWeight: 600 }}>
+                <span className="text-amber-600 font-semibold">
                   · {kpiStats.semMeta} sem meta
                 </span>
               )}
@@ -288,28 +273,25 @@ function HeroV2({
           icon="flag"
           tone={iniStats.tone}
           number={
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{
-                fontFamily: 'var(--hu-font-display)', fontWeight: 700,
-                fontSize: 30, lineHeight: 1, color: '#0A0A0A',
-                letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
-              }}>{inics.length === 0 ? '—' : iniStats.emDia}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
+                {inics.length === 0 ? '—' : iniStats.emDia}
+              </span>
               {inics.length > 0 && (
-                <span style={{
-                  fontFamily: 'var(--hu-font-display)', fontWeight: 600,
-                  fontSize: 16, color: '#737373', fontVariantNumeric: 'tabular-nums',
-                }}>/ {iniStats.total}</span>
+                <span className="font-display font-semibold text-base text-muted-foreground tabular-nums">
+                  / {iniStats.total}
+                </span>
               )}
             </div>
           }
           comparativo={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--hu-muted)' }}>
+            <span className="inline-flex items-center gap-2 flex-wrap">
+              <span className="text-muted-foreground">
                 {inics.length === 0 ? 'sem ação operacional'
                   : `de ${inics.length} iniciativa${inics.length === 1 ? '' : 's'}`}
               </span>
               {iniStats.atrasadas > 0 && (
-                <span style={{ color: '#C81E1E', fontWeight: 600 }}>
+                <span className="text-destructive font-semibold">
                   · {iniStats.atrasadas} atrasada{iniStats.atrasadas === 1 ? '' : 's'}
                 </span>
               )}
@@ -332,6 +314,14 @@ function HeroV2({
    HeroCard
    =========================================================== */
 
+const toneDotClass: Record<string, string> = {
+  success: 'bg-green-600 shadow-[0_0_0_3px_rgba(0,169,112,0.13)]',
+  warning: 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.13)]',
+  danger:  'bg-destructive shadow-[0_0_0_3px_rgba(224,49,49,0.13)]',
+  brand:   'bg-primary shadow-[0_0_0_3px_rgba(116,1,195,0.13)]',
+  neutral: '',
+};
+
 function HeroCard({
   eyebrow,
   sublabel,
@@ -349,88 +339,62 @@ function HeroCard({
   comparativo?: React.ReactNode;
   onClick?: () => void;
 }) {
-  const [hov, setHov] = React.useState(false);
-  const toneDot: Record<string, string | null> = {
-    success: '#00A970',
-    warning: '#F59E0B',
-    danger:  '#E03131',
-    brand:   '#7401C3',
-    neutral: null,
-  };
-  const dot = toneDot[tone] ?? null;
+  const dot = tone !== 'neutral' ? toneDotClass[tone] ?? null : null;
 
   return (
-    <div
+    <Card
       onClick={onClick}
-      onMouseEnter={() => onClick && setHov(true)}
-      onMouseLeave={() => onClick && setHov(false)}
-      style={{
-        background: '#FFFFFF',
-        border: '1px solid #E5E5E5',
-        borderRadius: 12,
-        padding: '16px 18px 14px', minHeight: 130,
-        display: 'flex', flexDirection: 'column',
-        position: 'relative', cursor: onClick ? 'pointer' : 'default',
-        boxShadow: hov && onClick ? '0 4px 12px rgba(60,3,102,0.08)' : '0 1px 2px rgba(0,0,0,0.04)',
-        transition: 'transform 180ms cubic-bezier(0.22,0.61,0.36,1), box-shadow 180ms',
-        transform: onClick && hov ? 'translateY(-1px)' : 'translateY(0)',
-      }}>
-      <div style={{
-        marginBottom: 10, display: 'flex', alignItems: 'flex-start',
-        justifyContent: 'space-between', gap: 8,
-      }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 500, letterSpacing: '0.04em',
-            textTransform: 'uppercase', color: '#737373',
-          }}>{eyebrow}</div>
-          {sublabel && (
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#525252', marginTop: 2 }}>
-              {sublabel}
+      className={cn(
+        'relative flex flex-col min-h-[130px] transition-transform duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        onClick ? 'cursor-pointer hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(60,3,102,0.08)]' : 'cursor-default',
+      )}
+    >
+      <CardContent className="flex flex-col flex-1 p-[16px_18px_14px]">
+        <div className="mb-[10px] flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
+              {eyebrow}
             </div>
+            {sublabel && (
+              <div className="text-[12.5px] font-semibold text-foreground/80 mt-0.5">
+                {sublabel}
+              </div>
+            )}
+          </div>
+          {dot && tone !== 'brand' && (
+            <span
+              title="Estado agregado"
+              className={cn('w-[9px] h-[9px] rounded-full flex-shrink-0 mt-1.5', dot)}
+            />
           )}
         </div>
-        {dot && tone !== 'brand' && (
-          <span title="Estado agregado" style={{
-            width: 9, height: 9, borderRadius: 999, background: dot,
-            boxShadow: `0 0 0 3px ${dot}22`,
-            flexShrink: 0, marginTop: 6,
-          }}/>
-        )}
-      </div>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-        {typeof number === 'string' ? (
-          <div style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 700,
-            fontSize: 30, lineHeight: 1, color: '#0A0A0A',
-            letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
-          }}>{number}</div>
-        ) : number}
-      </div>
-      {comparativo && (
-        <div style={{
-          marginTop: 12, paddingTop: 10, borderTop: '1px solid #F0F0F0',
-          fontSize: 11.5, color: 'var(--hu-muted)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-        }}>
-          <span>{comparativo}</span>
-          {onClick && <Icon name="chevron-right" size={12} color="#AA95BE"/>}
+        <div className="flex-1 flex items-center">
+          {typeof number === 'string' ? (
+            <div className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
+              {number}
+            </div>
+          ) : number}
         </div>
-      )}
-    </div>
+        {comparativo && (
+          <div className="mt-3 pt-[10px] border-t border-border/60 text-[11.5px] text-muted-foreground flex items-center justify-between gap-1.5">
+            <span>{comparativo}</span>
+            {onClick && <Icon name="chevron-right" size={12} color="#AA95BE"/>}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 function DeltaInline({ value, label }: { value: number | null; label: string }) {
-  if (value == null) return <span style={{ color: 'var(--hu-muted)' }}>{label}</span>;
-  const c = value > 0 ? '#009966' : value < 0 ? '#C81E1E' : '#737373';
-  const a = value > 0 ? '↑' : value < 0 ? '↓' : '·';
+  if (value == null) return <span className="text-muted-foreground">{label}</span>;
+  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '·';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-      <span style={{ fontWeight: 700, color: c, fontVariantNumeric: 'tabular-nums' }}>
-        {a} {Math.abs(value)}pp
+    <span className="inline-flex items-center gap-[5px]">
+      <span className={cn('font-bold tabular-nums', value > 0 ? 'text-green-600' : value < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+        {arrow} {Math.abs(value)}pp
       </span>
-      <span style={{ color: 'var(--hu-muted)' }}>{label}</span>
+      <span className="text-muted-foreground">{label}</span>
     </span>
   );
 }

@@ -8,6 +8,11 @@ import {
   sentColor, fmtSent, themeStatus, INICIATIVAS,
   type Theme, type Versao,
 } from './data';
+import {
+  Card as ShadCard,
+  CardContent,
+} from '~/components/ui/card';
+import { cn } from '~/lib/utils';
 
 /* ---------- Scorecard card ---------- */
 interface ScoreCardProps {
@@ -20,47 +25,53 @@ interface ScoreCardProps {
 
 export function ScoreCard({ label, value, tone, sublabel, icon }: ScoreCardProps) {
   const colorMap: Record<string, string> = {
-    neutral: '#0A0A0A',
+    neutral: 'text-foreground',
+    danger:  'text-destructive',
+    warning: 'text-amber-600',
+    success: 'text-green-600',
+    brand:   'text-primary',
+  };
+  const bgMap: Record<string, string> = {
+    neutral: 'bg-muted',
+    danger:  'bg-red-100',
+    warning: 'bg-amber-100',
+    success: 'bg-green-100',
+    brand:   'bg-primary/10',
+  };
+  const iconColorMap: Record<string, string> = {
+    neutral: '#525252',
     danger:  '#C81E1E',
     warning: '#B45309',
     success: '#009966',
     brand:   '#7401C3',
   };
-  const bgMap: Record<string, string> = {
-    neutral: '#F4F4F5',
-    danger:  '#FCE2E2',
-    warning: '#FDF6B2',
-    success: '#DEF7EC',
-    brand:   '#EFE3F8',
-  };
   return (
-    <Card style={{ padding: '18px 18px 16px', minHeight: 122, position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em',
-            textTransform: 'uppercase', color: 'var(--hu-muted)',
-            marginBottom: 8,
-          }}>{label}</div>
-          <div style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 900,
-            fontSize: 32, lineHeight: 1, letterSpacing: '-0.02em',
-            color: colorMap[tone] || '#0A0A0A',
-            fontVariantNumeric: 'tabular-nums',
-          }}>{value}</div>
-          {sublabel && (
-            <div style={{ fontSize: 11.5, color: 'var(--hu-muted)', marginTop: 8, lineHeight: 1.4 }}>{sublabel}</div>
-          )}
+    <ShadCard className="relative min-h-[122px] p-[18px_18px_16px]">
+      <CardContent className="p-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
+              {label}
+            </div>
+            <div className={cn(
+              'font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums',
+              colorMap[tone] ?? 'text-foreground',
+            )}>
+              {value}
+            </div>
+            {sublabel && (
+              <div className="mt-2 text-[11.5px] leading-[1.4] text-muted-foreground">{sublabel}</div>
+            )}
+          </div>
+          <span className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]',
+            bgMap[tone] ?? 'bg-muted',
+          )}>
+            <Icon name={icon} size={16} color={iconColorMap[tone] ?? '#525252'}/>
+          </span>
         </div>
-        <span style={{
-          width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-          background: bgMap[tone] || '#F4F4F5',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon name={icon} size={16} color={colorMap[tone] || '#525252'}/>
-        </span>
-      </div>
-    </Card>
+      </CardContent>
+    </ShadCard>
   );
 }
 
@@ -93,110 +104,85 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
   else summary = `${active.length} de ${PUBLICOS.length} públicos`;
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 220 }}>
-      <div style={{
-        fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em',
-        textTransform: 'uppercase', color: 'var(--hu-muted)', marginBottom: 6,
-      }}>Filtrar por público</div>
+    <div ref={ref} className="relative min-w-[220px]">
+      <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
+        Filtrar por público
+      </div>
       <button
         onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%',
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '9px 12px 9px 12px',
-          borderRadius: 10, border: '1px solid var(--hu-border)',
-          background: '#fff', cursor: 'pointer',
-          fontSize: 13, fontWeight: 600, color: '#0A0A0A',
-        }}>
+        className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] font-semibold text-foreground">
         <Icon name="users" size={14} color="#7401C3"/>
-        <span style={{ flex: 1, textAlign: 'left' }}>{summary}</span>
+        <span className="flex-1 text-left">{summary}</span>
         {!isOriginal && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#B45309',
-            background: '#FEF3C7', padding: '2px 7px', borderRadius: 999,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-          }}>filtrado</span>
+          <span className="rounded-full bg-amber-100 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-amber-600">
+            filtrado
+          </span>
         )}
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="#AA95BE"/>
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
-          background: '#fff', borderRadius: 12, border: '1px solid var(--hu-border)',
-          boxShadow: '0 12px 28px rgba(60,3,102,0.12)',
-          padding: 8, zIndex: 40, minWidth: 300, width: 'max-content', maxWidth: 360,
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '4px 6px 8px', borderBottom: '1px solid #F4F4F5', marginBottom: 6,
-          }}>
-            <span style={{ fontSize: 11, color: '#737373' }}>
-              Visão {isOriginal ? <b style={{ color: '#009966' }}>original</b> : <b style={{ color: '#B45309' }}>filtrada</b>}
+        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max max-w-[360px] min-w-[300px] rounded-xl border border-border bg-white p-2 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
+          <div className="mb-1.5 flex items-center justify-between border-b border-muted px-1.5 pb-2 pt-1">
+            <span className="text-[11px] text-muted-foreground">
+              Visão {isOriginal
+                ? <b className="text-green-600">original</b>
+                : <b className="text-amber-600">filtrada</b>}
             </span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button onClick={onAll} style={{
-                padding: '3px 8px', borderRadius: 6, border: '1px solid var(--hu-border)',
-                background: '#fff', cursor: 'pointer', fontSize: 11, color: '#7401C3', fontWeight: 600,
-              }}>Todos</button>
-              <button onClick={onNone} style={{
-                padding: '3px 8px', borderRadius: 6, border: '1px solid var(--hu-border)',
-                background: '#fff', cursor: 'pointer', fontSize: 11, color: '#737373', fontWeight: 600,
-              }}>Limpar</button>
+            <div className="flex gap-1">
+              <button
+                onClick={onAll}
+                className="cursor-pointer rounded-md border border-border bg-white px-2 py-[3px] text-[11px] font-semibold text-primary">
+                Todos
+              </button>
+              <button
+                onClick={onNone}
+                className="cursor-pointer rounded-md border border-border bg-white px-2 py-[3px] text-[11px] font-semibold text-muted-foreground">
+                Limpar
+              </button>
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div className="flex flex-col gap-0.5">
             {PUBLICOS.map(pub => {
               const isActive = active.includes(pub.id);
               return (
-                <div key={pub.id}
+                <div
+                  key={pub.id}
                   onClick={() => onToggle(pub.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 10px', borderRadius: 8,
-                    cursor: 'pointer',
-                    background: isActive ? '#EFE3F8' : '#FAFAFA',
-                    transition: 'background 120ms',
-                  }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#F6EDFB'; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#FAFAFA'; }}>
-                  <span style={{
-                    width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                    background: isActive ? '#7401C3' : '#fff',
-                    border: isActive ? '1.5px solid #7401C3' : '1.5px solid #D6D3D1',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors duration-[120ms]',
+                    isActive ? 'bg-primary/10' : 'bg-[#FAFAFA] hover:bg-[#F6EDFB]',
+                  )}>
+                  <span className={cn(
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px]',
+                    isActive
+                      ? 'border-[1.5px] border-primary bg-primary'
+                      : 'border-[1.5px] border-stone-300 bg-white',
+                  )}>
                     {isActive && <Icon name="check" size={10} color="#fff" stroke={3}/>}
                   </span>
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: isActive ? '#fff' : '#F4F4F5',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+                  <span className={cn(
+                    'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md',
+                    isActive ? 'bg-white' : 'bg-muted',
+                  )}>
                     <Icon name={pub.icon} size={11} color={isActive ? '#3C0366' : '#737373'}/>
                   </span>
-                  <span style={{
-                    flex: 1, minWidth: 0,
-                    fontSize: 12.5, fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#3C0366' : '#525252',
-                  }}>{pub.label}</span>
+                  <span className={cn(
+                    'min-w-0 flex-1 text-[12.5px]',
+                    isActive ? 'font-bold text-[#3C0366]' : 'font-medium text-[#525252]',
+                  )}>{pub.label}</span>
                   {pub.peso !== 1 && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      color: isActive ? '#5A0992' : '#737373',
-                      background: isActive ? '#fff' : '#F4F4F5',
-                      padding: '1px 6px', borderRadius: 999,
-                    }}>{pub.peso}×</span>
+                    <span className={cn(
+                      'rounded-full px-1.5 py-[1px] text-[10px] font-bold',
+                      isActive ? 'bg-white text-[#5A0992]' : 'bg-muted text-muted-foreground',
+                    )}>{pub.peso}×</span>
                   )}
                 </div>
               );
             })}
           </div>
-          <div style={{
-            marginTop: 8, padding: '8px 10px',
-            background: '#FAFAFA', borderRadius: 8, fontSize: 11, color: '#525252', lineHeight: 1.45,
-          }}>
-            Para a visão <b style={{ color: '#0A0A0A' }}>original</b>, mantenha todos os públicos selecionados. Esta vista não altera a matriz oficial.
+          <div className="mt-2 rounded-lg bg-[#FAFAFA] px-2.5 py-2 text-[11px] leading-[1.45] text-[#525252]">
+            Para a visão <b className="text-foreground">original</b>, mantenha todos os públicos selecionados. Esta vista não altera a matriz oficial.
           </div>
         </div>
       )}
@@ -226,68 +212,49 @@ export function ComparisonDropdown({ baseId, compareId, onChange }: ComparisonDr
   const cmpV  = compareId ? VERSOES.find(v => v.id === compareId) : null;
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 260 }}>
-      <div style={{
-        fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em',
-        textTransform: 'uppercase', color: 'var(--hu-muted)', marginBottom: 6,
-      }}>Comparar versões</div>
+    <div ref={ref} className="relative min-w-[260px]">
+      <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
+        Comparar versões
+      </div>
       <button
         onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%',
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '9px 12px',
-          borderRadius: 10, border: '1px solid var(--hu-border)',
-          background: '#fff', cursor: 'pointer',
-          fontSize: 13, fontWeight: 600, color: '#0A0A0A',
-        }}>
+        className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] font-semibold text-foreground">
         <Icon name="history" size={14} color="#7401C3"/>
-        <span style={{ flex: 1, textAlign: 'left' }}>
+        <span className="flex-1 text-left">
           {cmpV ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span className="inline-flex items-center gap-1.5">
               <b>{baseV?.curto}</b>
               <Icon name="arrow-right" size={11} color="#AA95BE"/>
               <b>{cmpV.curto}</b>
             </span>
           ) : (
-            <span style={{ color: '#737373' }}>Selecionar versões para comparar</span>
+            <span className="text-muted-foreground">Selecionar versões para comparar</span>
           )}
         </span>
         {cmpV && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#5A0992',
-            background: '#EFE3F8', padding: '2px 7px', borderRadius: 999,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-          }}>comparando</span>
+          <span className="rounded-full bg-primary/10 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-[#5A0992]">
+            comparando
+          </span>
         )}
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="#AA95BE"/>
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
-          background: '#fff', borderRadius: 12, border: '1px solid var(--hu-border)',
-          boxShadow: '0 12px 28px rgba(60,3,102,0.12)',
-          padding: 12, zIndex: 40, minWidth: 320, width: 'max-content',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max min-w-[320px] rounded-xl border border-border bg-white p-3 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
+          <div className="flex flex-col gap-3">
             <VersionPicker label="Versão de referência" value={baseId}
               onChange={(v) => onChange(v, compareId)}/>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#AA95BE', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              <span style={{ flex: 1, height: 1, background: 'var(--hu-border)' }}/>
+            <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#AA95BE]">
+              <span className="h-px flex-1 bg-border"/>
               <Icon name="arrow-right" size={11} color="#AA95BE"/>
               <span>vs.</span>
-              <span style={{ flex: 1, height: 1, background: 'var(--hu-border)' }}/>
+              <span className="h-px flex-1 bg-border"/>
             </div>
             <VersionPicker label="Comparar com" value={compareId || ''} allowEmpty
               onChange={(v) => onChange(baseId, v || null)}/>
           </div>
           {cmpV && (
-            <div style={{
-              marginTop: 12, padding: '8px 10px',
-              background: '#F6EDFB', borderRadius: 8,
-              fontSize: 11, color: '#5A0992', lineHeight: 1.5,
-            }}>
+            <div className="mt-3 rounded-lg bg-[#F6EDFB] px-2.5 py-2 text-[11px] leading-[1.5] text-[#5A0992]">
               Pontos com contorno claro são <b>{cmpV.curto}</b>. Linhas tracejadas conectam ao ponto atual ({baseV?.curto}).
             </div>
           )}
@@ -306,35 +273,35 @@ function VersionPicker({ label, value, onChange, allowEmpty }: {
   const options = allowEmpty ? [{ id: '', curto: '—', label: 'Sem comparação', status: '', atual: false, draft: false } as Versao & { id: string }, ...VERSOES] : VERSOES;
   return (
     <div>
-      <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--hu-muted)', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
+      <div className="flex flex-col gap-1">
         {options.map(opt => {
           const isActive = value === opt.id;
           return (
-            <div key={opt.id || 'none'}
+            <div
+              key={opt.id || 'none'}
               onClick={() => onChange(opt.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 10px', borderRadius: 8,
-                cursor: 'pointer',
-                background: isActive ? '#F6EDFB' : 'transparent',
-                border: isActive ? '1px solid #E8D9F2' : '1px solid transparent',
-              }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#FAFAFA'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-              <span style={{
-                width: 14, height: 14, borderRadius: 999,
-                border: isActive ? '4px solid #7401C3' : '1.5px solid #D6D3D1',
-                background: '#fff', flexShrink: 0,
-              }}/>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: isActive ? 700 : 500, color: '#0A0A0A' }}>
+              className={cn(
+                'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors duration-[120ms]',
+                isActive
+                  ? 'border-[#E8D9F2] bg-[#F6EDFB]'
+                  : 'border-transparent bg-transparent hover:bg-muted/50',
+              )}>
+              <span className={cn(
+                'h-3.5 w-3.5 shrink-0 rounded-full bg-white',
+                isActive ? 'border-[4px] border-primary' : 'border-[1.5px] border-stone-300',
+              )}/>
+              <span className={cn(
+                'min-w-0 flex-1 text-[12.5px] text-foreground',
+                isActive ? 'font-bold' : 'font-medium',
+              )}>
                 {opt.label || 'Sem comparação'}
               </span>
               {opt.status && (
-                <span style={{
-                  fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                  color: opt.atual ? '#009966' : (opt.draft ? '#B45309' : '#737373'),
-                }}>
+                <span className={cn(
+                  'text-[9.5px] font-bold uppercase tracking-[0.06em]',
+                  opt.atual ? 'text-green-600' : (opt.draft ? 'text-amber-600' : 'text-muted-foreground'),
+                )}>
                   {opt.atual ? 'atual' : (opt.draft ? 'rascunho' : 'arquivada')}
                 </span>
               )}
@@ -509,48 +476,31 @@ export function HoverTooltip({ point, baseLabel, cmpLabel }: HoverTooltipProps) 
   }
 
   return (
-    <div style={{
-      position: 'absolute', top: 12, right: 12, zIndex: 5,
-      width: 280, pointerEvents: 'none',
-      background: 'rgba(255,255,255,0.98)',
-      border: '1px solid var(--hu-border)',
-      borderRadius: 12,
-      boxShadow: '0 8px 24px rgba(60,3,102,0.16)',
-      padding: '12px 14px 14px',
-      animation: 'hu-fade-in 160ms ease-out both',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-        <span style={{
-          fontSize: 10, fontWeight: 700, color: '#5A0992',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
-        }}>Tema {String(t.id).padStart(2, '0')}</span>
+    <div className="pointer-events-none absolute right-3 top-3 z-[5] w-[280px] animate-[hu-fade-in_160ms_ease-out_both] rounded-xl border border-border bg-white/[0.98] px-[14px] pb-[14px] pt-3 shadow-[0_8px_24px_rgba(60,3,102,0.16)]">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#5A0992]">
+          Tema {String(t.id).padStart(2, '0')}
+        </span>
         <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="sm">{st.label}</Pill>
       </div>
-      <div style={{
-        fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 14, lineHeight: 1.3,
-        color: '#0A0A0A', marginBottom: 8,
-      }}>{t.nome}</div>
-      <div style={{ fontSize: 11.5, color: '#525252', lineHeight: 1.4, marginBottom: 10 }}>
+      <div className="mb-2 font-display text-[14px] font-bold leading-[1.3] text-foreground">
+        {t.nome}
+      </div>
+      <div className="mb-2.5 text-[11.5px] leading-[1.4] text-[#525252]">
         {t.descricao}
       </div>
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8,
-        padding: '8px 10px', background: '#FAFAFA', borderRadius: 8,
-      }}>
+      <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#FAFAFA] px-2.5 py-2">
         <TipStat label="Negócios" value={`${point.x}%`} delta={cmpLabel ? deltaX : null}/>
         <TipStat label="Stakeh." value={`${point.y}%`} delta={cmpLabel ? deltaY : null}/>
         <TipStat label="Sent." value={fmtSent(point.sent)} color={sentColor(point.sent)} delta={cmpLabel ? deltaSent : null}/>
       </div>
-      <div style={{
-        marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--hu-border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        fontSize: 11, color: '#737373',
-      }}>
+      <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-[11px] text-muted-foreground">
         <span>
-          {inicCount > 0 ? <span><b style={{ color: '#7401C3' }}>{inicCount}</b> iniciativa{inicCount > 1 ? 's' : ''} vinculada{inicCount > 1 ? 's' : ''}</span>
-                          : <span style={{ color: '#B45309', fontWeight: 600 }}>Sem iniciativa</span>}
+          {inicCount > 0
+            ? <span><b className="text-primary">{inicCount}</b> iniciativa{inicCount > 1 ? 's' : ''} vinculada{inicCount > 1 ? 's' : ''}</span>
+            : <span className="font-semibold text-amber-600">Sem iniciativa</span>}
         </span>
-        {cmpLabel && <span style={{ fontWeight: 600, color: '#AA95BE' }}>{baseLabel} vs. {cmpLabel}</span>}
+        {cmpLabel && <span className="font-semibold text-[#AA95BE]">{baseLabel} vs. {cmpLabel}</span>}
       </div>
     </div>
   );
@@ -559,18 +509,20 @@ export function HoverTooltip({ point, baseLabel, cmpLabel }: HoverTooltipProps) 
 function TipStat({ label, value, color, delta }: { label: string; value: string; color?: string; delta: number | null }) {
   return (
     <div>
-      <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#737373' }}>{label}</div>
-      <div style={{
-        fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 15, lineHeight: 1.1,
-        color: color || '#0A0A0A', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
-        marginTop: 2,
-      }}>{value}</div>
+      <div className="text-[9.5px] font-bold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
+      <div
+        className="mt-0.5 font-display text-[15px] font-black leading-[1.1] tabular-nums tracking-[-0.01em]"
+        style={{ color: color || undefined }}
+      >
+        {value}
+      </div>
       {delta != null && delta !== 0 && (
-        <div style={{
-          fontSize: 10, fontWeight: 700, marginTop: 2,
-          color: delta > 0 ? '#009966' : '#C81E1E',
-          fontVariantNumeric: 'tabular-nums',
-        }}>{delta > 0 ? '↑' : '↓'} {Math.abs(delta)}</div>
+        <div className={cn(
+          'mt-0.5 text-[10px] font-bold tabular-nums',
+          delta > 0 ? 'text-green-600' : 'text-destructive',
+        )}>
+          {delta > 0 ? '↑' : '↓'} {Math.abs(delta)}
+        </div>
       )}
     </div>
   );
@@ -598,21 +550,14 @@ export function PriorityList({ themes, activePublicos, onPick }: PriorityListPro
       <SectionTitle
         eyebrow="Top 10 · ordem de prioridade"
         action={
-          <span style={{
-            fontSize: 11.5, color: '#737373',
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}>
+          <span className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
             <Icon name="info" size={12} color="#AA95BE"/>
             <span>{filtered ? 'Ordem segundo filtros selecionados' : 'Ordem oficial da matriz'}</span>
           </span>
         }>
         Ranking de temas materiais
       </SectionTitle>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: 8,
-      }}>
+      <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
         {ranked.map((r, i) => (
           <PriorityCard key={r.theme.id} pos={i + 1} theme={r.theme} y={r.y} s={r.s} onPick={onPick}/>
         ))}
@@ -622,54 +567,38 @@ export function PriorityList({ themes, activePublicos, onPick }: PriorityListPro
 }
 
 function PriorityCard({ pos, theme, y, s, onPick }: { pos: number; theme: Theme; y: number; s: number | null; onPick: (id: number) => void }) {
-  const [hov, setHov] = React.useState(false);
   const st = themeStatus(theme, theme.x, y, s);
   const tones: Record<string, { bg: string; fg: string }> = {
-    danger:  { bg: '#FCE2E2', fg: '#C81E1E' },
-    warning: { bg: '#FEF3C7', fg: '#B45309' },
-    success: { bg: '#DEF7EC', fg: '#009966' },
-    info:    { bg: '#E1EFFE', fg: '#1E40AF' },
-    brand:   { bg: '#EFE3F8', fg: '#5A0992' },
-    neutral: { bg: '#F4F4F5', fg: '#525252' },
+    danger:  { bg: 'bg-red-100',    fg: 'text-destructive' },
+    warning: { bg: 'bg-amber-100',  fg: 'text-amber-600' },
+    success: { bg: 'bg-green-100',  fg: 'text-green-600' },
+    info:    { bg: 'bg-blue-100',   fg: 'text-blue-600' },
+    brand:   { bg: 'bg-primary/10', fg: 'text-primary' },
+    neutral: { bg: 'bg-muted',      fg: 'text-muted-foreground' },
   };
-  const tone = tones[st.tone] || tones.neutral;
+  const tone = tones[st.tone] ?? tones.neutral;
   return (
     <div
       onClick={() => onPick(theme.id)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: 'grid', gridTemplateColumns: '36px 1fr auto',
-        gap: 10, alignItems: 'center',
-        padding: '10px 12px',
-        borderRadius: 10,
-        border: `1px solid ${hov ? '#E8D9F2' : 'var(--hu-border)'}`,
-        background: hov ? '#FAF5FE' : '#fff',
-        cursor: 'pointer',
-        transition: 'background 120ms, border-color 120ms',
-      }}>
-      <div style={{
-        fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 22,
-        color: pos <= 3 ? '#7401C3' : '#AA95BE',
-        fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em',
-        textAlign: 'center',
-      }}>{String(pos).padStart(2, '0')}</div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{
-          fontSize: 12.5, fontWeight: 600, color: 'var(--hu-text)',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          marginBottom: 4,
-        }}>{theme.nome}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{
-            fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-            color: tone.fg, background: tone.bg, padding: '1px 6px', borderRadius: 999,
-          }}>{st.label}</span>
-          <span style={{
-            fontSize: 11, fontWeight: 700,
-            color: sentColor(s),
-            fontVariantNumeric: 'tabular-nums',
-          }}>{fmtSent(s)}</span>
+      className="grid cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-2.5 transition-colors duration-[120ms] hover:border-[#E8D9F2] hover:bg-[#FAF5FE] [grid-template-columns:36px_1fr_auto]">
+      <div className={cn(
+        'text-center font-display text-[22px] font-black tabular-nums tracking-[-0.03em]',
+        pos <= 3 ? 'text-primary' : 'text-[#AA95BE]',
+      )}>
+        {String(pos).padStart(2, '0')}
+      </div>
+      <div className="min-w-0">
+        <div className="mb-1 truncate text-[12.5px] font-semibold text-foreground">
+          {theme.nome}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className={cn(
+            'rounded-full px-1.5 py-[1px] text-[9.5px] font-bold uppercase tracking-[0.06em]',
+            tone.fg, tone.bg,
+          )}>{st.label}</span>
+          <span className="text-[11px] font-bold tabular-nums" style={{ color: sentColor(s) }}>
+            {fmtSent(s)}
+          </span>
         </div>
       </div>
       <Icon name="chevron-right" size={14} color="#AA95BE"/>
@@ -735,7 +664,7 @@ export function Overview({ onPickTheme }: OverviewProps) {
         actions={<Btn variant="secondary" icon="download">Exportar</Btn>}
       />
 
-      <div className="mat-scorecard" style={{ padding: '0 32px', marginBottom: 16 }}>
+      <div className="mat-scorecard px-8 mb-4">
         <ScoreCard label="Total de temas"   value={sb.total}    tone="neutral" icon="list"           sublabel="20 temas materiais publicados"/>
         <ScoreCard label="Críticos"         value={sb.crit}     tone="danger"  icon="alert"          sublabel="Alta relev. + sent. negativo"/>
         <ScoreCard label="Em alerta"        value={sb.alerta}   tone="warning" icon="trending-down"  sublabel="Sent. em deterioração"/>
@@ -744,29 +673,18 @@ export function Overview({ onPickTheme }: OverviewProps) {
       </div>
 
       {filtered && (
-        <div className="hu-fade" style={{
-          margin: '0 32px 16px',
-          background: '#FFF7E6',
-          border: '1px solid #FFE4B5',
-          borderRadius: 12,
-          padding: '12px 16px',
-          display: 'flex', alignItems: 'center', gap: 12,
-        }}>
+        <div className="hu-fade mx-8 mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
           <Icon name="filter" size={16} color="#B45309"/>
-          <div style={{ flex: 1, fontSize: 13, color: '#7C2D12' }}>
+          <div className="flex-1 text-[13px] text-amber-900">
             <b>Vista filtrada</b> — você está vendo apenas as percepções de <b>{active.length} público(s)</b> sobre a matriz. Esta não é a matriz oficial.
           </div>
           <Btn size="sm" variant="ghost" icon="x" onClick={selectAll}>Restaurar todos</Btn>
         </div>
       )}
 
-      <div className="mat-overview-grid-v2" style={{ padding: '0 32px 32px' }}>
+      <div className="mat-overview-grid-v2 px-8 pb-8">
         {/* LEFT column: AI insight + cobertura */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 16,
-          maxHeight: 'calc(100vh - 140px)', overflowY: 'auto',
-          paddingRight: 4,
-        }} className="mat-overview-sticky">
+        <div className="mat-overview-sticky flex max-h-[calc(100vh-140px)] flex-col gap-4 overflow-y-auto pr-1">
           <AIInsight
             title="Síntese executiva"
             sintese={sint}
@@ -774,40 +692,35 @@ export function Overview({ onPickTheme }: OverviewProps) {
             tone={filtered ? 'warning' : 'brand'}
           />
           <Card style={{
-            padding: '14px 16px',
             background: 'linear-gradient(135deg, #FAF5FE 0%, #F6EDFB 100%)',
-            border: '1px solid #E8D9F2',
-          }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#5A0992', marginBottom: 10 }}>
+          }} className="border-[#E8D9F2] p-[14px_16px]">
+            <div className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-[#5A0992]">
               Cobertura normativa
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <div style={{ fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 22, color: '#3C0366', letterSpacing: '-0.02em', lineHeight: 1 }}>{cob.gri}</div>
-                <div style={{ fontSize: 11, color: '#5A0992', marginTop: 2 }}>normas GRI</div>
+                <div className="font-display text-[22px] font-black leading-none tracking-[-0.02em] text-[#3C0366]">{cob.gri}</div>
+                <div className="mt-0.5 text-[11px] text-[#5A0992]">normas GRI</div>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 22, color: '#3C0366', letterSpacing: '-0.02em', lineHeight: 1 }}>{cob.ods}</div>
-                <div style={{ fontSize: 11, color: '#5A0992', marginTop: 2 }}>ODS</div>
+                <div className="font-display text-[22px] font-black leading-none tracking-[-0.02em] text-[#3C0366]">{cob.ods}</div>
+                <div className="mt-0.5 text-[11px] text-[#5A0992]">ODS</div>
               </div>
             </div>
           </Card>
         </div>
 
         {/* RIGHT column: filters + matrix */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        <div className="flex min-w-0 flex-col gap-4">
           <Card style={{ padding: '16px 20px 18px', overflow: 'visible' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 18 }}>
+            <div className="flex flex-wrap items-end gap-[18px]">
               <PublicosDropdown active={active} onToggle={toggle} onAll={selectAll} onNone={selectNone}/>
               <ComparisonDropdown baseId={baseVersion} compareId={compareVersion}
                 onChange={(b, c) => { setBaseVersion(b); setCompareVersion(c); }}/>
-              <div style={{ flex: 1, minWidth: 0 }}/>
-              <div style={{
-                fontSize: 11, color: '#737373', textAlign: 'right',
-                display: 'flex', flexDirection: 'column', gap: 2,
-              }}>
-                <span style={{ letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700, color: '#AA95BE' }}>Eixo X (oficial)</span>
-                <span><b style={{ color: '#0A0A0A' }}>Alta Liderança</b> · pesquisa direta com C-Level</span>
+              <div className="min-w-0 flex-1"/>
+              <div className="flex flex-col gap-0.5 text-right text-[11px] text-muted-foreground">
+                <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#AA95BE]">Eixo X (oficial)</span>
+                <span><b className="text-foreground">Alta Liderança</b> · pesquisa direta com C-Level</span>
               </div>
             </div>
           </Card>
@@ -816,14 +729,14 @@ export function Overview({ onPickTheme }: OverviewProps) {
             <SectionTitle
               eyebrow={filtered ? 'Vista filtrada' : (cmpLabel ? `Comparativo · ${baseLabel} vs. ${cmpLabel}` : 'Matriz oficial')}
               action={
-                <span style={{ fontSize: 11, color: '#737373', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Icon name="info" size={12} color="#AA95BE"/>
                   <span>Passe o mouse sobre um tema para ver detalhes</span>
                 </span>
               }>
               Relevância para os negócios × stakeholders
             </SectionTitle>
-            <div style={{ marginTop: 8, position: 'relative' }}>
+            <div className="relative mt-2">
               <MatrixSVG
                 themes={THEMES}
                 activePublicos={filtered ? active : []}
@@ -835,12 +748,8 @@ export function Overview({ onPickTheme }: OverviewProps) {
               />
               <HoverTooltip point={hoverPoint} baseLabel={baseLabel} cmpLabel={cmpLabel}/>
             </div>
-            <div style={{
-              marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--hu-border)',
-              display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16,
-              fontSize: 11.5, color: 'var(--hu-muted)',
-            }}>
-              <div style={{ fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10.5 }}>Sentimento agregado:</div>
+            <div className="mt-3.5 flex flex-wrap items-center gap-4 border-t border-border pt-3.5 text-[11.5px] text-muted-foreground">
+              <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#525252]">Sentimento agregado:</div>
               {[
                 ['Muito negativo', '#E03131'],
                 ['Negativo',       '#F59E0B'],
@@ -848,14 +757,14 @@ export function Overview({ onPickTheme }: OverviewProps) {
                 ['Positivo',       '#00A970'],
                 ['Sem dado',       '#AA95BE'],
               ].map(([lbl, c]) => (
-                <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 999, background: c }}/>
+                <div key={lbl} className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }}/>
                   <span>{lbl}</span>
                 </div>
               ))}
               {cmpLabel && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: '#fff', border: '1.5px solid #AA95BE' }}/>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full border-[1.5px] border-[#AA95BE] bg-white"/>
                   <span>Posição em {cmpLabel}</span>
                 </div>
               )}
@@ -864,7 +773,7 @@ export function Overview({ onPickTheme }: OverviewProps) {
         </div>
 
         {/* Full-width heatmap */}
-        <div style={{ gridColumn: '1 / -1', position: 'relative', zIndex: 1, background: 'var(--hu-bg)' }}>
+        <div className="relative col-span-full z-[1] bg-background">
           <HeatmapSentimentoBlock
             themes={THEMES}
             activePublicos={filtered ? active : []}
@@ -872,7 +781,7 @@ export function Overview({ onPickTheme }: OverviewProps) {
         </div>
 
         {/* Full-width ranking */}
-        <div style={{ gridColumn: '1 / -1', position: 'relative', zIndex: 1, background: 'var(--hu-bg)' }}>
+        <div className="relative col-span-full z-[1] bg-background">
           <PriorityList themes={THEMES} activePublicos={filtered ? active : []} onPick={onPickTheme}/>
         </div>
       </div>

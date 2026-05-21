@@ -7,6 +7,24 @@ import {
   iniciativaEmDiaStats, iniciativaDeadlineStatus,
   type Theme, type KPI, type Iniciativa, type SugestaoVinculo,
 } from './data';
+import { cn } from '~/lib/utils';
+import {
+  Card as UiCard,
+  CardContent,
+} from '~/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '~/components/ui/collapsible';
 
 /* ===========================================================
    COMENTÁRIOS DOS STAKEHOLDERS
@@ -169,125 +187,87 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
     : data.blocos.filter(b => b.dimensao === dimFilter);
 
   return (
-    <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E5E5E5',
-      borderRadius: 12,
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '18px 24px 14px',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: 14, flexWrap: 'wrap',
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#0A0A0A' }}>
+    <div className="bg-white border border-border rounded-xl overflow-hidden">
+      <div className="px-6 pt-[18px] pb-[14px] flex items-start justify-between gap-3.5 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-base font-semibold text-foreground">
             Comentários dos stakeholders sobre o tema
           </div>
-          <div style={{ fontSize: 13, color: '#737373', marginTop: 4 }}>
+          <div className="text-[13px] text-muted-foreground mt-1">
             Seleção dos comentários mais relevantes consolidados pela IA.
           </div>
         </div>
-        <button style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-          color: '#7401C3', fontSize: 13, fontWeight: 600,
-        }}>
-          <Icon name="download" size={13} color="#7401C3"/>
+        <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
+          <Icon name="download" size={13} color="var(--primary)"/>
           Exportar comentários (Excel)
         </button>
       </div>
 
-      <div style={{
-        padding: '0 24px 16px',
-        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-      }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: '#737373' }}>Dimensão:</span>
+      <div className="px-6 pb-4 flex items-center gap-2.5 flex-wrap">
+        <span className="text-[13px] font-medium text-muted-foreground">Dimensão:</span>
         <DimensaoDropdown value={dimFilter} onChange={setDimFilter}/>
       </div>
 
-      <div className="mat-coment-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: '380px minmax(0, 1.6fr)',
-        gap: 16,
-        padding: '0 24px 24px',
-      }}>
+      <div className="mat-coment-grid grid gap-4 px-6 pb-6" style={{ gridTemplateColumns: '380px minmax(0, 1.6fr)' }}>
         {/* Left: síntese */}
-        <div style={{
-          background: '#FAFAFA',
-          border: '1px solid #E5E5E5',
-          borderRadius: 8,
-          padding: '20px',
-          display: 'flex', flexDirection: 'column', gap: 14,
-          minWidth: 0,
-          alignSelf: 'flex-start',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#0A0A0A' }}>Síntese</div>
+        <UiCard className="rounded-lg border border-border self-start">
+          <CardContent className="p-5 flex flex-col gap-3.5">
+            <div className="text-sm font-semibold text-foreground">Síntese</div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SynKV label="Tema" value={theme.nome}/>
-            <SynKV label="Frequência" value={
-              <span>
-                <b style={{ color: '#0A0A0A', fontVariantNumeric: 'tabular-nums' }}>{data.frequencia}%</b>
-                <span style={{ color: '#737373', marginLeft: 6 }}>
-                  ({data.frequencia >= 20 ? 'Tema muito relevante' : data.frequencia >= 10 ? 'Tema relevante' : 'Menção esporádica'})
+            <div className="flex flex-col gap-3">
+              <SynKV label="Tema" value={theme.nome}/>
+              <SynKV label="Frequência" value={
+                <span>
+                  <b className="text-foreground tabular-nums">{data.frequencia}%</b>
+                  <span className="text-muted-foreground ml-1.5">
+                    ({data.frequencia >= 20 ? 'Tema muito relevante' : data.frequencia >= 10 ? 'Tema relevante' : 'Menção esporádica'})
+                  </span>
                 </span>
-              </span>
-            }/>
-            <SynKV label="Síntese" value={
-              <span style={{ color: '#1a1a1a', lineHeight: 1.55 }}>
-                {data.sintese}
-              </span>
-            }/>
-            {data.citacoesDestaque.length > 0 && (
-              <SynKV label="Citações representativas" value={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {data.citacoesDestaque.map((c, i) => (
-                    <div key={i} style={{
-                      fontStyle: 'italic', fontSize: 12.5, color: '#525252',
-                      lineHeight: 1.5,
-                    }}>"{c}"</div>
-                  ))}
-                </div>
               }/>
-            )}
-          </div>
+              <SynKV label="Síntese" value={
+                <span className="text-foreground leading-[1.55]">
+                  {data.sintese}
+                </span>
+              }/>
+              {data.citacoesDestaque.length > 0 && (
+                <SynKV label="Citações representativas" value={
+                  <div className="flex flex-col gap-2">
+                    {data.citacoesDestaque.map((c, i) => (
+                      <div key={i} className="italic text-[12.5px] text-[#525252] leading-[1.5]">"{c}"</div>
+                    ))}
+                  </div>
+                }/>
+              )}
+            </div>
 
-          <div style={{
-            marginTop: 4, paddingTop: 12, borderTop: '1px solid #E5E5E5',
-            display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: 12, color: '#737373',
-          }}>
-            <span>Esta informação foi útil?</span>
-            <button onClick={() => setUseful(useful === 'up' ? null : 'up')}
-              title="Útil"
-              style={{
-                width: 24, height: 24, padding: 0, borderRadius: 6, cursor: 'pointer',
-                border: '1px solid transparent', background: 'transparent',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                color: useful === 'up' ? '#00A970' : '#737373',
-              }}>
-              <Icon name="thumbs-up" size={13} color="currentColor"/>
-            </button>
-            <button onClick={() => setUseful(useful === 'down' ? null : 'down')}
-              title="Não útil"
-              style={{
-                width: 24, height: 24, padding: 0, borderRadius: 6, cursor: 'pointer',
-                border: '1px solid transparent', background: 'transparent',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                color: useful === 'down' ? '#C81E1E' : '#737373',
-              }}>
-              <Icon name="thumbs-down" size={13} color="currentColor"/>
-            </button>
-          </div>
-        </div>
+            <div className="mt-1 pt-3 border-t border-border flex items-center gap-2.5 text-xs text-muted-foreground">
+              <span>Esta informação foi útil?</span>
+              <button
+                onClick={() => setUseful(useful === 'up' ? null : 'up')}
+                title="Útil"
+                className={cn(
+                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
+                  useful === 'up' ? 'text-green-600' : 'text-muted-foreground'
+                )}
+              >
+                <Icon name="thumbs-up" size={13} color="currentColor"/>
+              </button>
+              <button
+                onClick={() => setUseful(useful === 'down' ? null : 'down')}
+                title="Não útil"
+                className={cn(
+                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
+                  useful === 'down' ? 'text-destructive' : 'text-muted-foreground'
+                )}
+              >
+                <Icon name="thumbs-down" size={13} color="currentColor"/>
+              </button>
+            </div>
+          </CardContent>
+        </UiCard>
 
         {/* Right: citações */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 0,
-          minWidth: 0,
-          maxHeight: 600, overflowY: 'auto',
-        }}>
+        <div className="flex flex-col gap-0 min-w-0 max-h-[600px] overflow-y-auto">
           {filtered.length === 0 ? (
             <EmptyState icon="message"
               title="Sem comentários para este filtro"
@@ -310,36 +290,29 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
 function ComentarioBlocoItem({ bloco, last }: { bloco: ComentarioBloco; last: boolean }) {
   const isOp = bloco.dimensao === 'oportunidade';
   return (
-    <div style={{
-      paddingTop: 4, paddingBottom: 16,
-      borderBottom: last ? 'none' : '1px solid #F0F0F0',
-      marginBottom: last ? 0 : 16,
-      display: 'flex', flexDirection: 'column', gap: 8,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <div className={cn(
+      'pt-1 pb-4 flex flex-col gap-2',
+      !last && 'border-b border-[#F0F0F0] mb-4',
+    )}>
+      <div className="flex items-center gap-2.5 flex-wrap">
         <Pill tone={isOp ? 'opportunity' : 'weakness'} size="sm">
           {isOp ? 'Oportunidade' : 'Fraqueza'}
         </Pill>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#0A0A0A' }}>{bloco.publico}</span>
+        <span className="text-[13px] font-semibold text-foreground">{bloco.publico}</span>
       </div>
-      <div style={{
-        fontSize: 13, lineHeight: 1.6, color: '#1a1a1a',
-      }}>{bloco.texto}</div>
+      <div className="text-[13px] leading-[1.6] text-foreground">{bloco.texto}</div>
     </div>
   );
 }
 
 function SynKV({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        fontSize: 12.5, fontWeight: 600, color: '#0A0A0A',
-      }}>
-        <span style={{ width: 6, height: 6, borderRadius: 999, background: '#7401C3' }}/>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-foreground">
+        <span className="w-1.5 h-1.5 rounded-full bg-primary"/>
         {label}:
       </div>
-      <div style={{ fontSize: 12.5, color: '#1a1a1a', lineHeight: 1.55, paddingLeft: 12 }}>{value}</div>
+      <div className="text-[12.5px] text-foreground leading-[1.55] pl-3">{value}</div>
     </div>
   );
 }
@@ -370,38 +343,29 @@ function DimensaoDropdown({
   const cur = opts.find(o => o.id === value) || opts[0];
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '6px 10px', borderRadius: 8,
-        border: '1px solid var(--hu-border)', background: '#fff',
-        cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: '#3C0366',
-        width: '100%',
-      }}>
-        <span style={{ flex: 1, textAlign: 'left' }}>{cur.label}</span>
+    <div ref={ref} className="relative min-w-[180px]">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border bg-white cursor-pointer text-[12.5px] font-semibold text-primary/80 w-full"
+      >
+        <span className="flex-1 text-left">{cur.label}</span>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#AA95BE"/>
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-          background: '#fff', borderRadius: 10, border: '1px solid var(--hu-border)',
-          boxShadow: '0 12px 28px rgba(60,3,102,0.12)',
-          padding: 6, zIndex: 30, minWidth: '100%',
-          display: 'flex', flexDirection: 'column', gap: 2,
-        }}>
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-white rounded-[10px] border border-border shadow-[0_12px_28px_rgba(60,3,102,0.12)] p-1.5 z-30 min-w-full flex flex-col gap-0.5">
           {opts.map(o => {
             const isActive = o.id === value;
             return (
-              <div key={o.id}
+              <div
+                key={o.id}
                 onClick={() => { onChange(o.id); setOpen(false); }}
-                style={{
-                  padding: '6px 10px', borderRadius: 6, cursor: 'pointer',
-                  background: isActive ? '#EFE3F8' : 'transparent',
-                  color: isActive ? '#3C0366' : '#525252',
-                  fontWeight: isActive ? 700 : 500, fontSize: 12.5,
-                }}
-                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.background = '#FAFAFA'; }}
-                onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                className={cn(
+                  'px-2.5 py-1.5 rounded-md cursor-pointer text-[12.5px] hover:bg-muted/50 transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary/80 font-bold'
+                    : 'bg-transparent text-[#525252] font-medium',
+                )}
+              >
                 {o.label}
               </div>
             );
@@ -433,32 +397,25 @@ export function KPIsBlock({
     .filter(x => !sugState[x.idx]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-        gap: 14, flexWrap: 'wrap',
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#0A0A0A' }}>KPIs vinculados</div>
-          <div style={{ fontSize: 13, color: '#737373', marginTop: 4 }}>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-end justify-between gap-3.5 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-lg font-semibold text-foreground">KPIs vinculados</div>
+          <div className="text-[13px] text-muted-foreground mt-1">
             {kpis.length === 0
               ? 'Nenhum indicador conectado a este tema'
               : (
                 <span>
-                  <b style={{ color: '#0A0A0A', fontWeight: 600 }}>{kpis.length}</b> indicador{kpis.length === 1 ? '' : 'es'} conectado{kpis.length === 1 ? '' : 's'} a este tema
-                  {stats.withMeta > 0 && <span> · <b style={{ color: '#0A0A0A', fontWeight: 600 }}>{stats.onTrack}</b> On Track</span>}
-                  {stats.semMeta > 0 && <span> · <b style={{ color: '#B45309', fontWeight: 600 }}>{stats.semMeta}</b> sem meta</span>}
+                  <b className="text-foreground font-semibold">{kpis.length}</b> indicador{kpis.length === 1 ? '' : 'es'} conectado{kpis.length === 1 ? '' : 's'} a este tema
+                  {stats.withMeta > 0 && <span> · <b className="text-foreground font-semibold">{stats.onTrack}</b> On Track</span>}
+                  {stats.semMeta > 0 && <span> · <b className="text-amber-600 font-semibold">{stats.semMeta}</b> sem meta</span>}
                 </span>
               )}
           </div>
         </div>
         {kpis.length > 0 && (
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-            color: '#7401C3', fontSize: 13, fontWeight: 600,
-          }}>
-            <Icon name="plus" size={13} color="#7401C3"/>
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
+            <Icon name="plus" size={13} color="var(--primary)"/>
             Vincular KPI
           </button>
         )}
@@ -504,26 +461,15 @@ function FlatEmptyState({
   actions?: React.ReactNode;
 }) {
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #E5E5E5',
-      borderRadius: 12,
-      padding: '48px 24px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: 12, textAlign: 'center',
-    }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: 999,
-        background: '#FAFAFA',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
+    <div className="bg-white border border-border rounded-xl py-12 px-6 flex flex-col items-center gap-3 text-center">
+      <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center">
         <Icon name={icon} size={26} color="#AA95BE"/>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: '#0A0A0A' }}>{title}</div>
+      <div className="text-[15px] font-semibold text-foreground">{title}</div>
       {subtitle && (
-        <div style={{ fontSize: 13, color: '#737373', maxWidth: 420, lineHeight: 1.55 }}>{subtitle}</div>
+        <div className="text-[13px] text-muted-foreground max-w-[420px] leading-[1.55]">{subtitle}</div>
       )}
-      {actions && <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>{actions}</div>}
+      {actions && <div className="flex gap-2 mt-1.5">{actions}</div>}
     </div>
   );
 }
@@ -545,76 +491,63 @@ function KPITable({ kpis }: { kpis: KPI[] }) {
   });
 
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #E5E5E5',
-      borderRadius: 12,
-      overflowX: 'auto',
-    }}>
-      <table style={{
-        width: '100%', minWidth: 1040,
-        borderCollapse: 'collapse', fontSize: 12.5,
-      }}>
-        <thead>
-          <tr style={{ background: '#FAFAFA' }}>
+    <div className="bg-white border border-border rounded-xl overflow-x-auto">
+      <Table style={{ minWidth: 1040 }}>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
             {['Perspectiva', 'Indicador', 'Responsável', 'Atualizado em', 'Polaridade', 'Atual', 'Meta', 'Diferença', 'Status']
               .map((h, i) => (
-                <th key={h} style={{
-                  textAlign: (i >= 5 && i <= 7) ? 'right' : 'left',
-                  padding: '12px 16px',
-                  fontSize: 12, fontWeight: 500,
-                  color: '#737373',
-                  borderBottom: '1px solid #F0F0F0',
-                  whiteSpace: 'nowrap',
-                }}>{h}</th>
+                <TableHead
+                  key={h}
+                  className={cn(
+                    'text-xs font-medium text-muted-foreground whitespace-nowrap py-3 px-4',
+                    (i >= 5 && i <= 7) && 'text-right',
+                  )}
+                >{h}</TableHead>
               ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {Object.entries(groups).map(([persp, items]) => {
             const palette = perspBg[persp] || perspBg['Outros'];
             return items.map((k, i) => (
-              <tr key={k.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+              <TableRow key={k.id} className="border-b border-[#F0F0F0]">
                 {i === 0 && (
-                  <td rowSpan={items.length} style={{
-                    padding: '14px 16px',
-                    background: palette.bg,
-                    verticalAlign: 'top',
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: palette.fg }}>{persp}</div>
-                  </td>
+                  <TableCell
+                    rowSpan={items.length}
+                    className="py-3.5 px-4 align-top"
+                    style={{ background: palette.bg }}
+                  >
+                    <div className="text-[13px] font-semibold" style={{ color: palette.fg }}>{persp}</div>
+                  </TableCell>
                 )}
-                <td style={{ padding: '14px 16px', color: '#0A0A0A', fontWeight: 600 }}>{k.nome}</td>
-                <td style={{ padding: '14px 16px' }}>
+                <TableCell className="py-3.5 px-4 text-foreground font-semibold">{k.nome}</TableCell>
+                <TableCell className="py-3.5 px-4">
                   <Resp resp={k.responsavel}/>
-                </td>
-                <td style={{ padding: '14px 16px', color: '#525252', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                </TableCell>
+                <TableCell className="py-3.5 px-4 text-[#525252] tabular-nums whitespace-nowrap">
                   {k.atualizado || '—'}
-                </td>
-                <td style={{ padding: '14px 16px' }}>
+                </TableCell>
+                <TableCell className="py-3.5 px-4">
                   <PolaridadeArrow dir={k.polaridade}/>
-                </td>
-                <td style={{
-                  padding: '14px 16px', textAlign: 'right',
-                  fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 14,
-                  color: '#0A0A0A', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                }}>{k.atual}</td>
-                <td style={{
-                  padding: '14px 16px', textAlign: 'right',
-                  color: k.sem_meta ? '#AA95BE' : '#525252',
-                  fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                }}>{k.sem_meta ? '—' : k.meta}</td>
-                <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                </TableCell>
+                <TableCell className="py-3.5 px-4 text-right font-bold text-sm text-foreground tabular-nums whitespace-nowrap">
+                  {k.atual}
+                </TableCell>
+                <TableCell className={cn('py-3.5 px-4 text-right tabular-nums whitespace-nowrap', k.sem_meta ? 'text-[#AA95BE]' : 'text-[#525252]')}>
+                  {k.sem_meta ? '—' : k.meta}
+                </TableCell>
+                <TableCell className="py-3.5 px-4 text-right whitespace-nowrap">
                   <DiffText text={k.diff} tone={k.diffTone}/>
-                </td>
-                <td style={{ padding: '14px 16px' }}>
+                </TableCell>
+                <TableCell className="py-3.5 px-4">
                   <KPIStatusCell tone={k.status} label={kpiStatusText(k)}/>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ));
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -628,34 +561,32 @@ function KPIStatusCell({ tone, label }: { tone: string; label: string }) {
   };
   const c = map[tone] || map['neutral'];
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 22, height: 22, borderRadius: 999,
-        background: c.bg, color: '#fff',
-        border: c.outlined ? '1.5px solid #AA95BE' : 'none',
-        fontSize: 12, fontWeight: 700, lineHeight: 1,
-      }}>
+    <div className="inline-flex items-center gap-2">
+      <span
+        className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-bold leading-none"
+        style={{
+          background: c.bg,
+          color: c.outlined ? undefined : '#fff',
+          border: c.outlined ? '1.5px solid #AA95BE' : 'none',
+        }}
+      >
         {c.outlined
-          ? <span style={{ color: '#AA95BE' }}>{c.icon}</span>
+          ? <span className="text-[#AA95BE]">{c.icon}</span>
           : c.icon}
       </span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: c.fg, whiteSpace: 'nowrap' }}>{label}</span>
+      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: c.fg }}>{label}</span>
     </div>
   );
 }
 
 function Resp({ resp }: { resp?: { iniciais: string; nome: string } | null }) {
-  if (!resp) return <span style={{ color: 'var(--hu-muted)' }}>—</span>;
+  if (!resp) return <span className="text-muted-foreground">—</span>;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{
-        width: 26, height: 26, borderRadius: 999, flexShrink: 0,
-        background: '#EFE3F8', color: '#5A0992',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 10, letterSpacing: '-0.02em',
-      }}>{resp.iniciais}</span>
-      <span style={{ fontSize: 12.5, color: '#0A0A0A' }}>{resp.nome}</span>
+    <div className="flex items-center gap-2">
+      <span className="w-[26px] h-[26px] rounded-full shrink-0 bg-primary/10 text-primary flex items-center justify-center font-black text-[10px] tracking-tight">
+        {resp.iniciais}
+      </span>
+      <span className="text-[12.5px] text-foreground">{resp.nome}</span>
     </div>
   );
 }
@@ -664,15 +595,14 @@ function PolaridadeArrow({ dir }: { dir?: string }) {
   const arrow = dir === 'down' ? '↓' : dir === 'up' ? '↑' : '·';
   const desc  = dir === 'down' ? 'quanto menor melhor' : dir === 'up' ? 'quanto maior melhor' : '';
   return (
-    <span title={desc} style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      color: '#737373', fontSize: 14, fontWeight: 600,
-    }}>{arrow}</span>
+    <span title={desc} className="inline-flex items-center justify-center text-muted-foreground text-sm font-semibold">
+      {arrow}
+    </span>
   );
 }
 
 function DiffText({ text, tone }: { text?: string | null; tone?: string }) {
-  if (!text) return <span style={{ color: '#737373' }}>—</span>;
+  if (!text) return <span className="text-muted-foreground">—</span>;
   const colorMap: Record<string, string> = {
     danger:  '#C81E1E',
     warning: '#92400E',
@@ -680,11 +610,10 @@ function DiffText({ text, tone }: { text?: string | null; tone?: string }) {
     neutral: '#525252',
   };
   return (
-    <span style={{
-      color: colorMap[tone || 'neutral'] || colorMap['neutral'],
-      fontSize: 12.5, fontWeight: 600,
-      fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-    }}>{text}</span>
+    <span
+      className="text-[12.5px] font-semibold tabular-nums whitespace-nowrap"
+      style={{ color: colorMap[tone || 'neutral'] || colorMap['neutral'] }}
+    >{text}</span>
   );
 }
 
@@ -729,32 +658,25 @@ export function IniciativasBlock({
   const stats = iniciativaEmDiaStats(inics);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-        gap: 14, flexWrap: 'wrap',
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#0A0A0A' }}>Iniciativas vinculadas</div>
-          <div style={{ fontSize: 13, color: '#737373', marginTop: 4 }}>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-end justify-between gap-3.5 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-lg font-semibold text-foreground">Iniciativas vinculadas</div>
+          <div className="text-[13px] text-muted-foreground mt-1">
             {inics.length === 0
               ? 'Nenhuma iniciativa conectada a este tema'
               : (
                 <span>
-                  <b style={{ color: '#0A0A0A', fontWeight: 600 }}>{inics.length}</b> iniciativa{inics.length === 1 ? '' : 's'} conectada{inics.length === 1 ? '' : 's'} a este tema
-                  {stats.emDia > 0 && <span> · <b style={{ color: '#00875a', fontWeight: 600 }}>{stats.emDia}</b> em dia</span>}
-                  {stats.atrasadas > 0 && <span> · <b style={{ color: '#C81E1E', fontWeight: 600 }}>{stats.atrasadas}</b> atrasada{stats.atrasadas === 1 ? '' : 's'}</span>}
+                  <b className="text-foreground font-semibold">{inics.length}</b> iniciativa{inics.length === 1 ? '' : 's'} conectada{inics.length === 1 ? '' : 's'} a este tema
+                  {stats.emDia > 0 && <span> · <b className="text-green-600 font-semibold">{stats.emDia}</b> em dia</span>}
+                  {stats.atrasadas > 0 && <span> · <b className="text-destructive font-semibold">{stats.atrasadas}</b> atrasada{stats.atrasadas === 1 ? '' : 's'}</span>}
                 </span>
               )}
           </div>
         </div>
         {inics.length > 0 && (
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-            color: '#7401C3', fontSize: 13, fontWeight: 600,
-          }}>
-            <Icon name="plus" size={13} color="#7401C3"/>
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
+            <Icon name="plus" size={13} color="var(--primary)"/>
             Vincular Iniciativa
           </button>
         )}
@@ -799,73 +721,59 @@ function IniciativasTable({ inics }: { inics: Iniciativa[] }) {
   });
 
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #E5E5E5',
-      borderRadius: 12,
-      overflowX: 'auto',
-    }}>
-      <table style={{
-        width: '100%', minWidth: 1100,
-        borderCollapse: 'collapse', fontSize: 12.5,
-      }}>
-        <thead>
-          <tr style={{ background: '#FAFAFA' }}>
+    <div className="bg-white border border-border rounded-xl overflow-x-auto">
+      <Table style={{ minWidth: 1100 }}>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
             {['Objetivo', 'Iniciativa', 'Responsável', 'Prazo', 'Status', 'Progresso', 'Próximo marco'].map(h => (
-              <th key={h} style={{
-                textAlign: 'left',
-                padding: '12px 16px',
-                fontSize: 12, fontWeight: 500,
-                color: '#737373',
-                borderBottom: '1px solid #F0F0F0',
-                whiteSpace: 'nowrap',
-              }}>{h}</th>
+              <TableHead key={h} className="text-left py-3 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                {h}
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {Object.entries(groups).map(([obj, items]) =>
             items.map((i, idx) => {
               const dl = iniciativaDeadlineStatus(i);
               return (
-                <tr key={i.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                <TableRow key={i.id} className="border-b border-[#F0F0F0]">
                   {idx === 0 && (
-                    <td rowSpan={items.length} style={{
-                      padding: '14px 16px',
-                      background: '#EFE3F8',
-                      verticalAlign: 'top',
-                    }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#5B21B6' }}>{obj}</div>
+                    <TableCell
+                      rowSpan={items.length}
+                      className="py-3.5 px-4 bg-primary/10 align-top"
+                    >
+                      <div className="text-[13px] font-semibold text-[#5B21B6]">{obj}</div>
                       {items[0]._extra.objetivoTone && (
-                        <div style={{ fontSize: 11, color: '#5B21B6', opacity: 0.75, marginTop: 2 }}>
+                        <div className="text-[11px] text-[#5B21B6] opacity-75 mt-0.5">
                           {items[0]._extra.objetivoTone}
                         </div>
                       )}
-                    </td>
+                    </TableCell>
                   )}
-                  <td style={{ padding: '14px 16px', color: '#0A0A0A', fontWeight: 600 }}>{i.nome}</td>
-                  <td style={{ padding: '14px 16px' }}>
+                  <TableCell className="py-3.5 px-4 text-foreground font-semibold">{i.nome}</TableCell>
+                  <TableCell className="py-3.5 px-4">
                     <Resp resp={i._extra.responsavel}/>
-                  </td>
-                  <td style={{ padding: '14px 16px', color: '#525252', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                  </TableCell>
+                  <TableCell className="py-3.5 px-4 text-[#525252] tabular-nums whitespace-nowrap">
                     {i.prazo}
-                  </td>
-                  <td style={{ padding: '14px 16px', minWidth: 200 }}>
+                  </TableCell>
+                  <TableCell className="py-3.5 px-4 min-w-[200px]">
                     <IniciativaStatusCell i={i} dl={dl}/>
-                  </td>
-                  <td style={{ padding: '14px 16px', minWidth: 180 }}>
+                  </TableCell>
+                  <TableCell className="py-3.5 px-4 min-w-[180px]">
                     <ProgressBar value={i.progresso} status={i.status}/>
                     <PrazoIndicator dl={dl}/>
-                  </td>
-                  <td style={{ padding: '14px 16px', color: '#525252', fontSize: 12.5 }}>
+                  </TableCell>
+                  <TableCell className="py-3.5 px-4 text-[#525252] text-[12.5px]">
                     {i._extra.marco || '—'}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -897,14 +805,11 @@ function IniciativaStatusCell({
   };
   const c = map[tone];
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 8,
-      padding: '4px 12px 4px 10px', borderRadius: 999,
-      background: c.bg, color: c.fg,
-      fontSize: 12, fontWeight: 600,
-      whiteSpace: 'nowrap',
-    }}>
-      <span style={{ width: 7, height: 7, borderRadius: 999, background: c.dot, flexShrink: 0 }}/>
+    <span
+      className="inline-flex items-center gap-2 py-1 px-3 rounded-full text-xs font-semibold whitespace-nowrap"
+      style={{ background: c.bg, color: c.fg }}
+    >
+      <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: c.dot }}/>
       {label}
     </span>
   );
@@ -919,10 +824,10 @@ function PrazoIndicator({ dl }: { dl: ReturnType<typeof iniciativaDeadlineStatus
     neutral: '#737373',
   };
   return (
-    <div style={{
-      marginTop: 6, fontSize: 11, color: colors[dl.tone] || '#737373',
-      fontWeight: 500,
-    }}>
+    <div
+      className="mt-1.5 text-[11px] font-medium"
+      style={{ color: colors[dl.tone] || '#737373' }}
+    >
       {dl.kind === 'completa' ? 'Concluída no prazo'
        : dl.kind === 'indef'  ? 'Prazo a definir'
        : dl.label}
@@ -931,21 +836,18 @@ function PrazoIndicator({ dl }: { dl: ReturnType<typeof iniciativaDeadlineStatus
 }
 
 function ProgressBar({ value, status }: { value: number; status: string }) {
-  const color = status === 'completo' ? '#00A970' : status === 'pendente' ? '#AA95BE' : '#7401C3';
+  const color = status === 'completo' ? '#00A970' : status === 'pendente' ? '#AA95BE' : 'var(--primary)';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{
-        width: 80, height: 6, borderRadius: 999, background: '#F0F0F0', overflow: 'hidden',
-      }}>
-        <div style={{
-          width: `${value}%`, height: '100%', background: color, borderRadius: 999,
-          transition: 'width 400ms',
-        }}/>
+    <div className="flex items-center gap-2.5">
+      <div className="w-20 h-1.5 rounded-full bg-[#F0F0F0] overflow-hidden">
+        <div
+          className="h-full rounded-full transition-[width] duration-400"
+          style={{ width: `${value}%`, background: color }}
+        />
       </div>
-      <span style={{
-        fontWeight: 600, fontSize: 12.5,
-        color: '#525252', fontVariantNumeric: 'tabular-nums', minWidth: 32, textAlign: 'right',
-      }}>{value}%</span>
+      <span className="font-semibold text-[12.5px] text-[#525252] tabular-nums min-w-[32px] text-right">
+        {value}%
+      </span>
     </div>
   );
 }
@@ -966,12 +868,12 @@ function SugestoesIAVinculo({
   onAction: (idx: number, action: string) => void;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '4px 4px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+    <div className="flex flex-col gap-0 pt-1 px-1">
+      <div className="flex items-center gap-2 mb-2">
         <Icon name="sparkles" size={14} color="#525252"/>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#525252' }}>{title}</span>
+        <span className="text-sm font-semibold text-[#525252]">{title}</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="flex flex-col">
         {sugs.map(({ s, idx }, i) => (
           <SugRow key={idx} s={s} kind={kind || s.kind}
             divider={i < sugs.length - 1}
@@ -989,7 +891,7 @@ const ACTION_VERBS: Record<string, { primary: string; dot: string; secondary?: s
   'plano-acao':   { primary: 'Criar iniciativa', dot: '#F59E0B' },
   'revisar':      { primary: 'Revisar meta',     dot: '#F59E0B' },
   'replanejar':   { primary: 'Replanejar',       dot: '#E03131' },
-  'default':      { primary: 'Vincular',         dot: '#7401C3' },
+  'default':      { primary: 'Vincular',         dot: 'var(--primary)' },
 };
 
 function SugRow({
@@ -1008,50 +910,42 @@ function SugRow({
   const isKpi = kind === 'kpi';
   const a = (s.acao ? ACTION_VERBS[s.acao] : undefined) || ACTION_VERBS['default'];
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 12,
-      padding: '12px 4px',
-      borderBottom: divider ? '1px solid #F0F0F0' : 'none',
-      flexWrap: 'wrap',
-    }}>
-      <span style={{
-        width: 8, height: 8, borderRadius: 999, flexShrink: 0,
-        background: a.dot, marginTop: 7,
-      }}/>
-      <div style={{ flex: 1, minWidth: 240 }}>
-        <div style={{ fontSize: 13.5, color: '#0A0A0A', lineHeight: 1.5, marginBottom: 2 }}>
-          <b style={{ fontWeight: 600 }}>"{s.ref}"</b>
+    <div className={cn(
+      'flex items-start gap-3 py-3 px-1 flex-wrap',
+      divider && 'border-b border-[#F0F0F0]',
+    )}>
+      <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: a.dot }}/>
+      <div className="flex-1 min-w-[240px]">
+        <div className="text-[13.5px] text-foreground leading-[1.5] mb-0.5">
+          <b className="font-semibold">"{s.ref}"</b>
           {s.score != null && (
-            <span style={{ color: '#737373', marginLeft: 8 }}>
-              — <b style={{ color: '#0A0A0A', fontWeight: 600 }}>{s.score}%</b> de similaridade com este tema
+            <span className="text-muted-foreground ml-2">
+              — <b className="text-foreground font-semibold">{s.score}%</b> de similaridade com este tema
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12.5, color: '#525252', lineHeight: 1.5 }}>
+        <div className="text-[12.5px] text-[#525252] leading-[1.5]">
           {isKpi && s.atual && s.meta ? (
-            <span>Indicador atualmente em <b style={{ color: '#0A0A0A' }}>{s.atual}</b> (meta {s.meta}). {s.rationale}</span>
+            <span>Indicador atualmente em <b className="text-foreground">{s.atual}</b> (meta {s.meta}). {s.rationale}</span>
           ) : isKpi && s.atual && !s.meta ? (
-            <span>Indicador atualmente em <b style={{ color: '#0A0A0A' }}>{s.atual}</b>, sem meta definida. {s.rationale}</span>
+            <span>Indicador atualmente em <b className="text-foreground">{s.atual}</b>, sem meta definida. {s.rationale}</span>
           ) : (
             <span>{s.rationale}</span>
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 14, flexShrink: 0, alignItems: 'center' }}>
-        <button onClick={onLink} style={{
-          background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-          color: '#7401C3', fontSize: 12.5, fontWeight: 600,
-        }}>{a.primary}</button>
+      <div className="flex gap-3.5 shrink-0 items-center">
+        <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-[12.5px] font-semibold">
+          {a.primary}
+        </button>
         {a.secondary && (
-          <button onClick={onLink} style={{
-            background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-            color: '#7401C3', fontSize: 12.5, fontWeight: 600,
-          }}>{a.secondary}</button>
+          <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-[12.5px] font-semibold">
+            {a.secondary}
+          </button>
         )}
-        <button onClick={onDismiss} style={{
-          background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-          color: '#737373', fontSize: 12.5, fontWeight: 500,
-        }}>Dispensar</button>
+        <button onClick={onDismiss} className="bg-transparent border-0 cursor-pointer p-0 text-muted-foreground text-[12.5px] font-medium">
+          Dispensar
+        </button>
       </div>
     </div>
   );
@@ -1106,93 +1000,64 @@ export function ApendiceBlock({ theme }: { theme: Theme }) {
     ? theme.sentimento - theme.baseline.sentimento : null;
 
   return (
-    <section style={{ padding: '0 32px 36px' }}>
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          style={{
-            width: '100%', textAlign: 'left',
-            display: 'flex', alignItems: 'center', gap: 14,
-            padding: '16px 20px',
-            background: open ? '#FAFAFA' : '#fff',
-            border: 0, cursor: 'pointer',
-            transition: 'background 120ms',
-          }}>
-          <span style={{
-            width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-            background: '#F4F4F5', color: '#737373',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Icon name="file-text" size={14} color="#737373"/>
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em',
-              textTransform: 'uppercase', color: 'var(--hu-muted)', marginBottom: 2,
-            }}>Apêndice</div>
-            <div style={{
-              fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 15,
-              color: '#0A0A0A',
-            }}>Contexto normativo · GRI · ODS · IFRS</div>
-          </div>
-          <span style={{ fontSize: 11.5, color: '#737373', marginRight: 6 }}>
-            {open ? 'Recolher' : 'Expandir'}
-          </span>
-          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#737373"/>
-        </button>
-
-        {open && (
-          <div className="hu-fade" style={{
-            padding: '20px 24px 24px',
-            borderTop: '1px solid var(--hu-border)',
-            display: 'flex', flexDirection: 'column', gap: 22,
-          }}>
-            <div className="mat-apendice-grid" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: 16,
-            }}>
-              <ApendiceCol title="GRI"          icon="file-text" theme={theme} kind="gri"/>
-              <ApendiceCol title="ODS"          icon="globe"     theme={theme} kind="ods"/>
-              <ApendiceCol title="IFRS S1 / S2" icon="shield"    theme={theme} kind="ifrs"/>
-            </div>
-
-            <div className="mat-apendice-bottom" style={{
-              display: 'grid',
-              gridTemplateColumns: '1.4fr minmax(0, 1fr)',
-              gap: 16, alignItems: 'stretch',
-            }}>
-              <div style={{
-                background: '#FCFAFD', borderRadius: 12,
-                border: '1px solid var(--hu-border)',
-                padding: '16px 18px',
-              }}>
-                <SectionTitle eyebrow="Contexto">Posição na matriz</SectionTitle>
-                <RefMiniMatrix theme={theme}/>
+    <section className="px-8 pb-9">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <CollapsibleTrigger
+            className={cn(
+              'w-full text-left flex items-center gap-3.5 px-5 py-4 border-0 cursor-pointer transition-colors duration-[120ms]',
+              open ? 'bg-muted/50' : 'bg-white',
+            )}
+          >
+            <span className="w-8 h-8 rounded-[9px] shrink-0 bg-[#F4F4F5] text-muted-foreground flex items-center justify-center">
+              <Icon name="file-text" size={14} color="#737373"/>
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10.5px] font-bold tracking-[0.10em] uppercase text-muted-foreground mb-0.5">
+                Apêndice
               </div>
-
-              <div style={{
-                background: '#FCFAFD', borderRadius: 12,
-                border: '1px solid var(--hu-border)',
-                padding: '16px 18px',
-                display: 'flex', flexDirection: 'column', gap: 10,
-              }}>
-                <SectionTitle eyebrow="Variação vs. Matriz 2024">Posição e sentimento</SectionTitle>
-                <DeltaRow label="Relevância Alta Liderança" cur={`${theme.x}%`}              prev={`${theme.baseline.x}%`}              delta={deltaX}/>
-                <DeltaRow label="Relevância Stakeholders"   cur={`${theme.y}%`}              prev={`${theme.baseline.y}%`}              delta={deltaY}/>
-                <DeltaRow label="Sentimento"                cur={fmtSent(theme.sentimento)}  prev={fmtSent(theme.baseline.sentimento)}  delta={deltaS}/>
+              <div className="font-bold text-[15px] text-foreground">
+                Contexto normativo · GRI · ODS · IFRS
               </div>
             </div>
+            <span className="text-[11.5px] text-muted-foreground mr-1.5">
+              {open ? 'Recolher' : 'Expandir'}
+            </span>
+            <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#737373"/>
+          </CollapsibleTrigger>
 
-            <style>{`
-              @media (max-width: 1080px) {
-                .mat-apendice-grid   { grid-template-columns: minmax(0, 1fr) !important; }
-                .mat-apendice-bottom { grid-template-columns: minmax(0, 1fr) !important; }
-              }
-            `}</style>
-          </div>
-        )}
-      </Card>
+          <CollapsibleContent>
+            <div className="hu-fade px-6 pt-5 pb-6 border-t border-border flex flex-col gap-[22px]">
+              <div className="mat-apendice-grid grid gap-4" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <ApendiceCol title="GRI"          icon="file-text" theme={theme} kind="gri"/>
+                <ApendiceCol title="ODS"          icon="globe"     theme={theme} kind="ods"/>
+                <ApendiceCol title="IFRS S1 / S2" icon="shield"    theme={theme} kind="ifrs"/>
+              </div>
+
+              <div className="mat-apendice-bottom grid gap-4 items-stretch" style={{ gridTemplateColumns: '1.4fr minmax(0, 1fr)' }}>
+                <div className="bg-[#FCFAFD] rounded-xl border border-border px-[18px] py-4">
+                  <SectionTitle eyebrow="Contexto">Posição na matriz</SectionTitle>
+                  <RefMiniMatrix theme={theme}/>
+                </div>
+
+                <div className="bg-[#FCFAFD] rounded-xl border border-border px-[18px] py-4 flex flex-col gap-2.5">
+                  <SectionTitle eyebrow="Variação vs. Matriz 2024">Posição e sentimento</SectionTitle>
+                  <DeltaRow label="Relevância Alta Liderança" cur={`${theme.x}%`}              prev={`${theme.baseline.x}%`}              delta={deltaX}/>
+                  <DeltaRow label="Relevância Stakeholders"   cur={`${theme.y}%`}              prev={`${theme.baseline.y}%`}              delta={deltaY}/>
+                  <DeltaRow label="Sentimento"                cur={fmtSent(theme.sentimento)}  prev={fmtSent(theme.baseline.sentimento)}  delta={deltaS}/>
+                </div>
+              </div>
+
+              <style>{`
+                @media (max-width: 1080px) {
+                  .mat-apendice-grid   { grid-template-columns: minmax(0, 1fr) !important; }
+                  .mat-apendice-bottom { grid-template-columns: minmax(0, 1fr) !important; }
+                }
+              `}</style>
+            </div>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </section>
   );
 }
@@ -1209,25 +1074,12 @@ function ApendiceCol({
   kind: 'gri' | 'ods' | 'ifrs';
 }) {
   return (
-    <div style={{
-      background: '#FCFAFD', borderRadius: 12,
-      border: '1px solid var(--hu-border)',
-      padding: '16px 18px',
-      display: 'flex', flexDirection: 'column', gap: 12,
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{
-          width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-          background: '#EFE3F8', color: '#5A0992',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon name={icon} size={13} color="#5A0992"/>
+    <div className="bg-[#FCFAFD] rounded-xl border border-border px-[18px] py-4 flex flex-col gap-3 min-w-0">
+      <div className="flex items-center gap-2">
+        <span className="w-[26px] h-[26px] rounded-lg shrink-0 bg-primary/10 text-primary flex items-center justify-center">
+          <Icon name={icon} size={13} color="var(--primary)"/>
         </span>
-        <div style={{
-          fontFamily: 'var(--hu-font-display)', fontWeight: 700, fontSize: 15,
-          color: '#0A0A0A',
-        }}>{title}</div>
+        <div className="font-bold text-[15px] text-foreground">{title}</div>
       </div>
       {kind === 'gri'  && <GRIList theme={theme}/>}
       {kind === 'ods'  && <ODSList theme={theme}/>}
@@ -1238,62 +1090,55 @@ function ApendiceCol({
 
 function GRIList({ theme }: { theme: Theme }) {
   if (theme.gri.length === 0) {
-    return <div style={{ fontSize: 12, color: 'var(--hu-muted)', fontStyle: 'italic' }}>
-      Sem padrões GRI vinculados.
-    </div>;
+    return <div className="text-xs text-muted-foreground italic">Sem padrões GRI vinculados.</div>;
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {theme.gri.map(g => {
         const d = GRI_DETAILS[g] || { titulo: g, cobertura: 'parcial' as const };
         const cov = d.cobertura;
         const covColor = cov === 'total' ? '#009966' : cov === 'parcial' ? '#B45309' : '#C81E1E';
         return (
-          <div key={g} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: '#7401C3' }}/>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#0A0A0A' }}>{g}</span>
-              <span style={{ fontSize: 12, color: '#525252' }}>— "{d.titulo}"</span>
+          <div key={g} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="w-[5px] h-[5px] rounded-full bg-primary"/>
+              <span className="text-[13px] font-bold text-foreground">{g}</span>
+              <span className="text-xs text-[#525252]">— "{d.titulo}"</span>
             </div>
-            <div style={{ paddingLeft: 13, fontSize: 11.5, color: covColor, fontWeight: 600 }}>
+            <div className="pl-[13px] text-[11.5px] font-semibold" style={{ color: covColor }}>
               Cobertura: {cov}
             </div>
           </div>
         );
       })}
-      <button style={{
-        alignSelf: 'flex-start',
-        background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-        color: '#5A0992', fontSize: 11.5, fontWeight: 600,
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-      }}>Ver detalhes <Icon name="arrow-right" size={11} color="#5A0992"/></button>
+      <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-[11.5px] font-semibold inline-flex items-center gap-1">
+        Ver detalhes <Icon name="arrow-right" size={11} color="var(--primary)"/>
+      </button>
     </div>
   );
 }
 
 function ODSList({ theme }: { theme: Theme }) {
   if (theme.ods.length === 0) {
-    return <div style={{ fontSize: 12, color: 'var(--hu-muted)', fontStyle: 'italic' }}>
-      Sem ODS vinculados.
-    </div>;
+    return <div className="text-xs text-muted-foreground italic">Sem ODS vinculados.</div>;
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className="flex flex-col gap-3.5">
       {theme.ods.map(o => {
         const d = ODS_DETAILS[o] || { titulo: `ODS ${o}`, desc: '', metas: [] as string[] };
         return (
-          <div key={o} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: '#00A970' }}/>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#0A0A0A' }}>ODS {o}</span>
-              <span style={{ fontSize: 12, color: '#525252' }}>— {d.titulo}</span>
+          <div key={o} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="w-[5px] h-[5px] rounded-full bg-green-600"/>
+              <span className="text-[13px] font-bold text-foreground">ODS {o}</span>
+              <span className="text-xs text-[#525252]">— {d.titulo}</span>
             </div>
-            <div style={{ paddingLeft: 13, fontSize: 11.5, color: '#525252', lineHeight: 1.45 }}>
+            <div className="pl-[13px] text-[11.5px] text-[#525252] leading-[1.45]">
               {d.desc}
             </div>
             {d.metas.length > 0 && (
-              <div style={{ paddingLeft: 13, fontSize: 11, color: 'var(--hu-muted)' }}>
-                Metas tocadas: <b style={{ color: '#525252' }}>{d.metas.join(', ')}</b>
+              <div className="pl-[13px] text-[11px] text-muted-foreground">
+                Metas tocadas: <b className="text-[#525252]">{d.metas.join(', ')}</b>
               </div>
             )}
           </div>
@@ -1305,43 +1150,39 @@ function ODSList({ theme }: { theme: Theme }) {
 
 function IFRSCol({ theme }: { theme: Theme }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ fontSize: 12, color: '#525252', lineHeight: 1.5 }}>
+    <div className="flex flex-col gap-3.5">
+      <div className="text-xs text-[#525252] leading-[1.5]">
         Conexão com o módulo IFRS deste tema:
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <Icon name="arrow-right" size={11} color="#5A0992"/>
-          <div style={{ fontSize: 12, color: '#0A0A0A' }}>
-            <b style={{ fontWeight: 700 }}>Risco S2 mapeado:</b>{' '}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start gap-2">
+          <Icon name="arrow-right" size={11} color="var(--primary)"/>
+          <div className="text-xs text-foreground">
+            <b className="font-bold">Risco S2 mapeado:</b>{' '}
             {theme.linkIFRS
-              ? <span style={{ color: '#B45309' }}>Sim — vinculado à Matriz de Riscos Climáticos.</span>
-              : <span style={{ color: 'var(--hu-muted)' }}>Não se aplica</span>}
+              ? <span className="text-amber-600">Sim — vinculado à Matriz de Riscos Climáticos.</span>
+              : <span className="text-muted-foreground">Não se aplica</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <Icon name="arrow-right" size={11} color="#5A0992"/>
-          <div style={{ fontSize: 12, color: '#0A0A0A' }}>
-            <b style={{ fontWeight: 700 }}>Métrica financeira:</b>{' '}
-            <span style={{ color: 'var(--hu-muted)' }}>
+        <div className="flex items-start gap-2">
+          <Icon name="arrow-right" size={11} color="var(--primary)"/>
+          <div className="text-xs text-foreground">
+            <b className="font-bold">Métrica financeira:</b>{' '}
+            <span className="text-muted-foreground">
               {theme.linkIFRS ? 'Em estruturação' : 'Não vinculada'}
             </span>
           </div>
         </div>
       </div>
       {theme.linkIFRS && (
-        <button style={{
-          alignSelf: 'flex-start',
-          background: 'transparent', border: 0, cursor: 'pointer', padding: 0,
-          color: '#5A0992', fontSize: 11.5, fontWeight: 600,
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-        }}>Abrir IFRS <Icon name="arrow-right" size={11} color="#5A0992"/></button>
+        <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-[11.5px] font-semibold inline-flex items-center gap-1">
+          Abrir IFRS <Icon name="arrow-right" size={11} color="var(--primary)"/>
+        </button>
       )}
       {!theme.linkIFRS && (
-        <div style={{
-          fontSize: 11.5, color: 'var(--hu-muted)', fontStyle: 'italic',
-          paddingTop: 6, borderTop: '1px dashed var(--hu-border)',
-        }}>Tema sem vínculo direto com IFRS S1/S2.</div>
+        <div className="text-[11.5px] text-muted-foreground italic pt-1.5 border-t border-dashed border-border">
+          Tema sem vínculo direto com IFRS S1/S2.
+        </div>
       )}
     </div>
   );
@@ -1361,28 +1202,21 @@ function DeltaRow({
   const tone = delta == null ? '#737373' : delta > 0 ? '#009966' : delta < 0 ? '#C81E1E' : '#737373';
   const arrow = delta == null || delta === 0 ? '·' : delta > 0 ? '↑' : '↓';
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: '1fr auto', gap: 14,
-      padding: '10px 0', borderBottom: '1px dashed var(--hu-border)',
-      alignItems: 'center',
-    }}>
+    <div className="grid grid-cols-[1fr_auto] gap-3.5 py-2.5 border-b border-dashed border-border items-center">
       <div>
-        <div style={{ fontSize: 12, color: 'var(--hu-muted)' }}>{label}</div>
-        <div style={{ fontSize: 11, color: 'var(--hu-muted)', marginTop: 2 }}>
-          <b style={{
-            fontFamily: 'var(--hu-font-display)', fontWeight: 900, fontSize: 15,
-            color: '#0A0A0A', letterSpacing: '-0.01em',
-            fontVariantNumeric: 'tabular-nums', marginRight: 6,
-          }}>{cur}</b>
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-[11px] text-muted-foreground mt-0.5">
+          <b className="font-black text-[15px] text-foreground tracking-[-0.01em] tabular-nums mr-1.5">{cur}</b>
           <span>era {prev}</span>
         </div>
       </div>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        fontWeight: 700, color: tone, fontVariantNumeric: 'tabular-nums',
-        background: delta != null && delta !== 0 ? (delta > 0 ? '#DEF7EC' : '#FCE2E2') : '#F4F4F5',
-        padding: '4px 10px', borderRadius: 999, fontSize: 12,
-      }}>
+      <div
+        className="inline-flex items-center gap-1 font-bold tabular-nums py-1 px-2.5 rounded-full text-xs"
+        style={{
+          color: tone,
+          background: delta != null && delta !== 0 ? (delta > 0 ? '#DEF7EC' : '#FCE2E2') : '#F4F4F5',
+        }}
+      >
         <span>{arrow}</span>
         <span>{delta == null ? '—' : Math.abs(delta) + 'pp'}</span>
       </div>
@@ -1398,7 +1232,7 @@ function RefMiniMatrix({ theme }: { theme: Theme }) {
   const py = (v: number) => H - MB - ((v - minA) / (maxA - minA)) * (H - MT - MB);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
         <rect x={px(75)} y={py(maxA)} width={px(maxA) - px(75)} height={py(65) - py(maxA)} fill="#FAF5FE"/>
         <line x1={px(75)} y1={py(minA)} x2={px(75)} y2={py(maxA)} stroke="#AA95BE" strokeWidth="1" strokeDasharray="3 3" opacity="0.6"/>
