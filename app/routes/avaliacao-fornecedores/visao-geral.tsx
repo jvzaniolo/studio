@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { Leaf, Shield, TrendingDown, TrendingUp, Users } from "lucide-react"
+import { Link } from "react-router"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
 import { organizacoes, questoes } from "~/data/avaliacao-fornecedores"
@@ -381,7 +382,12 @@ export default function VisaoGeralPage() {
                   return (
                     <TableRow key={org.id}>
                       <TableCell className="pl-5 text-left font-medium">
-                        {org.nome}
+                        <Link
+                          to={`/avaliacao-fornecedores/resultado/${org.id}`}
+                          className="hover:underline"
+                        >
+                          {org.nome}
+                        </Link>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {orgPillarScore(org, "Ambiental")}%

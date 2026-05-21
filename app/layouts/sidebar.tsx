@@ -62,7 +62,9 @@ export default function SidebarLayout() {
     !location.pathname.startsWith("/criar-indicador")
   const isCriarIndicador = location.pathname.startsWith("/criar-indicador")
   const isIndicadoresAtivos = location.pathname.startsWith("/indicadores-ativos")
-  const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
+  const isVisaoGeral =
+    location.pathname === "/avaliacao-fornecedores/visao-geral" ||
+    location.pathname.startsWith("/avaliacao-fornecedores/resultado")
   const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
     location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
   const isMaterialidade =
