@@ -5,12 +5,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { EyeOff, Filter, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react"
+import { EyeOff, Filter, Frown, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react"
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
-  LabelList,
   Line,
   LineChart,
   ReferenceLine,
@@ -72,31 +69,24 @@ import {
 import { cn } from "~/lib/utils"
 
 const periods = [
-  { key: "jul-2020", label: "Jul | 2020", date: "2020-07-01" },
-  { key: "fev-2021", label: "Fev | 2021", date: "2021-02-01" },
-  { key: "ago-2021", label: "Ago | 2021", date: "2021-08-01" },
-  { key: "mar-2023", label: "Mar | 2023", date: "2023-03-01" },
+  { key: "jan-2023", label: "Jan | 2023", date: "2023-01-01" },
   { key: "jun-2023", label: "Jun | 2023", date: "2023-06-01" },
+  { key: "jan-2024", label: "Jan | 2024", date: "2024-01-01" },
   { key: "jun-2024", label: "Jun | 2024", date: "2024-06-01" },
-  { key: "set-2025", label: "Set | 2025", date: "2025-09-04" },
 ]
 
 const indexSeries = [
-  { date: new Date("2020-07-01").getTime(), value: 87 },
-  { date: new Date("2021-02-01").getTime(), value: 87 },
-  { date: new Date("2021-08-01").getTime(), value: 83 },
-  { date: new Date("2023-03-01").getTime(), value: 87 },
-  { date: new Date("2023-06-01").getTime(), value: 88 },
-  { date: new Date("2024-06-01").getTime(), value: 87 },
-  { date: new Date("2025-09-04").getTime(), value: 79 },
+  { date: new Date("2023-01-01").getTime(), value: 74 },
+  { date: new Date("2023-06-01").getTime(), value: 78 },
+  { date: new Date("2024-01-01").getTime(), value: 75 },
+  { date: new Date("2024-06-01").getTime(), value: 81 },
 ]
 
-const yearTicks = [2020, 2021, 2023, 2024, 2025].map((y) =>
+const yearTicks = [2023, 2024].map((y) =>
   new Date(`${y}-06-01`).getTime()
 )
 
 type CellValue = number | null | "hidden"
-
 type IndicatorRow = { name: string } & Record<string, CellValue | string>
 
 function toRows(rows: { name: string; values: CellValue[] }[]): IndicatorRow[] {
@@ -107,57 +97,29 @@ function toRows(rows: { name: string; values: CellValue[] }[]): IndicatorRow[] {
 }
 
 const indicatorRows = toRows([
-  { name: "Índice de Bem-Estar", values: [87, 87, 83, 87, 88, 87, 79] },
-  { name: "Segurança Psicológica", values: [null, null, 89, 90, 91, 95, 92] },
-  {
-    name: "Valorização Profissional",
-    values: [null, null, null, null, 86, 85, 90],
-  },
-  { name: "Saúde Física", values: [null, null, null, null, null, null, 44] },
-  { name: "Saúde Mental", values: [null, null, null, null, null, null, 76] },
-  { name: "Confiança", values: [null, null, null, null, null, null, 92] },
+  { name: "Índice de Liderança", values: [74, 78, 75, 81] },
+  { name: "Comunicação", values: [null, 80, 79, 85] },
+  { name: "Visão Estratégica", values: [null, 72, 74, 78] },
+  { name: "Desenvolvimento de Equipe", values: [null, null, 68, 75] },
 ])
 
 const demographicRows = toRows([
-  { name: "Entre 20 e 29 anos", values: [null, null, 83, 85, 86, 86, 73] },
-  {
-    name: "Entre 30 e 39 anos",
-    values: [null, null, "hidden", 83, 95, 87, 83],
-  },
+  { name: "Líderes diretos", values: [76, 81, 79, 85] },
+  { name: "Líderes sênior", values: [null, 74, 71, "hidden"] },
 ])
 
 const priorities = [
-  { rank: 1, name: "Benefícios", value: 100 },
-  { rank: 2, name: "Remuneração", value: 78 },
-  { rank: 3, name: "Retenção de talentos", value: 50 },
-  { rank: 4, name: "Rotatividade", value: 50 },
-  { rank: 5, name: "Diversidade", value: 28 },
-  { rank: 6, name: "Plano de Carreira", value: 27 },
-  { rank: 7, name: "Coerência", value: 26 },
-  { rank: 8, name: "Clima Organizacional", value: 25 },
-  { rank: 9, name: "Relacionamento interpessoal", value: 25 },
-  { rank: 10, name: "Qualificação dos líderes", value: 25 },
+  { rank: 1, name: "Feedback estruturado", value: 82 },
+  { rank: 2, name: "Desenvolvimento de equipe", value: 61 },
 ].map((p) => ({ ...p, label: `${p.rank}. ${p.name}` }))
 
 const matrix = [
-  { rank: 1, sentiment: -45, frequency: 4 },
-  { rank: 2, sentiment: -78, frequency: 3 },
-  { rank: 3, sentiment: -65, frequency: 2 },
-  { rank: 4, sentiment: -55, frequency: 2 },
-  { rank: 5, sentiment: -95, frequency: 0.25 },
-  { rank: 6, sentiment: -70, frequency: 0.18 },
-  { rank: 7, sentiment: -55, frequency: 0.25 },
-  { rank: 8, sentiment: 30, frequency: 0.25 },
-  { rank: 9, sentiment: 50, frequency: 0.25 },
-  { rank: 10, sentiment: 60, frequency: 0.25 },
+  { rank: 1, sentiment: -58, frequency: 3.5 },
+  { rank: 2, sentiment: -42, frequency: 2.1 },
 ]
 
 const indexChartConfig = {
-  value: { label: "Bem-Estar", color: "var(--chart-4)" },
-} satisfies ChartConfig
-
-const priorityChartConfig = {
-  value: { label: "Prioridade", color: "var(--chart-3)" },
+  value: { label: "Liderança", color: "var(--chart-4)" },
 } satisfies ChartConfig
 
 const matrixChartConfig = {
@@ -221,7 +183,6 @@ const indicatorColumns = [
       ),
       cell: (info) => {
         const value = info.getValue()
-
         if (value === null) {
           return (
             <TableCell align="right" className="text-muted-foreground last:pr-6">
@@ -229,7 +190,6 @@ const indicatorColumns = [
             </TableCell>
           )
         }
-
         if (value === "hidden") {
           return (
             <TableCell align="right" className="bg-muted/40 last:pr-6">
@@ -237,14 +197,10 @@ const indicatorColumns = [
             </TableCell>
           )
         }
-
         return (
           <TableCell
             align="right"
-            className={cn(
-              "font-medium tabular-nums last:pr-6",
-              heatmapClass(value)
-            )}
+            className={cn("font-medium tabular-nums last:pr-6", heatmapClass(value))}
           >
             <HeatContent value={value} />
           </TableCell>
@@ -292,15 +248,15 @@ const periodOptions = periods
   .map((p) => ({ value: p.key, label: p.label.replace(" | ", ", ") }))
 
 const indicadorOptions = [
-  { value: "bem-estar", label: "Índice de Bem-Estar" },
-  { value: "seg-psi", label: "Segurança Psicológica" },
-  { value: "confianca", label: "Confiança" },
+  { value: "lideranca", label: "Índice de Liderança" },
+  { value: "comunicacao", label: "Comunicação" },
+  { value: "visao", label: "Visão Estratégica" },
 ]
 
 const criterioOptions = [
-  { value: "faixa-etaria", label: "Faixa etária" },
-  { value: "genero", label: "Gênero" },
+  { value: "nivel", label: "Nível hierárquico" },
   { value: "area", label: "Área" },
+  { value: "genero", label: "Gênero" },
   { value: "tempo-casa", label: "Tempo de casa" },
 ]
 
@@ -312,15 +268,20 @@ const generoOptions = [
   { value: "nao-informado", label: "Prefere não informar" },
 ]
 
-const escolaridadeOptions = [
-  { value: "fundamental", label: "Ensino Fundamental" },
-  { value: "medio", label: "Ensino Médio" },
-  { value: "tecnico", label: "Ensino Técnico" },
-  { value: "superior-incompleto", label: "Superior Incompleto" },
-  { value: "superior", label: "Superior Completo" },
-  { value: "pos", label: "Pós-graduação" },
-  { value: "mestrado", label: "Mestrado" },
-  { value: "doutorado", label: "Doutorado" },
+const nivelOptions = [
+  { value: "c-level", label: "C-Level" },
+  { value: "diretor", label: "Diretor" },
+  { value: "gerente", label: "Gerente" },
+  { value: "coordenador", label: "Coordenador" },
+  { value: "lider", label: "Líder de Equipe" },
+]
+
+const areaOptions = [
+  { value: "tecnologia", label: "Tecnologia" },
+  { value: "pessoas", label: "Pessoas & Cultura" },
+  { value: "comercial", label: "Comercial" },
+  { value: "operacoes", label: "Operações" },
+  { value: "financeiro", label: "Financeiro" },
 ]
 
 const tempoContribuicaoOptions = [
@@ -329,15 +290,6 @@ const tempoContribuicaoOptions = [
   { value: "3-5", label: "Entre 3 e 5 anos" },
   { value: "5-10", label: "Entre 5 e 10 anos" },
   { value: "10+", label: "Mais de 10 anos" },
-]
-
-const unidadeOptions = [
-  { value: "matriz", label: "Matriz" },
-  { value: "filial-sp", label: "Filial São Paulo" },
-  { value: "filial-rj", label: "Filial Rio de Janeiro" },
-  { value: "filial-bh", label: "Filial Belo Horizonte" },
-  { value: "filial-poa", label: "Filial Porto Alegre" },
-  { value: "remoto", label: "Remoto" },
 ]
 
 type FilterFieldProps = {
@@ -352,12 +304,7 @@ function FilterField({ id, label, placeholder, items }: FilterFieldProps) {
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Combobox items={items}>
-        <ComboboxInput
-          id={id}
-          placeholder={placeholder}
-          className="w-full"
-          showClear
-        />
+        <ComboboxInput id={id} placeholder={placeholder} className="w-full" showClear />
         <ComboboxContent>
           <ComboboxEmpty>Nenhum resultado encontrado.</ComboboxEmpty>
           <ComboboxList>
@@ -400,22 +347,22 @@ function FiltersSheet() {
               items={generoOptions}
             />
             <FilterField
-              id="filtro-escolaridade"
-              label="Escolaridade"
+              id="filtro-nivel"
+              label="Nível hierárquico"
+              placeholder="Todos"
+              items={nivelOptions}
+            />
+            <FilterField
+              id="filtro-area"
+              label="Área"
               placeholder="Todas"
-              items={escolaridadeOptions}
+              items={areaOptions}
             />
             <FilterField
               id="filtro-tempo"
               label="Tempo de contribuição"
               placeholder="Todos"
               items={tempoContribuicaoOptions}
-            />
-            <FilterField
-              id="filtro-unidade"
-              label="Unidade"
-              placeholder="Todas"
-              items={unidadeOptions}
             />
           </FieldGroup>
         </form>
@@ -441,7 +388,7 @@ function HeaderActions() {
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Select defaultValue="set-2025" items={periodOptions}>
+      <Select defaultValue="jun-2024" items={periodOptions}>
         <SelectTrigger className="min-w-40" size="sm">
           <SelectValue />
         </SelectTrigger>
@@ -460,7 +407,7 @@ function HeaderActions() {
   )
 }
 
-export default function IndicadorPage() {
+export default function LiderancaPage() {
   const [iaPrioridadesTab, setIaPrioridadesTab] = useState<"grafico" | "matriz">("grafico")
 
   const indicatorTable = useReactTable({
@@ -479,7 +426,7 @@ export default function IndicadorPage() {
 
   return (
     <>
-      <PageHeader title="Bem-Estar" actions={<HeaderActions />} />
+      <PageHeader title="Liderança" actions={<HeaderActions />} />
 
       <div className="container mx-auto flex flex-col gap-4 p-4 md:p-6">
         {/* Linha 1: AI Insights + Gráfico do índice */}
@@ -504,35 +451,29 @@ export default function IndicadorPage() {
                   <div className="max-h-72 space-y-3 overflow-y-auto pr-2 text-sm leading-relaxed text-foreground/90">
                     <p>
                       <strong className="font-semibold">Contexto:</strong> O
-                      indicador de Bem-Estar avalia a percepção dos
-                      colaboradores sobre sua saúde física, mental, segurança
-                      geral e qualidade do ambiente de trabalho.
+                      indicador de Liderança avalia a percepção das equipes
+                      sobre a qualidade da liderança exercida, abrangendo
+                      comunicação, visão estratégica e desenvolvimento de pessoas.
                     </p>
                     <p>
                       <strong className="font-semibold">Tendência:</strong> O
-                      valor atual de 79% aponta um recuo de 8 pontos percentuais
-                      em relação à última medição, posicionando o resultado na
-                      zona de{" "}
-                      <strong className="font-semibold">Aperfeiçoamento</strong>
-                      .
+                      resultado atual de 81% representa uma evolução consistente
+                      desde o início da medição, com crescimento de 7 pontos
+                      percentuais ao longo dos quatro ciclos avaliados.
                     </p>
                     <p>
                       <strong className="font-semibold">
                         Análise Técnica:
                       </strong>{" "}
-                      Os dados sugerem uma forte dualidade na percepção do time.
-                      Por um lado, o bem-estar é sustentado por componentes
-                      relacionais de excelência, com destaque para Confiança
-                      (92%), Segurança Psicológica (92%) e Valorização
-                      Profissional (90%). Respondentes relatam de forma
-                      expressiva que a autonomia, a flexibilidade, a escuta
-                      ativa e o clima de colaboração são forças sólidas da
-                      operação. Por outro lado, a queda no indicador global é
-                      diretamente explicada pelo recuo severo no subindicador de
-                      Saúde Física (44%). Cruzando essa métrica com a matriz de
-                      prioridades, observa-se que Benefícios e Remuneração
-                      concentram a maior frequência de comentários negativos,
-                      indicando que o tema requer ação imediata da liderança.
+                      Os dados apontam avanços expressivos em Comunicação (85%)
+                      e Visão Estratégica (78%), indicando que os líderes têm
+                      conseguido transmitir clareza de direção e engajar suas
+                      equipes. No entanto, o Desenvolvimento de Equipe (75%)
+                      ainda apresenta espaço significativo de melhoria. A matriz
+                      de prioridades indica que Feedback estruturado concentra
+                      alta frequência de comentários negativos, sugerindo que
+                      práticas de devolutiva ainda não estão consolidadas como
+                      rotina de gestão.
                     </p>
                   </div>
                 </TabsContent>
@@ -557,10 +498,9 @@ export default function IndicadorPage() {
 
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Índice de Bem-Estar</CardTitle>
+              <CardTitle>Índice de Liderança</CardTitle>
               <CardDescription>
-                Evolução da percepção dos stakeholders sobre o bem-estar na
-                organização
+                Evolução da percepção das equipes sobre a liderança na organização
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -633,16 +573,16 @@ export default function IndicadorPage() {
 
         {/* Linha 2: KPI cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <KpiCard label="Resultado do índice" value="79,0%" />
-          <KpiCard label="População de stakeholders" value="13" />
-          <KpiCard label="Stakeholders respondentes" value="13" />
-          <KpiCard label="Comentários válidos realizados" value="45" />
+          <KpiCard label="Resultado do índice" value="81,0%" />
+          <KpiCard label="Líderes avaliados" value="18" />
+          <KpiCard label="Líderes respondentes" value="16" />
+          <KpiCard label="Comentários válidos realizados" value="28" />
         </div>
 
         {/* Tabela: Indicadores que compõem */}
         <Card>
           <CardHeader>
-            <CardTitle>Indicadores que compõem o Índice de Bem-Estar</CardTitle>
+            <CardTitle>Indicadores que compõem o Índice de Liderança</CardTitle>
           </CardHeader>
           <CardContent className="px-0">
             <DataTable table={indicatorTable} />
@@ -658,7 +598,7 @@ export default function IndicadorPage() {
             <FieldGroup className="grid grid-cols-1 gap-4 sm:max-w-xl sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="indicador-select">Indicador</FieldLabel>
-                <Select defaultValue="bem-estar" items={indicadorOptions}>
+                <Select defaultValue="lideranca" items={indicadorOptions}>
                   <SelectTrigger id="indicador-select" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -677,7 +617,7 @@ export default function IndicadorPage() {
                 <FieldLabel htmlFor="criterio-select">
                   Critério demográfico
                 </FieldLabel>
-                <Select defaultValue="faixa-etaria" items={criterioOptions}>
+                <Select defaultValue="nivel" items={criterioOptions}>
                   <SelectTrigger id="criterio-select" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -697,314 +637,6 @@ export default function IndicadorPage() {
             <DataTable table={demographicTable} />
           </CardContent>
         </Card>
-
-        {/* Linha final: IA Prioridades + IA Matriz */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
-                IA Prioridades
-              </CardTitle>
-              <CardDescription>
-                Temas mais prioritários para a melhoria dos resultados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={priorityChartConfig}
-                className="aspect-auto h-105 w-full"
-              >
-                <BarChart
-                  data={priorities}
-                  layout="vertical"
-                  margin={{ top: 8, right: 24, left: 0, bottom: 0 }}
-                  barCategoryGap="20%"
-                >
-                  <XAxis type="number" hide domain={[0, 110]} />
-                  <YAxis
-                    type="category"
-                    dataKey="label"
-                    width={170}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{
-                      fontSize: 12,
-                      fill: "var(--muted-foreground)",
-                    }}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        indicator="line"
-                        labelFormatter={(_, payload) =>
-                          payload?.[0]?.payload?.name ?? ""
-                        }
-                        valueFormatter={(value) => `${value}%`}
-                      />
-                    }
-                  />
-                  <Bar
-                    dataKey="value"
-                    fill="var(--color-value)"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    <LabelList
-                      dataKey="value"
-                      position="right"
-                      className="fill-muted-foreground text-xs"
-                      formatter={(v) => `${v}%`}
-                    />
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
-                IA Matriz de Prioridades
-              </CardTitle>
-              <CardDescription>
-                Análise de criticidade para apoiar a priorização dos temas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={matrixChartConfig}
-                className="aspect-auto h-105 w-full"
-              >
-                <ScatterChart
-                  margin={{ top: 16, right: 24, left: 8, bottom: 32 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    type="number"
-                    dataKey="sentiment"
-                    domain={[-100, 100]}
-                    ticks={[-100, 0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                    tickLine={false}
-                    label={{
-                      value: "Sentimento",
-                      position: "insideBottom",
-                      offset: -16,
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="frequency"
-                    domain={[0, 4]}
-                    ticks={[0, 2, 4]}
-                    tickLine={false}
-                    label={{
-                      value: "Frequência de comentários",
-                      angle: -90,
-                      position: "insideLeft",
-                      offset: 12,
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <ChartTooltip
-                    cursor={{ strokeDasharray: "3 3" }}
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(_, payload) => {
-                          const rank = payload?.[0]?.payload?.rank
-                          const item = priorities.find((p) => p.rank === rank)
-                          return item ? `${rank}. ${item.name}` : ""
-                        }}
-                        formatter={(value, name, item) => {
-                          const key = String(item.dataKey ?? name)
-                          const label =
-                            matrixChartConfig[
-                              key as keyof typeof matrixChartConfig
-                            ]?.label ?? name
-                          return (
-                            <>
-                              <div
-                                className="size-2.5 shrink-0 rounded-xs"
-                                style={{
-                                  backgroundColor: `var(--color-${key})`,
-                                }}
-                              />
-                              <div className="flex flex-1 items-center justify-between gap-2 leading-none">
-                                <span className="text-muted-foreground">
-                                  {label}
-                                </span>
-                                <span className="font-mono font-medium text-foreground tabular-nums">
-                                  {value}%
-                                </span>
-                              </div>
-                            </>
-                          )
-                        }}
-                      />
-                    }
-                  />
-                  <Scatter data={matrix} shape={NumberedDot} />
-                </ScatterChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* IA Prioridades (10 barras) + Matriz */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
-                IA Prioridades — Visão Integrada
-              </CardTitle>
-              <CardDescription>
-                Tópicos e percentuais exibidos diretamente nas barras para leitura imediata
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={priorityChartConfig}
-                className="aspect-auto h-96 w-full"
-              >
-                <BarChart
-                  data={priorities}
-                  layout="vertical"
-                  margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
-                  barCategoryGap="20%"
-                >
-                  <XAxis type="number" hide domain={[0, 110]} />
-                  <YAxis
-                    type="category"
-                    dataKey="rank"
-                    width={18}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        indicator="line"
-                        labelFormatter={(_, payload) =>
-                          payload?.[0]?.payload?.name ?? ""
-                        }
-                        valueFormatter={(value) => `${value}%`}
-                      />
-                    }
-                  />
-                  <Bar dataKey="value" fill="var(--color-value)" radius={[0, 4, 4, 0]} barSize={30}>
-                    <LabelList
-                      dataKey="name"
-                      position="insideLeft"
-                      className="fill-primary-foreground text-[11px] font-medium"
-                      offset={10}
-                    />
-                    <LabelList
-                      dataKey="value"
-                      position="right"
-                      className="fill-muted-foreground text-[11px] font-semibold"
-                      formatter={(v: number) => `${v}%`}
-                      offset={8}
-                    />
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
-                IA Matriz de Prioridades
-              </CardTitle>
-              <CardDescription>
-                Análise de criticidade para apoiar a priorização dos temas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={matrixChartConfig}
-                className="aspect-auto h-96 w-full"
-              >
-                <ScatterChart margin={{ top: 16, right: 24, left: 8, bottom: 32 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    type="number"
-                    dataKey="sentiment"
-                    domain={[-100, 100]}
-                    ticks={[-100, 0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                    tickLine={false}
-                    label={{
-                      value: "Sentimento",
-                      position: "insideBottom",
-                      offset: -16,
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="frequency"
-                    domain={[0, 4]}
-                    ticks={[0, 2, 4]}
-                    tickLine={false}
-                    label={{
-                      value: "Frequência de comentários",
-                      angle: -90,
-                      position: "insideLeft",
-                      offset: 12,
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <ChartTooltip
-                    cursor={{ strokeDasharray: "3 3" }}
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(_, payload) => {
-                          const rank = payload?.[0]?.payload?.rank
-                          const item = priorities.find((p) => p.rank === rank)
-                          return item ? `${rank}. ${item.name}` : ""
-                        }}
-                        formatter={(value, name, item) => {
-                          const key = String(item.dataKey ?? name)
-                          const label =
-                            matrixChartConfig[
-                              key as keyof typeof matrixChartConfig
-                            ]?.label ?? name
-                          return (
-                            <>
-                              <div
-                                className="size-2.5 shrink-0 rounded-xs"
-                                style={{ backgroundColor: `var(--color-${key})` }}
-                              />
-                              <div className="flex flex-1 items-center justify-between gap-2 leading-none">
-                                <span className="text-muted-foreground">{label}</span>
-                                <span className="font-mono font-medium text-foreground tabular-nums">
-                                  {value}%
-                                </span>
-                              </div>
-                            </>
-                          )
-                        }}
-                      />
-                    }
-                  />
-                  <Scatter data={matrix} shape={NumberedDot} />
-                </ScatterChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* IA Prioridades — layout em colunas fixas com tabs */}
         <Card>
@@ -1032,8 +664,7 @@ export default function IndicadorPage() {
                 </TabsList>
               </div>
             </CardHeader>
-          <CardContent className="px-8 pb-8">
-
+            <CardContent className="px-8 pb-8">
               <TabsContent value="grafico" className="pt-4">
                 <div className="flex flex-col gap-2">
                   {priorities.map((item) => (
@@ -1139,7 +770,44 @@ export default function IndicadorPage() {
                   </ScatterChart>
                 </ChartContainer>
               </TabsContent>
-          </CardContent>
+            </CardContent>
+          </Tabs>
+        </Card>
+        {/* IA Prioridades — sem dados */}
+        <Card>
+          <Tabs defaultValue="grafico">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div className="flex flex-col gap-1">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" />
+                  IA Prioridades
+                </CardTitle>
+                <CardDescription>
+                  Temas prioritários para a melhoria dos resultados
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Visualizar</span>
+                <TabsList variant="line">
+                  <TabsTrigger value="grafico">Gráfico</TabsTrigger>
+                  <TabsTrigger value="matriz">Matriz</TabsTrigger>
+                </TabsList>
+              </div>
+            </CardHeader>
+            <CardContent className="px-8 pb-8">
+              <TabsContent value="grafico" className="pt-4">
+                <div className="flex flex-col items-center justify-center gap-3 py-6 text-muted-foreground">
+                  <Frown className="size-8 stroke-[1.5]" />
+                  <span className="text-sm">Não temos dados a mostrar para essa variação</span>
+                </div>
+              </TabsContent>
+              <TabsContent value="matriz" className="pt-4">
+                <div className="flex flex-col items-center justify-center gap-3 py-6 text-muted-foreground">
+                  <Frown className="size-8 stroke-[1.5]" />
+                  <span className="text-sm">Não temos dados a mostrar para essa variação</span>
+                </div>
+              </TabsContent>
+            </CardContent>
           </Tabs>
         </Card>
       </div>
@@ -1167,7 +835,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
           {value}
         </div>
         <Badge variant="secondary" className="font-normal">
-          Período: 4 de set. de 2025
+          Período: Jun, 2024
         </Badge>
       </CardContent>
     </Card>

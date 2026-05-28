@@ -4,6 +4,7 @@ export default [
   layout("layouts/sidebar.tsx", [
     index("routes/home.tsx"),
     route("indicador", "routes/indicador.tsx"),
+    route("lideranca", "routes/lideranca.tsx"),
     route("criar-indicador", "routes/criar-indicador.tsx"),
     route("indicadores-ativos", "routes/indicadores-ativos.tsx"),
     route("avaliacao-fornecedores/visao-geral", "routes/avaliacao-fornecedores/visao-geral.tsx"),
