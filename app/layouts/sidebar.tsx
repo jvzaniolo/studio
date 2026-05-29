@@ -4,6 +4,8 @@ import {
   ChevronRight,
   ChevronsUpDown,
   ClipboardCheck,
+  Layers,
+  Map,
   Settings2,
   Wallet,
 } from "lucide-react"
@@ -59,9 +61,12 @@ export default function SidebarLayout() {
   const isIndicador =
     location.pathname.startsWith("/indicador") &&
     !location.pathname.startsWith("/criar-indicador")
+  const isLideranca = location.pathname.startsWith("/lideranca")
   const isCriarIndicador = location.pathname.startsWith("/criar-indicador")
   const isIndicadoresAtivos = location.pathname.startsWith("/indicadores-ativos")
-  const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
+  const isVisaoGeral =
+    location.pathname === "/avaliacao-fornecedores/visao-geral" ||
+    location.pathname.startsWith("/avaliacao-fornecedores/resultado")
   const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
     location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
   const isOrcamentoReal = location.pathname.startsWith("/orcamento-real")
@@ -165,6 +170,14 @@ export default function SidebarLayout() {
                             Bem-Estar
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/lideranca" />}
+                            isActive={isLideranca}
+                          >
+                            Liderança
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -257,6 +270,41 @@ export default function SidebarLayout() {
                             isActive={isAcompanhamento}
                           >
                             Acompanhamento
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton tooltip="Materialidade">
+                          <Layers />
+                          <span>Materialidade</span>
+                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/materialidade" />}
+                            isActive={isMaterialidade}
+                          >
+                            Matriz
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/materialidade/mapeamentos" />}
+                            isActive={isMapeamentos}
+                          >
+                            <Map className="size-3.5" />
+                            Mapeamentos
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
