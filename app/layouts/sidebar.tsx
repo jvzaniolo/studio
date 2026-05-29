@@ -5,6 +5,7 @@ import {
   ChevronsUpDown,
   ClipboardCheck,
   Settings2,
+  Wallet,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
 
@@ -63,6 +64,7 @@ export default function SidebarLayout() {
   const isVisaoGeral = location.pathname === "/avaliacao-fornecedores/visao-geral"
   const isAcompanhamento = location.pathname.startsWith("/avaliacao-fornecedores/acompanhamento") ||
     location.pathname.startsWith("/avaliacao-fornecedores/fornecedor")
+  const isOrcamentoReal = location.pathname.startsWith("/orcamento-real")
 
   return (
     <TooltipProvider>
@@ -195,6 +197,32 @@ export default function SidebarLayout() {
                             isActive={isCriarIndicador}
                           >
                             Criar Indicador
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton tooltip="Financeiro">
+                          <Wallet />
+                          <span>Financeiro</span>
+                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/orcamento-real" />}
+                            isActive={isOrcamentoReal}
+                          >
+                            Orçamento × Real
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>

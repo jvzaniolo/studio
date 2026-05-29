@@ -9,5 +9,6 @@ export default [
     route("avaliacao-fornecedores/visao-geral", "routes/avaliacao-fornecedores/visao-geral.tsx"),
     route("avaliacao-fornecedores/acompanhamento", "routes/avaliacao-fornecedores/acompanhamento.tsx"),
     route("avaliacao-fornecedores/fornecedor/:id", "routes/avaliacao-fornecedores/fornecedor.tsx"),
+    route("orcamento-real", "routes/orcamento-real.tsx"),
   ]),
 ] satisfies RouteConfig

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "studio-dev",
+      "runtimeExecutable": "C:\\Users\\analu\\.bun\\bin\\bun.exe",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    }
+  ]
+}
