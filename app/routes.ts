@@ -10,9 +10,6 @@ export default [
     route("avaliacao-fornecedores/visao-geral", "routes/avaliacao-fornecedores/visao-geral.tsx"),
     route("avaliacao-fornecedores/acompanhamento", "routes/avaliacao-fornecedores/acompanhamento.tsx"),
     route("avaliacao-fornecedores/fornecedor/:id", "routes/avaliacao-fornecedores/fornecedor.tsx"),
-    route("avaliacao-fornecedores/resultado/:id", "routes/avaliacao-fornecedores/resultado.tsx"),
-    route("materialidade", "routes/materialidade.tsx"),
-    route("materialidade/tema/:id", "routes/materialidade.tema.$id.tsx"),
-    route("materialidade/mapeamentos", "routes/materialidade.mapeamentos.tsx"),
+    route("orcamento-real", "routes/orcamento-real.tsx"),
   ]),
 ] satisfies RouteConfig
