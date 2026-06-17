@@ -61,6 +61,8 @@ export default function SidebarLayout() {
     location.pathname.startsWith("/indicador") &&
     !location.pathname.startsWith("/criar-indicador")
   const isLideranca = location.pathname.startsWith("/lideranca")
+  const isDiversidade = location.pathname.startsWith("/diversidade")
+  const isEngajamento = location.pathname.startsWith("/engajamento")
   const isCriarIndicador = location.pathname.startsWith("/criar-indicador")
   const isIndicadoresAtivos = location.pathname.startsWith("/indicadores-ativos")
   const isVisaoGeral =
@@ -178,6 +180,22 @@ export default function SidebarLayout() {
                             isActive={isLideranca}
                           >
                             Liderança
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/diversidade" />}
+                            isActive={isDiversidade}
+                          >
+                            Diversidade
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/engajamento" />}
+                            isActive={isEngajamento}
+                          >
+                            Engajamento
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
