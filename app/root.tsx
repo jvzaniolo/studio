@@ -22,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
         <Links />
       </head>
+      <script dangerouslySetInnerHTML={{__html: `(function(){var t=localStorage.getItem('theme'),m=localStorage.getItem('theme-mode'),a=localStorage.getItem('accent-color');if(t==='dark')document.documentElement.classList.add('dark');if(m==='minimalista')document.documentElement.classList.add('theme-minimal');if(m==='colorido')document.documentElement.classList.add('theme-colorful');var cs={roxo:[301.924,0.265,0.496],azul:[250,0.22,0.46],verde:[145,0.18,0.46],teal:[193,0.16,0.48],rosa:[340,0.22,0.52],laranja:[42,0.21,0.60]};var c=cs[a];if(c){var el=document.documentElement;el.style.setProperty('--ac-h',c[0]);el.style.setProperty('--ac-c',c[1]);el.style.setProperty('--ac-l',c[2]);}})();`}} />
       <body>
         {children}
         <ScrollRestoration />

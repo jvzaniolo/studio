@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
 import {
   Collapsible,
@@ -34,6 +35,7 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -57,6 +59,7 @@ const user = {
 
 export default function SidebarLayout() {
   const location = useLocation()
+  const isSettings = location.pathname.startsWith("/configuracoes")
   const isIndicador =
     location.pathname.startsWith("/indicador") &&
     !location.pathname.startsWith("/criar-indicador")
@@ -360,11 +363,19 @@ export default function SidebarLayout() {
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem>Configurações</DropdownMenuItem>
+                      <DropdownMenuItem render={<Link to="/configuracoes" />}>
+                        Configurações
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Sair</DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <SidebarMenuAction
+                  render={<Link to="/configuracoes" title="Configurações" />}
+                  className={isSettings ? "text-sidebar-accent-foreground" : ""}
+                >
+                  <Settings2 />
+                </SidebarMenuAction>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
