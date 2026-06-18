@@ -4,11 +4,14 @@ import {
   ChevronRight,
   ChevronsUpDown,
   ClipboardCheck,
+  Cog,
   Layers,
   Map,
   Settings2,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
+
+import { cn } from "~/lib/utils"
 
 
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
@@ -340,9 +343,6 @@ export default function SidebarLayout() {
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-medium">{user.name}</span>
-                      <span className="truncate text-xs text-sidebar-foreground/70">
-                        {user.email}
-                      </span>
                     </div>
                     <ChevronsUpDown className="ml-auto" />
                   </DropdownMenuTrigger>
@@ -372,9 +372,12 @@ export default function SidebarLayout() {
                 </DropdownMenu>
                 <SidebarMenuAction
                   render={<Link to="/configuracoes" title="Configurações" />}
-                  className={isSettings ? "text-sidebar-accent-foreground" : ""}
+                  className={cn(
+                    "!top-1/2 !-translate-y-1/2",
+                    isSettings ? "text-sidebar-accent-foreground" : ""
+                  )}
                 >
-                  <Settings2 />
+                  <Cog />
                 </SidebarMenuAction>
               </SidebarMenuItem>
             </SidebarMenu>

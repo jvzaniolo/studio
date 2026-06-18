@@ -78,7 +78,7 @@
   --chart-4: oklch(var(--ac-l) var(--ac-c) var(--ac-h));
   --chart-5: oklch(0.44 calc(var(--ac-c) * 0.82) var(--ac-h));
   --radius: 0.45rem;
-  --sidebar: oklch(0.181 calc(var(--ac-c) * 0.264) var(--ac-h));
+  --sidebar: var(--color-purple-950);
   --sidebar-foreground: oklch(0.97 0 0);
   --sidebar-primary: oklch(0.381 calc(var(--ac-c) * 0.71) var(--ac-h));
   --sidebar-primary-foreground: oklch(0.97 0 0);
