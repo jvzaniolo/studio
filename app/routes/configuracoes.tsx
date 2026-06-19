@@ -1167,9 +1167,19 @@ function PerfisSection({
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-[200px]">Módulo</TableHead>
-                      <TableHead>Elemento X</TableHead>
-                      <TableHead>Elemento Y</TableHead>
+                      <TableHead className="w-[220px]">Módulo</TableHead>
+                      <TableHead className="w-1/2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-24 shrink-0">Recurso</span>
+                          <span>Permissão</span>
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-1/2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-24 shrink-0">Recurso</span>
+                          <span>Permissão</span>
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1179,10 +1189,10 @@ function PerfisSection({
                       ) ?? { moduleId: mod.id, elementX: "nenhum" as Permission, elementY: "nenhum" as Permission }
                       return (
                         <TableRow key={mod.id}>
-                          <TableCell className="text-sm font-medium">{mod.name}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs text-muted-foreground">{mod.elementX}</span>
+                          <TableCell className="align-middle text-sm font-medium">{mod.name}</TableCell>
+                          <TableCell className="align-middle">
+                            <div className="flex items-center gap-2">
+                              <span className="w-24 shrink-0 text-xs font-medium text-muted-foreground">{mod.elementX}</span>
                               <PermissionSelect
                                 value={perm.elementX}
                                 onChange={(v) =>
@@ -1191,9 +1201,9 @@ function PerfisSection({
                               />
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs text-muted-foreground">{mod.elementY}</span>
+                          <TableCell className="align-middle">
+                            <div className="flex items-center gap-2">
+                              <span className="w-24 shrink-0 text-xs font-medium text-muted-foreground">{mod.elementY}</span>
                               <PermissionSelect
                                 value={perm.elementY}
                                 onChange={(v) =>
