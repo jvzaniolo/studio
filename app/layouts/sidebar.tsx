@@ -7,6 +7,7 @@ import {
   Cog,
   Layers,
   Map,
+  Rocket,
   Settings2,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
@@ -80,6 +81,7 @@ export default function SidebarLayout() {
     location.pathname === "/materialidade" ||
     location.pathname.startsWith("/materialidade/tema")
   const isMapeamentos = location.pathname.startsWith("/materialidade/mapeamentos")
+  const isIniciativas = location.pathname.startsWith("/iniciativas")
 
   return (
     <TooltipProvider>
@@ -159,6 +161,17 @@ export default function SidebarLayout() {
 
             <SidebarGroup>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Iniciativas"
+                    render={<Link to="/iniciativas" />}
+                    isActive={isIniciativas}
+                  >
+                    <Rocket />
+                    <span>Iniciativas</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
                 <Collapsible defaultOpen className="group/collapsible">
                   <SidebarMenuItem>
                     <CollapsibleTrigger
@@ -384,7 +397,7 @@ export default function SidebarLayout() {
           </SidebarFooter>
         </Sidebar>
 
-        <SidebarInset>
+        <SidebarInset className="min-w-0 [overflow-x:clip]">
           <Outlet />
         </SidebarInset>
       </SidebarProvider>

@@ -17,6 +17,7 @@ export default [
     route("materialidade", "routes/materialidade.tsx"),
     route("materialidade/tema/:id", "routes/materialidade.tema.$id.tsx"),
     route("materialidade/mapeamentos", "routes/materialidade.mapeamentos.tsx"),
+    route("iniciativas", "routes/iniciativas.tsx"),
     route("configuracoes", "routes/configuracoes.tsx"),
   ]),
 ] satisfies RouteConfig
