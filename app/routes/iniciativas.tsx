@@ -28,6 +28,9 @@ import {
 import { Textarea } from "~/components/ui/textarea"
 import { Label } from "~/components/ui/label"
 import { Slider } from "~/components/ui/slider"
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+} from "~/components/ui/sheet"
 import { cn } from "~/lib/utils"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -755,7 +758,6 @@ function ListView({
   onDuplicate,
   onDelete,
   onClearFilters,
-  groupBy,
 }: {
   initiatives: Initiative[]
   onRowClick: (id: string) => void
@@ -763,7 +765,6 @@ function ListView({
   onDuplicate: (id: string) => void
   onDelete: (id: string) => void
   onClearFilters: () => void
-  groupBy: string
 }) {
   const [sortField, setSortField] = useState<SortField>(null)
   const [sortDir, setSortDir] = useState<SortDir>(null)
@@ -810,28 +811,8 @@ function ListView({
 
   const sortedAll = sorted(initiatives)
 
-  function getGroups(): Array<{ key: string; label: string; items: Initiative[] }> {
-    if (!groupBy || groupBy === "none") return [{ key: "all", label: "", items: sortedAll }]
-    const map = new Map<string, Initiative[]>()
-    sortedAll.forEach((ini) => {
-      let key = ""
-      if (groupBy === "status") key = ini.status
-      else if (groupBy === "prioridade") key = ini.prioridade
-      else if (groupBy === "equipe") key = ini.equipe
-      else if (groupBy === "responsavel") key = ini.responsavel.nome
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(ini)
-    })
-    return Array.from(map.entries()).map(([key, items]) => {
-      let label = key
-      if (groupBy === "status") label = STATUS_CONFIG[key as Status]?.label ?? key
-      else if (groupBy === "prioridade") label = PRIORIDADE_CONFIG[key as Prioridade]?.label ?? key
-      return { key, label, items }
-    })
-  }
-
-  const groups = getGroups()
-  const showGroupHeader = groupBy && groupBy !== "none"
+  const groups = [{ key: "all", label: "", items: sortedAll }]
+  const showGroupHeader = false
 
   const cols = [
     { key: "responsavel", label: "Responsável", hideable: true, sortable: true },
@@ -1166,7 +1147,11 @@ function InitiativeModal({
                 <div className="space-y-1">
                   <Label>Responsável <span className="text-red-500">*</span></Label>
                   <Select value={form.responsavel_id} onValueChange={v => set("responsavel_id", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione">
+                        {MOCK_USERS.find(u => u.id === form.responsavel_id)?.nome}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {MOCK_USERS.map(u => <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>)}
                     </SelectContent>
@@ -1747,18 +1732,20 @@ interface Filters {
   risco: string[]
 }
 
-function FiltersPanel({
+function FiltersSheet({
   initiatives,
   filters,
   onChange,
   onClear,
   total,
+  activeCount,
 }: {
   initiatives: Initiative[]
   filters: Filters
   onChange: (filters: Filters) => void
   onClear: () => void
   total: number
+  activeCount: number
 }) {
   const teams = [...new Set(initiatives.map(i => i.equipe))]
   const responsaveis = [...new Set(initiatives.map(i => i.responsavel.nome))]
@@ -1768,11 +1755,11 @@ function FiltersPanel({
   }
 
   function ChipGroup<T extends string>({
-    label, options, selected, onToggle
+    label, options, selected, onToggle,
   }: { label: string; options: Array<{ value: T; label: string }>; selected: T[]; onToggle: (v: T) => void }) {
     return (
-      <div className="space-y-1.5">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
         <div className="flex flex-wrap gap-1.5">
           {options.map(opt => (
             <button
@@ -1794,49 +1781,74 @@ function FiltersPanel({
   }
 
   return (
-    <div className="border-b bg-muted/20 px-4 py-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{total} iniciativa{total !== 1 ? "s" : ""} visível{total !== 1 ? "s" : ""}</span>
-        <button onClick={onClear} className="text-xs text-violet-600 hover:underline">Limpar filtros</button>
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <ChipGroup
-          label="Status"
-          options={STATUS_ORDER.map(s => ({ value: s, label: STATUS_CONFIG[s].label }))}
-          selected={filters.status}
-          onToggle={v => onChange({ ...filters, status: toggle(filters.status, v) })}
-        />
-        <ChipGroup
-          label="Prioridade"
-          options={(Object.keys(PRIORIDADE_CONFIG) as Prioridade[]).map(p => ({ value: p, label: PRIORIDADE_CONFIG[p].label }))}
-          selected={filters.prioridade}
-          onToggle={v => onChange({ ...filters, prioridade: toggle(filters.prioridade, v) })}
-        />
-        <ChipGroup
-          label="Equipe"
-          options={teams.map(t => ({ value: t, label: t }))}
-          selected={filters.equipe}
-          onToggle={v => onChange({ ...filters, equipe: toggle(filters.equipe, v) })}
-        />
-        <ChipGroup
-          label="Responsável"
-          options={responsaveis.map(r => ({ value: r, label: r.split(" ")[0] }))}
-          selected={filters.responsavel}
-          onToggle={v => onChange({ ...filters, responsavel: toggle(filters.responsavel, v) })}
-        />
-        <ChipGroup
-          label="Risco"
-          options={[
-            { value: "baixo", label: "Baixo" },
-            { value: "medio", label: "Médio" },
-            { value: "alto", label: "Alto" },
-            { value: "critico", label: "Crítico" },
-          ]}
-          selected={filters.risco}
-          onToggle={v => onChange({ ...filters, risco: toggle(filters.risco, v) })}
-        />
-      </div>
-    </div>
+    <Sheet>
+      <SheetTrigger
+        render={
+          <Button variant={activeCount > 0 ? "default" : "outline"} size="sm" className="h-8 text-xs gap-1.5" />
+        }
+      >
+        <Filter className="size-3.5" />
+        Filtros
+        {activeCount > 0 && (
+          <span className="ml-0.5 rounded-full bg-white text-violet-700 text-[10px] font-bold px-1.5 py-0 leading-4">
+            {activeCount}
+          </span>
+        )}
+      </SheetTrigger>
+      <SheetContent className="flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <SheetTitle>Filtros</SheetTitle>
+          <SheetDescription>
+            Refine as iniciativas por status, prioridade, equipe e mais.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <ChipGroup
+            label="Status"
+            options={STATUS_ORDER.map(s => ({ value: s, label: STATUS_CONFIG[s].label }))}
+            selected={filters.status}
+            onToggle={v => onChange({ ...filters, status: toggle(filters.status, v) })}
+          />
+          <ChipGroup
+            label="Prioridade"
+            options={(Object.keys(PRIORIDADE_CONFIG) as Prioridade[]).map(p => ({ value: p, label: PRIORIDADE_CONFIG[p].label }))}
+            selected={filters.prioridade}
+            onToggle={v => onChange({ ...filters, prioridade: toggle(filters.prioridade, v) })}
+          />
+          <ChipGroup
+            label="Equipe"
+            options={teams.map(t => ({ value: t, label: t }))}
+            selected={filters.equipe}
+            onToggle={v => onChange({ ...filters, equipe: toggle(filters.equipe, v) })}
+          />
+          <ChipGroup
+            label="Responsável"
+            options={responsaveis.map(r => ({ value: r, label: r }))}
+            selected={filters.responsavel}
+            onToggle={v => onChange({ ...filters, responsavel: toggle(filters.responsavel, v) })}
+          />
+          <ChipGroup
+            label="Risco"
+            options={[
+              { value: "baixo", label: "Baixo" },
+              { value: "medio", label: "Médio" },
+              { value: "alto", label: "Alto" },
+              { value: "critico", label: "Crítico" },
+            ]}
+            selected={filters.risco}
+            onToggle={v => onChange({ ...filters, risco: toggle(filters.risco, v) })}
+          />
+        </div>
+        <div className="px-6 py-4 border-t shrink-0 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {total} iniciativa{total !== 1 ? "s" : ""} visível{total !== 1 ? "s" : ""}
+          </span>
+          <button onClick={onClear} className="text-xs text-violet-600 hover:underline">
+            Limpar filtros
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -1856,12 +1868,10 @@ function GanttView({
   initiatives,
   onRowClick,
   onEdit,
-  groupBy,
 }: {
   initiatives: Initiative[]
   onRowClick: (id: string) => void
   onEdit: (id: string) => void
-  groupBy: string
 }) {
   const LEFT_WIDTH = 300
   const MONTH_WIDTH = 160
@@ -1933,33 +1943,8 @@ function GanttView({
     return () => document.removeEventListener("mousedown", handler)
   }, [donePopover])
 
-  // Build flat row list with optional group headers
-  type Row = { type: "group"; label: string; count: number } | { type: "ini"; initiative: Initiative }
-  function buildRows(): Row[] {
-    if (!groupBy || groupBy === "none") {
-      return initiatives.map(i => ({ type: "ini" as const, initiative: i }))
-    }
-    const map = new Map<string, Initiative[]>()
-    initiatives.forEach(i => {
-      let key = groupBy === "status" ? i.status
-        : groupBy === "prioridade" ? i.prioridade
-        : groupBy === "equipe" ? i.equipe
-        : i.responsavel.nome
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(i)
-    })
-    const rows: Row[] = []
-    map.forEach((items, key) => {
-      const label = groupBy === "status" ? STATUS_CONFIG[key as Status]?.label ?? key
-        : groupBy === "prioridade" ? PRIORIDADE_CONFIG[key as Prioridade]?.label ?? key
-        : key
-      rows.push({ type: "group", label, count: items.length })
-      items.forEach(i => rows.push({ type: "ini", initiative: i }))
-    })
-    return rows
-  }
-
-  const rows = buildRows()
+  type Row = { type: "ini"; initiative: Initiative }
+  const rows: Row[] = initiatives.map(i => ({ type: "ini" as const, initiative: i }))
 
   // Week lines within each month
   function weekLines(monthIndex: number, month: Date): number[] {
@@ -2258,8 +2243,7 @@ export default function Iniciativas() {
   const [activeView, setActiveView] = useState<View>("kanban")
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
-  const [groupBy, setGroupBy] = useState("none")
-  const [filtersOpen, setFiltersOpen] = useState(false)
+
   const [toasts, setToasts] = useState<Toast[]>([])
   const [drawerInitId, setDrawerInitId] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -2300,12 +2284,11 @@ export default function Iniciativas() {
       }
       if (e.key === "Escape") {
         if (drawerInitId) setDrawerInitId(null)
-        else if (filtersOpen) setFiltersOpen(false)
       }
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [modalOpen, drawerInitId, filtersOpen])
+  }, [modalOpen, drawerInitId])
 
   // Toast helpers
   function addToast(toast: Omit<Toast, "id">) {
@@ -2443,6 +2426,13 @@ export default function Iniciativas() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-background shrink-0 flex-wrap">
+        {/* Nova iniciativa */}
+        <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => { setModalMode("create"); setModalInitId(null); setModalOpen(true) }}>
+          <Plus className="size-3.5" />Nova iniciativa
+        </Button>
+
+        <Separator orientation="vertical" className="h-5" />
+
         {/* View toggle */}
         <div className="flex rounded-md border overflow-hidden">
           {([
@@ -2465,8 +2455,8 @@ export default function Iniciativas() {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative flex-1 min-w-[160px] max-w-xs">
+        {/* Search — pushed to the right */}
+        <div className="relative ml-auto min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input
             ref={searchRef}
@@ -2481,52 +2471,15 @@ export default function Iniciativas() {
             </button>
           )}
         </div>
-
-        {/* Filters button */}
-        <Button
-          variant={filtersOpen ? "default" : "outline"}
-          size="sm"
-          className="h-8 text-xs gap-1.5"
-          onClick={() => setFiltersOpen(v => !v)}
-        >
-          <Filter className="size-3.5" />
-          Filtros
-          {activeFiltersCount > 0 && (
-            <span className="ml-0.5 rounded-full bg-white text-violet-700 text-[10px] font-bold px-1.5 py-0 leading-4">
-              {activeFiltersCount}
-            </span>
-          )}
-        </Button>
-
-        {/* Group by */}
-        <Select value={groupBy} onValueChange={setGroupBy}>
-          <SelectTrigger className="h-8 text-xs w-auto min-w-[130px]">
-            <SelectValue placeholder="Agrupar por" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sem agrupamento</SelectItem>
-            <SelectItem value="equipe">Equipe</SelectItem>
-            <SelectItem value="status">Status</SelectItem>
-            <SelectItem value="prioridade">Prioridade</SelectItem>
-            <SelectItem value="responsavel">Responsável</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button size="sm" className="h-8 text-xs gap-1.5 ml-auto" onClick={() => { setModalMode("create"); setModalInitId(null); setModalOpen(true) }}>
-          <Plus className="size-3.5" />Nova iniciativa
-        </Button>
-      </div>
-
-      {/* Filters panel */}
-      {filtersOpen && (
-        <FiltersPanel
+        <FiltersSheet
           initiatives={initiatives}
           filters={filters}
           onChange={setFilters}
           onClear={() => setFilters(EMPTY_FILTERS)}
           total={filtered.length}
+          activeCount={activeFiltersCount}
         />
-      )}
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden min-h-0">
@@ -2552,7 +2505,6 @@ export default function Iniciativas() {
               onDuplicate={handleDuplicate}
               onDelete={handleDelete}
               onClearFilters={() => setFilters(EMPTY_FILTERS)}
-              groupBy={groupBy}
             />
           </div>
         )}
@@ -2562,7 +2514,6 @@ export default function Iniciativas() {
               initiatives={filtered}
               onRowClick={setDrawerInitId}
               onEdit={openEdit}
-              groupBy={groupBy}
             />
           </div>
         )}
