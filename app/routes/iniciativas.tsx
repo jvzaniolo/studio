@@ -2446,7 +2446,7 @@ export default function Iniciativas() {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
                 activeView === v.value
-                  ? "bg-violet-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted text-muted-foreground"
               )}
             >
