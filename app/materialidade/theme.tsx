@@ -121,9 +121,9 @@ export function ThemeDetail({
       />
 
       {/* ── Sections ── */}
-      <ThemeBlock id="sec-evolucao" title="Linha do tempo do sentimento" subtitle="Evolução">
+      <section id="sec-evolucao" className="px-8 pt-3">
         <EvolucaoBlock theme={theme} sinais={sinais} inics={inics} kpis={kpis}/>
-      </ThemeBlock>
+      </section>
 
       <ThemeBlock
         id="sec-percepcao"
@@ -174,6 +174,25 @@ export function ThemeDetail({
       >
         <IniciativasBlock theme={theme} inics={inics} sugestoes={sugestoes}/>
       </ThemeBlock>
+
+      {/* ── ODS ── */}
+      {theme.ods.length > 0 && (
+        <section className="px-8 pt-3">
+          <Card>
+            <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border/50">
+              <div>
+                <h2 className="text-[15px] font-bold text-foreground tracking-tight leading-snug">ODS relacionados</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Objetivos de Desenvolvimento Sustentável da ONU atendidos por este tema material.
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-5 flex flex-wrap gap-3">
+              {theme.ods.map(n => <OdsIcon key={n} n={n}/>)}
+            </div>
+          </Card>
+        </section>
+      )}
 
       <div className="pb-8"/>
 
@@ -423,6 +442,53 @@ export function MiniGauge({ value, size = 48 }: { value: number | null; size?: n
         </g>
       )}
     </svg>
+  );
+}
+
+/* ===========================================================
+   OdsIcon — badge com cor e número oficial da ONU
+   =========================================================== */
+
+const ODS_META: Record<number, { color: string; label: string }> = {
+  1:  { color: '#E5243B', label: 'Erradicação da Pobreza' },
+  2:  { color: '#DDA63A', label: 'Fome Zero' },
+  3:  { color: '#4C9F38', label: 'Saúde e Bem-Estar' },
+  4:  { color: '#C5192D', label: 'Educação de Qualidade' },
+  5:  { color: '#FF3A21', label: 'Igualdade de Gênero' },
+  6:  { color: '#26BDE2', label: 'Água Potável e Saneamento' },
+  7:  { color: '#FCC30B', label: 'Energia Limpa e Acessível' },
+  8:  { color: '#A21942', label: 'Trabalho Decente e Crescimento' },
+  9:  { color: '#FD6925', label: 'Indústria, Inovação e Infraestrutura' },
+  10: { color: '#DD1367', label: 'Redução das Desigualdades' },
+  11: { color: '#FD9D24', label: 'Cidades e Comunidades Sustentáveis' },
+  12: { color: '#BF8B2E', label: 'Consumo e Produção Responsáveis' },
+  13: { color: '#3F7E44', label: 'Ação Contra a Mudança Global do Clima' },
+  14: { color: '#0A97D9', label: 'Vida na Água' },
+  15: { color: '#56C02B', label: 'Vida Terrestre' },
+  16: { color: '#00689D', label: 'Paz, Justiça e Instituições Eficazes' },
+  17: { color: '#19486A', label: 'Parcerias e Meios de Implementação' },
+};
+
+function OdsIcon({ n }: { n: number }) {
+  const meta = ODS_META[n];
+  if (!meta) return null;
+  return (
+    <div
+      title={`ODS ${n} · ${meta.label}`}
+      className="flex flex-col items-center justify-between rounded-lg overflow-hidden w-[88px] shrink-0 select-none"
+      style={{ background: meta.color }}
+    >
+      <div className="w-full px-2 pt-2 pb-1">
+        <div className="text-white font-black text-[10px] leading-tight opacity-90">ODS</div>
+        <div className="text-white font-black text-[26px] leading-none tracking-tight tabular-nums">{n}</div>
+      </div>
+      <div
+        className="w-full px-2 py-1.5 text-white text-[9px] font-bold leading-tight"
+        style={{ background: 'rgba(0,0,0,0.18)' }}
+      >
+        {meta.label}
+      </div>
+    </div>
   );
 }
 

@@ -213,58 +213,64 @@ export function EvolucaoBlock({ theme, sinais }: EvolucaoBlockProps) {
   const blockTitle = isSent ? 'Linha do tempo do sentimento' : 'Evolução da relevância';
 
   return (
-    <div className="flex flex-col gap-3.5">
-      <div className="flex items-center gap-3.5 flex-wrap">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground">
-            Filtrar por público
-          </span>
-          <PubFilterDropdown value={pubFilter} onChange={setPubFilter}/>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground">
-            Dimensão
-          </span>
-          <DimensionRadio value={dim} onChange={setDim}/>
-        </div>
-        {pubFilter !== 'all' && (
-          <span className="text-xs text-primary">
-            Recorte: <b>{PUB_FILTERS.find(f => f.id === pubFilter)?.label}</b>
-          </span>
-        )}
-      </div>
+    <div className="mat-evolucao-outer grid gap-3" style={{ gridTemplateColumns: '300px minmax(0, 1fr)' }}>
 
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="mat-evolucao-grid grid gap-0" style={{ gridTemplateColumns: '320px minmax(0, 1fr)' }}>
-          <AIAnalysePanel theme={theme} dim={dim}/>
-          <div className="p-5 border-l border-border flex flex-col gap-3 min-w-0" style={{ padding: '20px 24px 22px' }}>
-            <div className="flex items-center justify-end gap-3.5 text-xs text-muted-foreground">
+      {/* ── AI Diagnosis — standalone card ── */}
+      <AIAnalysePanel theme={theme} dim={dim}/>
+
+      {/* ── Timeline + filters — single card ── */}
+      <ShadCard className="flex flex-col gap-0 overflow-hidden p-0">
+        {/* title */}
+        <div className="px-5 pt-4 pb-3 border-b border-border/50">
+          <div className="text-[15px] font-bold text-foreground tracking-tight leading-snug">
+            {isSent ? 'Linha do tempo do sentimento' : 'Evolução da relevância'}
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">Evolução</p>
+        </div>
+
+        {/* filters bar */}
+        <div className="px-5 py-3 border-b border-border/50 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Filtrar por público</span>
+            <PubFilterDropdown value={pubFilter} onChange={setPubFilter}/>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Dimensão</span>
+            <DimensionRadio value={dim} onChange={setDim}/>
+          </div>
+          {pubFilter !== 'all' && (
+            <span className="text-xs text-primary">
+              Recorte: <b>{PUB_FILTERS.find(f => f.id === pubFilter)?.label}</b>
+            </span>
+          )}
+        </div>
+
+        {/* chart area */}
+        <div className="flex flex-col gap-3 p-5">
+          <div className="flex items-center justify-end gap-3.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-primary"/>Matriz
+            </span>
+            {isSent && (
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary"/>
-                Matriz
+                <span className="w-2 h-2 rounded-full" style={{ background: '#F59E0B' }}/>
+                Sinal operacional
               </span>
-              {isSent && (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: '#F59E0B' }}/>
-                  Sinal operacional
-                </span>
-              )}
-            </div>
-            {points.length < 2 ? (
-              <EmptyState icon="zap"
-                title="Sem dados suficientes para este recorte"
-                subtitle="Ajuste o filtro de público ou a dimensão para ver outra leitura."/>
-            ) : (
-              <TimelineSVG points={points} range={range} dim={dim}/>
             )}
           </div>
+          {points.length < 2 ? (
+            <EmptyState icon="zap"
+              title="Sem dados suficientes para este recorte"
+              subtitle="Ajuste o filtro de público ou a dimensão para ver outra leitura."/>
+          ) : (
+            <TimelineSVG points={points} range={range} dim={dim}/>
+          )}
         </div>
-      </Card>
+      </ShadCard>
 
       <style>{`
-        @media (max-width: 1080px) {
-          .mat-evolucao-grid { grid-template-columns: minmax(0, 1fr) !important; }
-          .mat-evolucao-grid > div:nth-child(2) { border-left: 0 !important; border-top: 1px solid var(--hu-border); }
+        @media (max-width: 1100px) {
+          .mat-evolucao-outer { grid-template-columns: minmax(0, 1fr) !important; }
         }
       `}</style>
     </div>
@@ -303,7 +309,7 @@ export function AIAnalysePanel({ theme, dim = 'sentimento' }: AIAnalysePanelProp
   );
 
   return (
-    <ShadCard className="rounded-none border-0 shadow-none bg-[#FAFAFA] flex flex-col gap-3.5 min-w-0 p-0">
+    <ShadCard className="flex flex-col min-w-0 self-start">
       <CardContent className="p-[18px_20px] flex flex-col gap-3.5">
         <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-border">
           <div className="flex items-center gap-2">
