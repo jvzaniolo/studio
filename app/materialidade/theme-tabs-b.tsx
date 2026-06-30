@@ -30,6 +30,363 @@ import {
    COMENTÁRIOS DOS STAKEHOLDERS
    =========================================================== */
 
+interface CommentItem {
+  classificacao: 'Força' | 'Oportunidade' | 'Fraqueza';
+  publico: string;
+  texto: string;
+}
+
+const COMENTARIOS_INDIVIDUAIS: Record<number, CommentItem[]> = {
+  1: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'A internet no canteiro cai toda hora. Fico sem conseguir usar o sistema de medição online.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Equipamentos antigos travam na hora errada. Digitalização existe no papel, mas não chega ao campo.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'A digitalização das medições mudou o jogo — antes era tudo em planilha, agora é bem mais rápido.' },
+    { classificacao: 'Oportunidade', publico: 'Fornecedores',  texto: 'Sistema de medição online é avanço, mas quando a rede cai, o atraso é pior que antes.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Um roteador 4G em cada canteiro resolveria 90% dos problemas de conectividade.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Suporte de TI leva dias para resolver chamado. Precisamos de atendimento prioritário nas obras.' },
+  ],
+  2: [
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'A qualidade técnica de entrega superou nossas expectativas — superior ao que vimos em outras construtoras.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'Treinamento de segurança é levado a sério. Transparência nos relatórios de incidentes.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'Cultura de segurança é real aqui — DDS todo dia, EPI sem exceção.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Pressão de cronograma faz com que às vezes os protocolos sejam relativizados. Isso preocupa.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Precisamos de um mestre de segurança próprio nas obras maiores, não terceirizado.' },
+    { classificacao: 'Oportunidade', publico: 'Clientes',      texto: 'Institucionalizar pesquisa de qualidade pós-entrega seria um diferencial competitivo.' },
+  ],
+  3: [
+    { classificacao: 'Força',        publico: 'Fornecedores',  texto: 'A empresa não aceita jeitinho — dá orgulho trabalhar com quem tem essa postura.' },
+    { classificacao: 'Força',        publico: 'Fornecedores',  texto: 'Contratos claros e pagamentos sem facilidades indevidas constroem confiança de longo prazo.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Tenho dúvida se as denúncias no Canal de Ética têm consequência real. Nunca vejo retorno.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Publicar o relatório anual do Canal com agregados anonimizados aumentaria a confiança no processo.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Treinar as lideranças para lidar com denúncias diretas é essencial para a cultura ética.' },
+  ],
+  4: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'O plano de carreira existe no papel, mas ninguém sabe como subir. Faltam critérios claros.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Avaliações de desempenho são subjetivas — não há alinhamento com o que o RH propõe.' },
+    { classificacao: 'Fraqueza',     publico: 'Lideranças',    texto: 'É difícil reter talentos com pressão de entrega e orçamento limitado para reconhecimento.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Critérios objetivos e transparentes de promoção mudariam o engajamento no time.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Uma trilha de carreira técnica — não só gerencial — faria diferença na retenção.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Auxiliares não enxergam caminho claro de crescimento. Treinamento não vira promoção.' },
+  ],
+  10: [
+    { classificacao: 'Força',        publico: 'Sociedade',     texto: 'A obra atrapalhou o trânsito por meses, mas a comunicação prévia foi correta. Reclamamos menos por isso.' },
+    { classificacao: 'Força',        publico: 'Sociedade',     texto: 'A empresa contratou pedreiros da comunidade. Isso fez diferença na nossa região.' },
+    { classificacao: 'Força',        publico: 'Sociedade',     texto: 'A empresa patrocinou a reforma da quadra do bairro — ficou ótima.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Boas práticas de engajamento comunitário, mas sem indicadores de impacto social mensurados.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'Quando contratamos mão de obra local, a relação com a vizinhança melhora muito.' },
+    { classificacao: 'Fraqueza',     publico: 'Sociedade',     texto: 'O barulho fora do horário ainda incomoda, apesar dos avisos.' },
+  ],
+  11: [
+    { classificacao: 'Fraqueza',     publico: 'Fornecedores',  texto: 'Tem gente demais entre o canteiro e a diretoria. Pagamento atrasa por isso, não por falta de dinheiro.' },
+    { classificacao: 'Fraqueza',     publico: 'Fornecedores',  texto: 'Oito áreas aprovam uma medição. Reduzi o limite de crédito porque não aguento mais o ciclo.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'A sobreposição de papéis entre Engenharia, Suprimentos e Financeiro gera travamento.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Mapear o fluxo atual de aprovações em 60 dias é o primeiro passo para resolver o gargalo.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Um piloto em 2 obras de tipologias distintas pode provar o modelo antes do scale.' },
+  ],
+  16: [
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'Resíduos ainda vão muito para aterro comum. Faltam parcerias com recicladoras.' },
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'A logística reversa fica a cargo de cada obra, com resultados muito desiguais.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'A obra do Centro está com 80% de destinação correta — é o nosso caso de referência.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Replicar o modelo da obra do Centro nas 5 maiores obras até Dez/2026 é viável.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Vincular meta de destinação correta no contrato de subempreiteiras mudaria o comportamento.' },
+  ],
+  20: [
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'Não existe ainda um inventário de emissões formal. Estamos no escuro sobre nossa linha de base.' },
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'O programa Carbono Neutro 2030 é ambicioso, mas falta um caminho concreto e mensurável.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Estruturar o inventário GEE agora — a janela regulatória aperta em 2027.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Adotar trajetória SBTi daria credibilidade externa ao compromisso climático.' },
+  ],
+  5: [
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'O programa de ginástica laboral no canteiro faz diferença no dia a dia — menos dor, mais disposição.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Saúde mental quase não é falada aqui. Pressão de obra é alta e não temos suporte psicológico formal.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Incluir triagem de saúde mental no processo de integração reduziria o absenteísmo a longo prazo.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Ergonomia nas atividades repetitivas de canteiro é ignorada. Muitos colegas têm lesões por esforço.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'A empresa demonstra genuína preocupação com o bem-estar da equipe de campo — isso se reflete na qualidade.' },
+  ],
+  6: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Senhas fracas e compartilhadas ainda são comuns. Falta uma política clara de segurança digital.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Com o avanço da digitalização das obras, o risco de vazamento de dados aumenta — é hora de estruturar.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Nunca recebi treinamento sobre phishing ou segurança de e-mail. Aprendi sozinho.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Uma campanha de conscientização digital semestral teria alto impacto com custo baixo.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'O novo sistema de autenticação em dois fatores é um passo importante — sentimos mais segurança.' },
+  ],
+  7: [
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'A transparência nos relatórios financeiros ao longo do projeto é um diferencial claro.' },
+    { classificacao: 'Oportunidade', publico: 'Fornecedores',  texto: 'Previsibilidade de caixa e planejamento financeiro de longo prazo beneficiariam toda a cadeia.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Atrasos nos reembolsos de despesas de campo geram desconforto — às vezes espero 60 dias.' },
+    { classificacao: 'Força',        publico: 'Lideranças',    texto: 'A disciplina financeira da empresa nos dá segurança para investir em crescimento.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Vincular metas financeiras a indicadores ESG melhoraria o custo de capital e atrairia investidores.' },
+  ],
+  8: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Treinamentos existem, mas são pontuais e desconectados. Falta uma trilha contínua de aprendizado.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Um programa de mentoria interna entre sêniors e juniores teria impacto imediato na retenção.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'Os cursos de BIM disponibilizados pela empresa abriram portas que eu não esperava.' },
+    { classificacao: 'Fraqueza',     publico: 'Lideranças',    texto: 'Gestores não são preparados para desenvolver as equipes — precisam de capacitação em liderança.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Investir em certificações técnicas aumenta a produtividade e reduz rotatividade — ROI comprovado.' },
+  ],
+  9: [
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'O atendimento pós-entrega surpreende. Ligam de volta e resolvem sem enrolação.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'Comunicação clara durante a obra, com updates regulares. Isso constrói confiança.' },
+    { classificacao: 'Oportunidade', publico: 'Clientes',      texto: 'Um portal digital para acompanhar o andamento da obra em tempo real seria um diferencial enorme.' },
+    { classificacao: 'Fraqueza',     publico: 'Clientes',      texto: 'Quando há problema, o primeiro contato é difícil — não fica claro quem é o responsável.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'NPS estruturado e monitorado reduziria perdas de renovação em pelo menos 15%.' },
+  ],
+  12: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Recebo propostas externas com 30% a mais. Fico pela cultura, mas isso tem um limite.' },
+    { classificacao: 'Fraqueza',     publico: 'Lideranças',    texto: 'Saímos perdendo profissionais para concorrentes que oferecem flexibilidade que não temos.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Employer branding ativo nas universidades de engenharia mudaria o perfil dos candidatos que chegam.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'A cultura de obra aqui é boa. É o que me manteve quando recebi oferta de ir embora.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Mapeamento de competências críticas e sucessão para cargos-chave é urgente.' },
+  ],
+  13: [
+    { classificacao: 'Força',        publico: 'Fornecedores',  texto: 'Contratos claros e cumpridos no prazo — isso é raro no setor e nos faz priorizar a Vértice.' },
+    { classificacao: 'Fraqueza',     publico: 'Fornecedores',  texto: 'Falta canal de comunicação direto com a obra. Fico ligando para 3 pessoas diferentes.' },
+    { classificacao: 'Oportunidade', publico: 'Fornecedores',  texto: 'Um portal de acompanhamento de pedidos e medições economizaria horas por semana.' },
+    { classificacao: 'Fraqueza',     publico: 'Fornecedores',  texto: 'Penalidades contratuais desproporcionais para atrasos causados por fatores externos.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'A exigência de conformidade ética nos fornecedores eleva o padrão de toda a cadeia.' },
+  ],
+  14: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Pouco sei sobre o propósito da empresa além de construir prédios. Nunca foi bem comunicado.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Propósito claro e autêntico é um fator decisivo para atração de jovens talentos na engenharia.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'A empresa tem um jeito de trabalhar que transmite seriedade e comprometimento com a qualidade.' },
+    { classificacao: 'Oportunidade', publico: 'Colaboradores', texto: 'Uma campanha interna sobre o impacto das nossas obras nas comunidades aumentaria o orgulho de pertencer.' },
+    { classificacao: 'Fraqueza',     publico: 'Sociedade',     texto: 'Nunca ouvi falar da Vértice antes de eles começarem a obra na minha rua. Deveriam se apresentar.' },
+  ],
+  15: [
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'Fornecedores de primeira camada são auditados, mas a segunda camada é completamente opaca.' },
+    { classificacao: 'Oportunidade', publico: 'Fornecedores',  texto: 'Critérios ESG claros no processo de qualificação de fornecedores nos ajudariam a melhorar também.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'A equipe de suprimentos é rigorosa com fornecedores — isso protege a qualidade final da obra.' },
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'Sem certificação de cadeia responsável, o acesso a certos contratos públicos ficará restrito.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Capacitar fornecedores locais em boas práticas cria valor compartilhado e reduz risco de cadeia.' },
+  ],
+  17: [
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Quase não vejo mulheres em cargos técnicos de obra. A empresa precisa agir mais diretamente nisso.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Equipes diversas tomam melhores decisões. O setor da construção está muito atrasado nisso.' },
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'O programa de aprendizes abre portas para jovens que teriam poucas oportunidades — isso me orgulha.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'A linguagem ainda é muito masculina nos comunicados e processos seletivos da empresa.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Metas de diversidade com monitoramento real — não só declaração de intenção.' },
+  ],
+  18: [
+    { classificacao: 'Fraqueza',     publico: 'Especialistas', texto: 'Três obras foram impactadas por enchentes nos últimos 2 anos. Ainda não há protocolo de resposta.' },
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Avaliação de risco climático nos estudos de viabilidade protegeria cronogramas e margens.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'As ondas de calor nas obras em 2025 foram perigosas. Não tivemos nenhuma orientação especial.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Vincular o plano de adaptação climática ao módulo IFRS S2 já está no radar — precisamos acelerar.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'A empresa já inclui premissas climáticas em alguns projetos hospitalares — isso é diferencial.' },
+  ],
+  19: [
+    { classificacao: 'Força',        publico: 'Colaboradores', texto: 'O espírito de equipe no canteiro é diferente. Tem gente que fica anos por causa do ambiente.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'Cultura de escritório e de canteiro são mundos separados. Falta integração real entre eles.' },
+    { classificacao: 'Oportunidade', publico: 'Lideranças',    texto: 'Rituais de reconhecimento consistentes — mesmo os pequenos — criam pertencimento duradouro.' },
+    { classificacao: 'Fraqueza',     publico: 'Colaboradores', texto: 'As lideranças intermediárias não transmitem bem a cultura — tudo depende do gestor direto.' },
+    { classificacao: 'Força',        publico: 'Clientes',      texto: 'Percebemos que as equipes são engajadas — isso se traduz em postura proativa em campo.' },
+  ],
+};
+
+function getComentariosIndividuais(themeId: number): CommentItem[] {
+  return COMENTARIOS_INDIVIDUAIS[themeId] || [
+    { classificacao: 'Oportunidade', publico: 'Especialistas', texto: 'Tema ainda sem comentários consolidados. Vincule novas fontes de dados em Mapeamentos para alimentar esta análise.' },
+  ];
+}
+
+export function ComentariosBlock({ theme }: { theme: Theme }) {
+  const individuais = getComentariosIndividuais(theme.id);
+  const [dimFilter, setDimFilter] = React.useState<'all' | 'Força' | 'Oportunidade' | 'Fraqueza'>('all');
+  const [useful, setUseful] = React.useState<'up' | 'down' | null>(null);
+
+  const filtered = dimFilter === 'all'
+    ? individuais
+    : individuais.filter(c => c.classificacao === dimFilter);
+
+  const publicos = [...new Set(individuais.map(c => c.publico))];
+
+  return (
+    <div>
+      <div className="px-6 py-3.5 flex items-center gap-2.5 flex-wrap border-b border-border/50">
+        <span className="text-sm font-medium text-muted-foreground">Dimensão:</span>
+        <ClassificacaoFilter value={dimFilter} onChange={setDimFilter}/>
+      </div>
+
+      <div className="mat-coment-grid grid gap-4 px-6 py-5" style={{ gridTemplateColumns: '320px minmax(0, 1.6fr)' }}>
+        {/* Left: síntese */}
+        <UiCard className="rounded-lg border border-border self-start">
+          <CardContent className="p-5 flex flex-col gap-4">
+            <div className="text-sm font-semibold text-foreground">Síntese</div>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                  Total de comentários
+                </div>
+                <div className="text-sm text-foreground">
+                  {individuais.length} comentário{individuais.length === 1 ? '' : 's'} neste tema
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                  Públicos
+                </div>
+                <div className="text-sm text-foreground">{publicos.join(', ')}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                  Distribuição
+                </div>
+                <div className="flex flex-col gap-1">
+                  {(['Força', 'Oportunidade', 'Fraqueza'] as const).map(cl => {
+                    const count = individuais.filter(c => c.classificacao === cl).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={cl} className="flex items-center gap-2 text-xs">
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[10px]"
+                          style={cl === 'Força' ? { background: '#EFE3F8', color: '#5B21B6' }
+                            : cl === 'Oportunidade' ? { background: '#DEF7EC', color: '#065F46' }
+                            : { background: '#FEF3C7', color: '#92400E' }}
+                        >
+                          {cl}
+                        </span>
+                        <span className="text-muted-foreground">{count} comentário{count === 1 ? '' : 's'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-border flex items-center gap-2.5 text-xs text-muted-foreground">
+              <span>Esta informação foi útil?</span>
+              <button
+                onClick={() => setUseful(useful === 'up' ? null : 'up')}
+                title="Útil"
+                className={cn(
+                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
+                  useful === 'up' ? 'text-green-600' : 'text-muted-foreground',
+                )}
+              >
+                <Icon name="thumbs-up" size={13} color="currentColor"/>
+              </button>
+              <button
+                onClick={() => setUseful(useful === 'down' ? null : 'down')}
+                title="Não útil"
+                className={cn(
+                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
+                  useful === 'down' ? 'text-destructive' : 'text-muted-foreground',
+                )}
+              >
+                <Icon name="thumbs-down" size={13} color="currentColor"/>
+              </button>
+            </div>
+          </CardContent>
+        </UiCard>
+
+        {/* Right: individual comments */}
+        <div className="flex flex-col min-w-0 max-h-[600px] overflow-y-auto divide-y divide-border/60">
+          {filtered.length === 0 ? (
+            <EmptyState icon="message"
+              title="Sem comentários para este filtro"
+              subtitle="Ajuste o filtro de dimensão para ver outros recortes."/>
+          ) : filtered.map((c, i) => (
+            <ComentarioItem key={i} comment={c}/>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 1080px) {
+          .mat-coment-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function ComentarioItem({ comment }: { comment: CommentItem }) {
+  const styles: Record<string, { bg: string; fg: string }> = {
+    Força:        { bg: '#EFE3F8', fg: '#5B21B6' },
+    Oportunidade: { bg: '#DEF7EC', fg: '#065F46' },
+    Fraqueza:     { bg: '#FEF3C7', fg: '#92400E' },
+  };
+  const s = styles[comment.classificacao] || styles['Força'];
+  return (
+    <div className="py-4 flex flex-col gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+          style={{ background: s.bg, color: s.fg }}
+        >
+          {comment.classificacao}
+        </span>
+        <span className="text-xs font-semibold text-muted-foreground">{comment.publico}</span>
+      </div>
+      <div className="text-sm leading-[1.6] text-foreground">{comment.texto}</div>
+    </div>
+  );
+}
+
+function ClassificacaoFilter({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: 'all' | 'Força' | 'Oportunidade' | 'Fraqueza') => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const opts: { id: 'all' | 'Força' | 'Oportunidade' | 'Fraqueza'; label: string }[] = [
+    { id: 'all',          label: 'Todas as dimensões' },
+    { id: 'Força',        label: 'Força' },
+    { id: 'Oportunidade', label: 'Oportunidade' },
+    { id: 'Fraqueza',     label: 'Fraqueza' },
+  ];
+  const cur = opts.find(o => o.id === value) || opts[0];
+
+  return (
+    <div ref={ref} className="relative min-w-[180px]">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border bg-background cursor-pointer text-sm font-semibold text-foreground/70 w-full"
+      >
+        <span className="flex-1 text-left">{cur.label}</span>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#AA95BE"/>
+      </button>
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-background rounded-[10px] border border-border shadow-md p-1.5 z-30 min-w-full flex flex-col gap-0.5">
+          {opts.map(o => {
+            const isActive = o.id === value;
+            return (
+              <div
+                key={o.id}
+                onClick={() => { onChange(o.id); setOpen(false); }}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-md cursor-pointer text-sm hover:bg-muted/50 transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary/80 font-bold'
+                    : 'bg-transparent text-muted-foreground font-medium',
+                )}
+              >
+                {o.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===========================================================
+   Legacy data (kept for reference / Apêndice sentimento stats)
+   =========================================================== */
+
 interface ComentarioBloco {
   dimensao: 'oportunidade' | 'fraqueza';
   publico: string;
@@ -177,205 +534,6 @@ function getComentarios(themeId: number): ComentariosData {
   };
 }
 
-export function ComentariosBlock({ theme }: { theme: Theme }) {
-  const data = getComentarios(theme.id);
-  const [dimFilter, setDimFilter] = React.useState<'all' | 'oportunidade' | 'fraqueza'>('all');
-  const [useful, setUseful] = React.useState<'up' | 'down' | null>(null);
-
-  const filtered = dimFilter === 'all'
-    ? data.blocos
-    : data.blocos.filter(b => b.dimensao === dimFilter);
-
-  return (
-    <div className="bg-white border border-border rounded-xl overflow-hidden">
-      <div className="px-6 pt-[18px] pb-[14px] flex items-start justify-between gap-3.5 flex-wrap">
-        <div className="min-w-0">
-          <div className="text-base font-semibold text-foreground">
-            Comentários dos stakeholders sobre o tema
-          </div>
-          <div className="text-[13px] text-muted-foreground mt-1">
-            Seleção dos comentários mais relevantes consolidados pela IA.
-          </div>
-        </div>
-        <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
-          <Icon name="download" size={13} color="var(--primary)"/>
-          Exportar comentários (Excel)
-        </button>
-      </div>
-
-      <div className="px-6 pb-4 flex items-center gap-2.5 flex-wrap">
-        <span className="text-[13px] font-medium text-muted-foreground">Dimensão:</span>
-        <DimensaoDropdown value={dimFilter} onChange={setDimFilter}/>
-      </div>
-
-      <div className="mat-coment-grid grid gap-4 px-6 pb-6" style={{ gridTemplateColumns: '380px minmax(0, 1.6fr)' }}>
-        {/* Left: síntese */}
-        <UiCard className="rounded-lg border border-border self-start">
-          <CardContent className="p-5 flex flex-col gap-3.5">
-            <div className="text-sm font-semibold text-foreground">Síntese</div>
-
-            <div className="flex flex-col gap-3">
-              <SynKV label="Tema" value={theme.nome}/>
-              <SynKV label="Frequência" value={
-                <span>
-                  <b className="text-foreground tabular-nums">{data.frequencia}%</b>
-                  <span className="text-muted-foreground ml-1.5">
-                    ({data.frequencia >= 20 ? 'Tema muito relevante' : data.frequencia >= 10 ? 'Tema relevante' : 'Menção esporádica'})
-                  </span>
-                </span>
-              }/>
-              <SynKV label="Síntese" value={
-                <span className="text-foreground leading-[1.55]">
-                  {data.sintese}
-                </span>
-              }/>
-              {data.citacoesDestaque.length > 0 && (
-                <SynKV label="Citações representativas" value={
-                  <div className="flex flex-col gap-2">
-                    {data.citacoesDestaque.map((c, i) => (
-                      <div key={i} className="italic text-[12.5px] text-[#525252] leading-[1.5]">"{c}"</div>
-                    ))}
-                  </div>
-                }/>
-              )}
-            </div>
-
-            <div className="mt-1 pt-3 border-t border-border flex items-center gap-2.5 text-xs text-muted-foreground">
-              <span>Esta informação foi útil?</span>
-              <button
-                onClick={() => setUseful(useful === 'up' ? null : 'up')}
-                title="Útil"
-                className={cn(
-                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
-                  useful === 'up' ? 'text-green-600' : 'text-muted-foreground'
-                )}
-              >
-                <Icon name="thumbs-up" size={13} color="currentColor"/>
-              </button>
-              <button
-                onClick={() => setUseful(useful === 'down' ? null : 'down')}
-                title="Não útil"
-                className={cn(
-                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
-                  useful === 'down' ? 'text-destructive' : 'text-muted-foreground'
-                )}
-              >
-                <Icon name="thumbs-down" size={13} color="currentColor"/>
-              </button>
-            </div>
-          </CardContent>
-        </UiCard>
-
-        {/* Right: citações */}
-        <div className="flex flex-col gap-0 min-w-0 max-h-[600px] overflow-y-auto">
-          {filtered.length === 0 ? (
-            <EmptyState icon="message"
-              title="Sem comentários para este filtro"
-              subtitle="Ajuste o filtro de dimensão para ver outros recortes."/>
-          ) : filtered.map((b, i) => (
-            <ComentarioBlocoItem key={i} bloco={b} last={i === filtered.length - 1}/>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
-        @media (max-width: 1080px) {
-          .mat-coment-grid { grid-template-columns: minmax(0, 1fr) !important; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function ComentarioBlocoItem({ bloco, last }: { bloco: ComentarioBloco; last: boolean }) {
-  const isOp = bloco.dimensao === 'oportunidade';
-  return (
-    <div className={cn(
-      'pt-1 pb-4 flex flex-col gap-2',
-      !last && 'border-b border-[#F0F0F0] mb-4',
-    )}>
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <Pill tone={isOp ? 'opportunity' : 'weakness'} size="sm">
-          {isOp ? 'Oportunidade' : 'Fraqueza'}
-        </Pill>
-        <span className="text-[13px] font-semibold text-foreground">{bloco.publico}</span>
-      </div>
-      <div className="text-[13px] leading-[1.6] text-foreground">{bloco.texto}</div>
-    </div>
-  );
-}
-
-function SynKV({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-foreground">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary"/>
-        {label}:
-      </div>
-      <div className="text-[12.5px] text-foreground leading-[1.55] pl-3">{value}</div>
-    </div>
-  );
-}
-
-function DimensaoDropdown({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: 'all' | 'oportunidade' | 'fraqueza') => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
-
-  const opts: { id: 'all' | 'oportunidade' | 'fraqueza'; label: string }[] = [
-    { id: 'all',          label: 'Todas as dimensões' },
-    { id: 'oportunidade', label: 'Oportunidade' },
-    { id: 'fraqueza',     label: 'Fraqueza' },
-  ];
-  const cur = opts.find(o => o.id === value) || opts[0];
-
-  return (
-    <div ref={ref} className="relative min-w-[180px]">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border bg-white cursor-pointer text-[12.5px] font-semibold text-primary/80 w-full"
-      >
-        <span className="flex-1 text-left">{cur.label}</span>
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#AA95BE"/>
-      </button>
-      {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 bg-white rounded-[10px] border border-border shadow-[0_12px_28px_rgba(60,3,102,0.12)] p-1.5 z-30 min-w-full flex flex-col gap-0.5">
-          {opts.map(o => {
-            const isActive = o.id === value;
-            return (
-              <div
-                key={o.id}
-                onClick={() => { onChange(o.id); setOpen(false); }}
-                className={cn(
-                  'px-2.5 py-1.5 rounded-md cursor-pointer text-[12.5px] hover:bg-muted/50 transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary/80 font-bold'
-                    : 'bg-transparent text-[#525252] font-medium',
-                )}
-              >
-                {o.label}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ===========================================================
    KPIs
    =========================================================== */
@@ -389,7 +547,6 @@ export function KPIsBlock({
   kpis: KPI[];
   sugestoes: SugestaoVinculo[];
 }) {
-  const stats = kpiOnTrackStats(kpis);
   const kpiSugestoes = sugestoes.filter(s => s.kind === 'kpi');
   const [sugState, setSugState] = React.useState<Record<number, string>>({});
   const visibleSugs = kpiSugestoes
@@ -398,29 +555,6 @@ export function KPIsBlock({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end justify-between gap-3.5 flex-wrap">
-        <div className="min-w-0">
-          <div className="text-lg font-semibold text-foreground">KPIs vinculados</div>
-          <div className="text-[13px] text-muted-foreground mt-1">
-            {kpis.length === 0
-              ? 'Nenhum indicador conectado a este tema'
-              : (
-                <span>
-                  <b className="text-foreground font-semibold">{kpis.length}</b> indicador{kpis.length === 1 ? '' : 'es'} conectado{kpis.length === 1 ? '' : 's'} a este tema
-                  {stats.withMeta > 0 && <span> · <b className="text-foreground font-semibold">{stats.onTrack}</b> On Track</span>}
-                  {stats.semMeta > 0 && <span> · <b className="text-amber-600 font-semibold">{stats.semMeta}</b> sem meta</span>}
-                </span>
-              )}
-          </div>
-        </div>
-        {kpis.length > 0 && (
-          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
-            <Icon name="plus" size={13} color="var(--primary)"/>
-            Vincular KPI
-          </button>
-        )}
-      </div>
-
       {kpis.length === 0 ? (
         <FlatEmptyState
           icon="bar-chart"
@@ -461,13 +595,13 @@ function FlatEmptyState({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-border rounded-xl py-12 px-6 flex flex-col items-center gap-3 text-center">
+    <div className="py-12 px-6 flex flex-col items-center gap-3 text-center">
       <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center">
         <Icon name={icon} size={26} color="#AA95BE"/>
       </div>
       <div className="text-[15px] font-semibold text-foreground">{title}</div>
       {subtitle && (
-        <div className="text-[13px] text-muted-foreground max-w-[420px] leading-[1.55]">{subtitle}</div>
+        <div className="text-sm text-muted-foreground max-w-[420px] leading-[1.55]">{subtitle}</div>
       )}
       {actions && <div className="flex gap-2 mt-1.5">{actions}</div>}
     </div>
@@ -491,7 +625,7 @@ function KPITable({ kpis }: { kpis: KPI[] }) {
   });
 
   return (
-    <div className="bg-white border border-border rounded-xl overflow-x-auto">
+    <div className="overflow-x-auto">
       <Table style={{ minWidth: 1040 }}>
         <TableHeader>
           <TableRow className="bg-muted/50">
@@ -511,21 +645,21 @@ function KPITable({ kpis }: { kpis: KPI[] }) {
           {Object.entries(groups).map(([persp, items]) => {
             const palette = perspBg[persp] || perspBg['Outros'];
             return items.map((k, i) => (
-              <TableRow key={k.id} className="border-b border-[#F0F0F0]">
+              <TableRow key={k.id} className="border-b border-border/50">
                 {i === 0 && (
                   <TableCell
                     rowSpan={items.length}
                     className="py-3.5 px-4 align-top"
                     style={{ background: palette.bg }}
                   >
-                    <div className="text-[13px] font-semibold" style={{ color: palette.fg }}>{persp}</div>
+                    <div className="text-sm font-semibold" style={{ color: palette.fg }}>{persp}</div>
                   </TableCell>
                 )}
                 <TableCell className="py-3.5 px-4 text-foreground font-semibold">{k.nome}</TableCell>
                 <TableCell className="py-3.5 px-4">
                   <Resp resp={k.responsavel}/>
                 </TableCell>
-                <TableCell className="py-3.5 px-4 text-[#525252] tabular-nums whitespace-nowrap">
+                <TableCell className="py-3.5 px-4 text-muted-foreground tabular-nums whitespace-nowrap">
                   {k.atualizado || '—'}
                 </TableCell>
                 <TableCell className="py-3.5 px-4">
@@ -534,7 +668,7 @@ function KPITable({ kpis }: { kpis: KPI[] }) {
                 <TableCell className="py-3.5 px-4 text-right font-bold text-sm text-foreground tabular-nums whitespace-nowrap">
                   {k.atual}
                 </TableCell>
-                <TableCell className={cn('py-3.5 px-4 text-right tabular-nums whitespace-nowrap', k.sem_meta ? 'text-[#AA95BE]' : 'text-[#525252]')}>
+                <TableCell className={cn('py-3.5 px-4 text-right tabular-nums whitespace-nowrap', k.sem_meta ? 'text-[#AA95BE]' : 'text-muted-foreground')}>
                   {k.sem_meta ? '—' : k.meta}
                 </TableCell>
                 <TableCell className="py-3.5 px-4 text-right whitespace-nowrap">
@@ -586,7 +720,7 @@ function Resp({ resp }: { resp?: { iniciais: string; nome: string } | null }) {
       <span className="w-[26px] h-[26px] rounded-full shrink-0 bg-primary/10 text-primary flex items-center justify-center font-black text-[10px] tracking-tight">
         {resp.iniciais}
       </span>
-      <span className="text-[12.5px] text-foreground">{resp.nome}</span>
+      <span className="text-sm text-foreground">{resp.nome}</span>
     </div>
   );
 }
@@ -611,7 +745,7 @@ function DiffText({ text, tone }: { text?: string | null; tone?: string }) {
   };
   return (
     <span
-      className="text-[12.5px] font-semibold tabular-nums whitespace-nowrap"
+      className="text-sm font-semibold tabular-nums whitespace-nowrap"
       style={{ color: colorMap[tone || 'neutral'] || colorMap['neutral'] }}
     >{text}</span>
   );
@@ -655,33 +789,9 @@ export function IniciativasBlock({
   const visibleSugs = iniSugestoes
     .map((s, idx) => ({ s, idx }))
     .filter(x => !sugState[x.idx]);
-  const stats = iniciativaEmDiaStats(inics);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end justify-between gap-3.5 flex-wrap">
-        <div className="min-w-0">
-          <div className="text-lg font-semibold text-foreground">Iniciativas vinculadas</div>
-          <div className="text-[13px] text-muted-foreground mt-1">
-            {inics.length === 0
-              ? 'Nenhuma iniciativa conectada a este tema'
-              : (
-                <span>
-                  <b className="text-foreground font-semibold">{inics.length}</b> iniciativa{inics.length === 1 ? '' : 's'} conectada{inics.length === 1 ? '' : 's'} a este tema
-                  {stats.emDia > 0 && <span> · <b className="text-green-600 font-semibold">{stats.emDia}</b> em dia</span>}
-                  {stats.atrasadas > 0 && <span> · <b className="text-destructive font-semibold">{stats.atrasadas}</b> atrasada{stats.atrasadas === 1 ? '' : 's'}</span>}
-                </span>
-              )}
-          </div>
-        </div>
-        {inics.length > 0 && (
-          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-[13px] font-semibold">
-            <Icon name="plus" size={13} color="var(--primary)"/>
-            Vincular Iniciativa
-          </button>
-        )}
-      </div>
-
       {inics.length === 0 ? (
         <FlatEmptyState
           icon="flag"
@@ -713,19 +823,17 @@ export function IniciativasBlock({
 type IniciativaWithExtra = Iniciativa & { _extra: Partial<IniciativaMeta> };
 
 function IniciativasTable({ inics }: { inics: Iniciativa[] }) {
-  const groups: Record<string, IniciativaWithExtra[]> = {};
-  inics.forEach(i => {
-    const m = INICIATIVAS_META[i.id] || ({} as Partial<IniciativaMeta>);
-    const obj = m.objetivo || 'Sem objetivo';
-    (groups[obj] = groups[obj] || []).push({ ...i, _extra: m });
-  });
+  const rows: IniciativaWithExtra[] = inics.map(i => ({
+    ...i,
+    _extra: INICIATIVAS_META[i.id] || ({} as Partial<IniciativaMeta>),
+  }));
 
   return (
-    <div className="bg-white border border-border rounded-xl overflow-x-auto">
-      <Table style={{ minWidth: 1100 }}>
+    <div className="overflow-x-auto">
+      <Table style={{ minWidth: 860 }}>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            {['Objetivo', 'Iniciativa', 'Responsável', 'Prazo', 'Status', 'Progresso', 'Próximo marco'].map(h => (
+            {['Iniciativa', 'Responsável', 'Prazo', 'Status', 'Progresso'].map(h => (
               <TableHead key={h} className="text-left py-3 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap">
                 {h}
               </TableHead>
@@ -733,45 +841,27 @@ function IniciativasTable({ inics }: { inics: Iniciativa[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Object.entries(groups).map(([obj, items]) =>
-            items.map((i, idx) => {
-              const dl = iniciativaDeadlineStatus(i);
-              return (
-                <TableRow key={i.id} className="border-b border-[#F0F0F0]">
-                  {idx === 0 && (
-                    <TableCell
-                      rowSpan={items.length}
-                      className="py-3.5 px-4 bg-primary/10 align-top"
-                    >
-                      <div className="text-[13px] font-semibold text-[#5B21B6]">{obj}</div>
-                      {items[0]._extra.objetivoTone && (
-                        <div className="text-[11px] text-[#5B21B6] opacity-75 mt-0.5">
-                          {items[0]._extra.objetivoTone}
-                        </div>
-                      )}
-                    </TableCell>
-                  )}
-                  <TableCell className="py-3.5 px-4 text-foreground font-semibold">{i.nome}</TableCell>
-                  <TableCell className="py-3.5 px-4">
-                    <Resp resp={i._extra.responsavel}/>
-                  </TableCell>
-                  <TableCell className="py-3.5 px-4 text-[#525252] tabular-nums whitespace-nowrap">
-                    {i.prazo}
-                  </TableCell>
-                  <TableCell className="py-3.5 px-4 min-w-[200px]">
-                    <IniciativaStatusCell i={i} dl={dl}/>
-                  </TableCell>
-                  <TableCell className="py-3.5 px-4 min-w-[180px]">
-                    <ProgressBar value={i.progresso} status={i.status}/>
-                    <PrazoIndicator dl={dl}/>
-                  </TableCell>
-                  <TableCell className="py-3.5 px-4 text-[#525252] text-[12.5px]">
-                    {i._extra.marco || '—'}
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
+          {rows.map(i => {
+            const dl = iniciativaDeadlineStatus(i);
+            return (
+              <TableRow key={i.id} className="border-b border-border/50">
+                <TableCell className="py-3.5 px-4 text-foreground font-semibold">{i.nome}</TableCell>
+                <TableCell className="py-3.5 px-4">
+                  <Resp resp={i._extra.responsavel}/>
+                </TableCell>
+                <TableCell className="py-3.5 px-4 text-muted-foreground tabular-nums whitespace-nowrap">
+                  {i.prazo}
+                </TableCell>
+                <TableCell className="py-3.5 px-4 min-w-[200px]">
+                  <IniciativaStatusCell i={i} dl={dl}/>
+                </TableCell>
+                <TableCell className="py-3.5 px-4 min-w-[180px]">
+                  <ProgressBar value={i.progresso} status={i.status}/>
+                  <PrazoIndicator dl={dl}/>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -825,7 +915,7 @@ function PrazoIndicator({ dl }: { dl: ReturnType<typeof iniciativaDeadlineStatus
   };
   return (
     <div
-      className="mt-1.5 text-[11px] font-medium"
+      className="mt-1.5 text-xs font-medium"
       style={{ color: colors[dl.tone] || '#737373' }}
     >
       {dl.kind === 'completa' ? 'Concluída no prazo'
@@ -845,7 +935,7 @@ function ProgressBar({ value, status }: { value: number; status: string }) {
           style={{ width: `${value}%`, background: color }}
         />
       </div>
-      <span className="font-semibold text-[12.5px] text-[#525252] tabular-nums min-w-[32px] text-right">
+      <span className="font-semibold text-sm text-muted-foreground tabular-nums min-w-[32px] text-right">
         {value}%
       </span>
     </div>
@@ -871,7 +961,7 @@ function SugestoesIAVinculo({
     <div className="flex flex-col gap-0 pt-1 px-1">
       <div className="flex items-center gap-2 mb-2">
         <Icon name="sparkles" size={14} color="#525252"/>
-        <span className="text-sm font-semibold text-[#525252]">{title}</span>
+        <span className="text-sm font-semibold text-muted-foreground">{title}</span>
       </div>
       <div className="flex flex-col">
         {sugs.map(({ s, idx }, i) => (
@@ -912,7 +1002,7 @@ function SugRow({
   return (
     <div className={cn(
       'flex items-start gap-3 py-3 px-1 flex-wrap',
-      divider && 'border-b border-[#F0F0F0]',
+      divider && 'border-b border-border/50',
     )}>
       <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: a.dot }}/>
       <div className="flex-1 min-w-[240px]">
@@ -924,7 +1014,7 @@ function SugRow({
             </span>
           )}
         </div>
-        <div className="text-[12.5px] text-[#525252] leading-[1.5]">
+        <div className="text-sm text-muted-foreground leading-[1.5]">
           {isKpi && s.atual && s.meta ? (
             <span>Indicador atualmente em <b className="text-foreground">{s.atual}</b> (meta {s.meta}). {s.rationale}</span>
           ) : isKpi && s.atual && !s.meta ? (
@@ -935,15 +1025,15 @@ function SugRow({
         </div>
       </div>
       <div className="flex gap-3.5 shrink-0 items-center">
-        <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-[12.5px] font-semibold">
+        <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
           {a.primary}
         </button>
         {a.secondary && (
-          <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-[12.5px] font-semibold">
+          <button onClick={onLink} className="bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
             {a.secondary}
           </button>
         )}
-        <button onClick={onDismiss} className="bg-transparent border-0 cursor-pointer p-0 text-muted-foreground text-[12.5px] font-medium">
+        <button onClick={onDismiss} className="bg-transparent border-0 cursor-pointer p-0 text-muted-foreground text-sm font-medium">
           Dispensar
         </button>
       </div>
@@ -1013,14 +1103,14 @@ export function ApendiceBlock({ theme }: { theme: Theme }) {
               <Icon name="file-text" size={14} color="#737373"/>
             </span>
             <div className="flex-1 min-w-0">
-              <div className="text-[10.5px] font-bold tracking-[0.10em] uppercase text-muted-foreground mb-0.5">
+              <div className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground mb-0.5">
                 Apêndice
               </div>
               <div className="font-bold text-[15px] text-foreground">
                 Contexto normativo · GRI · ODS · IFRS
               </div>
             </div>
-            <span className="text-[11.5px] text-muted-foreground mr-1.5">
+            <span className="text-xs text-muted-foreground mr-1.5">
               {open ? 'Recolher' : 'Expandir'}
             </span>
             <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#737373"/>
@@ -1102,16 +1192,16 @@ function GRIList({ theme }: { theme: Theme }) {
           <div key={g} className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="w-[5px] h-[5px] rounded-full bg-primary"/>
-              <span className="text-[13px] font-bold text-foreground">{g}</span>
-              <span className="text-xs text-[#525252]">— "{d.titulo}"</span>
+              <span className="text-sm font-bold text-foreground">{g}</span>
+              <span className="text-xs text-muted-foreground">— "{d.titulo}"</span>
             </div>
-            <div className="pl-[13px] text-[11.5px] font-semibold" style={{ color: covColor }}>
+            <div className="pl-[13px] text-xs font-semibold" style={{ color: covColor }}>
               Cobertura: {cov}
             </div>
           </div>
         );
       })}
-      <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-[11.5px] font-semibold inline-flex items-center gap-1">
+      <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-xs font-semibold inline-flex items-center gap-1">
         Ver detalhes <Icon name="arrow-right" size={11} color="var(--primary)"/>
       </button>
     </div>
@@ -1130,15 +1220,15 @@ function ODSList({ theme }: { theme: Theme }) {
           <div key={o} className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="w-[5px] h-[5px] rounded-full bg-green-600"/>
-              <span className="text-[13px] font-bold text-foreground">ODS {o}</span>
-              <span className="text-xs text-[#525252]">— {d.titulo}</span>
+              <span className="text-sm font-bold text-foreground">ODS {o}</span>
+              <span className="text-xs text-muted-foreground">— {d.titulo}</span>
             </div>
-            <div className="pl-[13px] text-[11.5px] text-[#525252] leading-[1.45]">
+            <div className="pl-[13px] text-xs text-muted-foreground leading-[1.45]">
               {d.desc}
             </div>
             {d.metas.length > 0 && (
-              <div className="pl-[13px] text-[11px] text-muted-foreground">
-                Metas tocadas: <b className="text-[#525252]">{d.metas.join(', ')}</b>
+              <div className="pl-[13px] text-xs text-muted-foreground">
+                Metas tocadas: <b className="text-muted-foreground">{d.metas.join(', ')}</b>
               </div>
             )}
           </div>
@@ -1151,7 +1241,7 @@ function ODSList({ theme }: { theme: Theme }) {
 function IFRSCol({ theme }: { theme: Theme }) {
   return (
     <div className="flex flex-col gap-3.5">
-      <div className="text-xs text-[#525252] leading-[1.5]">
+      <div className="text-xs text-muted-foreground leading-[1.5]">
         Conexão com o módulo IFRS deste tema:
       </div>
       <div className="flex flex-col gap-2">
@@ -1175,12 +1265,12 @@ function IFRSCol({ theme }: { theme: Theme }) {
         </div>
       </div>
       {theme.linkIFRS && (
-        <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-[11.5px] font-semibold inline-flex items-center gap-1">
+        <button className="self-start bg-transparent border-0 cursor-pointer p-0 text-primary/80 text-xs font-semibold inline-flex items-center gap-1">
           Abrir IFRS <Icon name="arrow-right" size={11} color="var(--primary)"/>
         </button>
       )}
       {!theme.linkIFRS && (
-        <div className="text-[11.5px] text-muted-foreground italic pt-1.5 border-t border-dashed border-border">
+        <div className="text-xs text-muted-foreground italic pt-1.5 border-t border-dashed border-border">
           Tema sem vínculo direto com IFRS S1/S2.
         </div>
       )}
@@ -1205,7 +1295,7 @@ function DeltaRow({
     <div className="grid grid-cols-[1fr_auto] gap-3.5 py-2.5 border-b border-dashed border-border items-center">
       <div>
         <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="text-[11px] text-muted-foreground mt-0.5">
+        <div className="text-xs text-muted-foreground mt-0.5">
           <b className="font-black text-[15px] text-foreground tracking-[-0.01em] tabular-nums mr-1.5">{cur}</b>
           <span>era {prev}</span>
         </div>

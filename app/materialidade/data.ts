@@ -12,11 +12,13 @@ export interface Publico {
 }
 
 export const PUBLICOS: Publico[] = [
-  { id: 'interno',       label: 'Colaboradores',   short: 'Colab',  icon: 'users',     peso: 1.0, color: '#7401C3' },
-  { id: 'clientes',      label: 'Clientes',        short: 'Client', icon: 'briefcase', peso: 1.0, color: '#2563EB' },
-  { id: 'fornecedores',  label: 'Fornecedores',    short: 'Fornec', icon: 'plug',      peso: 1.0, color: '#F59E0B' },
-  { id: 'sociedade',     label: 'Sociedade',       short: 'Socied', icon: 'globe',     peso: 1.0, color: '#00A970' },
-  { id: 'especialistas', label: 'Especialistas',   short: 'Espec',  icon: 'shield',    peso: 1.5, color: '#0A3786' },
+  { id: 'interno',        label: 'Colaboradores',  short: 'Colab',   icon: 'users',     peso: 1.0, color: '#7401C3' },
+  { id: 'clientes',       label: 'Clientes',       short: 'Client',  icon: 'briefcase', peso: 1.0, color: '#2563EB' },
+  { id: 'fornecedores',   label: 'Fornecedores',   short: 'Fornec',  icon: 'plug',      peso: 1.0, color: '#F59E0B' },
+  { id: 'sociedade',      label: 'Sociedade',      short: 'Socied',  icon: 'globe',     peso: 1.0, color: '#00A970' },
+  { id: 'especialistas',  label: 'Especialistas',  short: 'Espec',   icon: 'shield',    peso: 1.5, color: '#0A3786' },
+  { id: 'investidores',   label: 'Investidores',   short: 'Invest',  icon: 'bar-chart', peso: 1.0, color: '#0891B2' },
+  { id: 'alta_lideranca', label: 'Alta Liderança', short: 'AltaLid', icon: 'target',    peso: 1.5, color: '#E11D48' },
 ];
 
 export const PUBLICO_BY_ID: Record<string, Publico> = Object.fromEntries(PUBLICOS.map(p => [p.id, p]));
@@ -89,6 +91,9 @@ export interface Theme {
   gri: string[];
   ods: number[];
   linkIFRS: boolean;
+  esg: 'E' | 'S' | 'G';
+  impacto: number;
+  financeira: number;
   baseline: VersaoPos;
   por_versao: Record<string, VersaoPos>;
   por_publico: PerPublico[];
@@ -97,26 +102,26 @@ export interface Theme {
 }
 
 const THEME_SEEDS = [
-  { id: 1,  nome: 'Processos, tecnologia e infraestrutura',           descricao: 'Modernização da infraestrutura tecnológica e operacional do canteiro e do escritório.',                              x: 97, y: 76, sentimento: -15, gri: ['GRI 3-3'],           ods: [9],     linkIFRS: false },
-  { id: 2,  nome: 'Qualidade e segurança em obras',                   descricao: 'Excelência técnica de entrega e prevenção de acidentes nas obras.',                                                   x: 89, y: 82, sentimento:  28, gri: ['GRI 403'],           ods: [3,11],  linkIFRS: false },
-  { id: 3,  nome: 'Integridade corporativa, ética e transparência',   descricao: 'Cultura de integridade, canal de ética e prevenção a corrupção.',                                                     x: 84, y: 72, sentimento:  14, gri: ['GRI 205','GRI 206'], ods: [16],    linkIFRS: false },
-  { id: 4,  nome: 'Gestão de Pessoas',                                descricao: 'Plano de carreira, reconhecimento, remuneração e desenvolvimento profissional.',                                       x: 91, y: 69, sentimento: -27, gri: ['GRI 401'],           ods: [8],     linkIFRS: false },
-  { id: 5,  nome: 'Saúde e bem-estar dos colaboradores',              descricao: 'Programas de saúde física e mental, ergonomia e qualidade de vida.',                                                  x: 79, y: 73, sentimento:   6, gri: ['GRI 403'],           ods: [3],     linkIFRS: false },
-  { id: 6,  nome: 'Segurança da informação',                          descricao: 'Proteção de dados, controle de acesso e continuidade de serviços críticos.',                                          x: 88, y: 69, sentimento:   5, gri: ['GRI 418'],           ods: [16],    linkIFRS: false },
-  { id: 7,  nome: 'Gestão financeira',                                descricao: 'Disciplina financeira, gestão de capital e previsibilidade de resultados.',                                           x: 85, y: 67, sentimento:  21, gri: ['GRI 201'],           ods: [8],     linkIFRS: false },
-  { id: 8,  nome: 'Desenvolvimento dos colaboradores',                descricao: 'Capacitação técnica, requalificação e trilhas de aprendizagem.',                                                      x: 72, y: 66, sentimento:  18, gri: ['GRI 404'],           ods: [4,8],   linkIFRS: false },
-  { id: 9,  nome: 'Relacionamento com clientes e comunicação',        descricao: 'Comunicação clara com clientes e acompanhamento do ciclo de entrega.',                                                x: 74, y: 71, sentimento:  12, gri: [],                   ods: [12,17], linkIFRS: false },
-  { id: 10, nome: 'Impacto nas comunidades do entorno',               descricao: 'Mitigação de impactos de obra e geração de valor para a vizinhança.',                                                 x: 62, y: 63, sentimento:  33, gri: ['GRI 413'],           ods: [11],    linkIFRS: false },
-  { id: 11, nome: 'Estrutura organizacional',                         descricao: 'Desenho organizacional, governança interna e fluxos decisórios.',                                                     x: 74, y: 68, sentimento: -47, gri: ['GRI 2-9'],           ods: [16],    linkIFRS: false },
-  { id: 12, nome: 'Retenção e atração de talentos',                   descricao: 'Marca empregadora, retenção e estratégia de atração no mercado.',                                                     x: 75, y: 66, sentimento:  -8, gri: ['GRI 401'],           ods: [8],     linkIFRS: false },
-  { id: 13, nome: 'Relacionamento com fornecedores e subcontratados', descricao: 'Parceria de longo prazo com fornecedores e padrões compartilhados.',                                                  x: 70, y: 64, sentimento:  11, gri: ['GRI 204','GRI 308'], ods: [8,12],  linkIFRS: false },
-  { id: 14, nome: 'Comunicação do propósito organizacional',          descricao: 'Clareza do propósito interno e externo da organização.',                                                              x: 72, y: 65, sentimento:  41, gri: [],                   ods: [12],    linkIFRS: false },
-  { id: 15, nome: 'Cadeia de fornecimento responsável',               descricao: 'Critérios ESG na qualificação e auditoria de fornecedores.',                                                          x: 66, y: 61, sentimento:  -3, gri: ['GRI 308','GRI 414'], ods: [12],    linkIFRS: false },
-  { id: 16, nome: 'Gestão de resíduos de construção',                 descricao: 'Destinação adequada de resíduos de obra e logística reversa.',                                                        x: 76, y: 59, sentimento: -12, gri: ['GRI 306'],           ods: [11,12], linkIFRS: false },
-  { id: 17, nome: 'Diversidade, equidade e inclusão',                 descricao: 'DE&I no quadro próprio, na liderança e na cadeia de subcontratados.',                                                 x: 65, y: 62, sentimento:   9, gri: ['GRI 405','GRI 406'], ods: [5,10],  linkIFRS: false },
-  { id: 18, nome: 'Adaptação a mudanças climáticas',                  descricao: 'Riscos climáticos físicos sobre obras, supply chain e cronogramas.',                                                  x: 78, y: 60, sentimento:  -8, gri: ['GRI 201-2'],         ods: [13],    linkIFRS: true  },
-  { id: 19, nome: 'Cultura Organizacional',                           descricao: 'Valores vividos no dia a dia e clima de cooperação entre áreas.',                                                    x: 73, y: 68, sentimento:  15, gri: ['GRI 2-23'],          ods: [8],     linkIFRS: false },
-  { id: 20, nome: 'Emissão de gases de efeito estufa',                descricao: 'Inventário e trajetória de redução de emissões Escopo 1, 2 e 3.',                                                    x: 68, y: 58, sentimento: -22, gri: ['GRI 305'],           ods: [13],    linkIFRS: true  },
+  { id: 1,  nome: 'Processos, tecnologia e infraestrutura',           descricao: 'Modernização da infraestrutura tecnológica e operacional do canteiro e do escritório.',                              x: 97, y: 76, sentimento: -15, gri: ['GRI 3-3'],           ods: [9],     linkIFRS: false, esg: 'G' as const, impacto: 45, financeira: 88 },
+  { id: 2,  nome: 'Qualidade e segurança em obras',                   descricao: 'Excelência técnica de entrega e prevenção de acidentes nas obras.',                                                   x: 89, y: 82, sentimento:  28, gri: ['GRI 403'],           ods: [3,11],  linkIFRS: false, esg: 'S' as const, impacto: 82, financeira: 85 },
+  { id: 3,  nome: 'Integridade corporativa, ética e transparência',   descricao: 'Cultura de integridade, canal de ética e prevenção a corrupção.',                                                     x: 84, y: 72, sentimento:  14, gri: ['GRI 205','GRI 206'], ods: [16],    linkIFRS: false, esg: 'G' as const, impacto: 58, financeira: 76 },
+  { id: 4,  nome: 'Gestão de Pessoas',                                descricao: 'Plano de carreira, reconhecimento, remuneração e desenvolvimento profissional.',                                       x: 91, y: 69, sentimento: -27, gri: ['GRI 401'],           ods: [8],     linkIFRS: false, esg: 'S' as const, impacto: 71, financeira: 80 },
+  { id: 5,  nome: 'Saúde e bem-estar dos colaboradores',              descricao: 'Programas de saúde física e mental, ergonomia e qualidade de vida.',                                                  x: 79, y: 73, sentimento:   6, gri: ['GRI 403'],           ods: [3],     linkIFRS: false, esg: 'S' as const, impacto: 78, financeira: 68 },
+  { id: 6,  nome: 'Segurança da informação',                          descricao: 'Proteção de dados, controle de acesso e continuidade de serviços críticos.',                                          x: 88, y: 69, sentimento:   5, gri: ['GRI 418'],           ods: [16],    linkIFRS: false, esg: 'G' as const, impacto: 52, financeira: 82 },
+  { id: 7,  nome: 'Gestão financeira',                                descricao: 'Disciplina financeira, gestão de capital e previsibilidade de resultados.',                                           x: 85, y: 67, sentimento:  21, gri: ['GRI 201'],           ods: [8],     linkIFRS: false, esg: 'G' as const, impacto: 38, financeira: 95 },
+  { id: 8,  nome: 'Desenvolvimento dos colaboradores',                descricao: 'Capacitação técnica, requalificação e trilhas de aprendizagem.',                                                      x: 72, y: 66, sentimento:  18, gri: ['GRI 404'],           ods: [4,8],   linkIFRS: false, esg: 'S' as const, impacto: 65, financeira: 62 },
+  { id: 9,  nome: 'Relacionamento com clientes e comunicação',        descricao: 'Comunicação clara com clientes e acompanhamento do ciclo de entrega.',                                                x: 74, y: 71, sentimento:  12, gri: [],                   ods: [12,17], linkIFRS: false, esg: 'S' as const, impacto: 60, financeira: 72 },
+  { id: 10, nome: 'Impacto nas comunidades do entorno',               descricao: 'Mitigação de impactos de obra e geração de valor para a vizinhança.',                                                 x: 62, y: 63, sentimento:  33, gri: ['GRI 413'],           ods: [11],    linkIFRS: false, esg: 'S' as const, impacto: 88, financeira: 55 },
+  { id: 11, nome: 'Estrutura organizacional',                         descricao: 'Desenho organizacional, governança interna e fluxos decisórios.',                                                     x: 74, y: 68, sentimento: -47, gri: ['GRI 2-9'],           ods: [16],    linkIFRS: false, esg: 'G' as const, impacto: 42, financeira: 78 },
+  { id: 12, nome: 'Retenção e atração de talentos',                   descricao: 'Marca empregadora, retenção e estratégia de atração no mercado.',                                                     x: 75, y: 66, sentimento:  -8, gri: ['GRI 401'],           ods: [8],     linkIFRS: false, esg: 'S' as const, impacto: 55, financeira: 74 },
+  { id: 13, nome: 'Relacionamento com fornecedores e subcontratados', descricao: 'Parceria de longo prazo com fornecedores e padrões compartilhados.',                                                  x: 70, y: 64, sentimento:  11, gri: ['GRI 204','GRI 308'], ods: [8,12],  linkIFRS: false, esg: 'G' as const, impacto: 62, financeira: 65 },
+  { id: 14, nome: 'Comunicação do propósito organizacional',          descricao: 'Clareza do propósito interno e externo da organização.',                                                              x: 72, y: 65, sentimento:  41, gri: [],                   ods: [12],    linkIFRS: false, esg: 'G' as const, impacto: 48, financeira: 50 },
+  { id: 15, nome: 'Cadeia de fornecimento responsável',               descricao: 'Critérios ESG na qualificação e auditoria de fornecedores.',                                                          x: 66, y: 61, sentimento:  -3, gri: ['GRI 308','GRI 414'], ods: [12],    linkIFRS: false, esg: 'E' as const, impacto: 74, financeira: 60 },
+  { id: 16, nome: 'Gestão de resíduos de construção',                 descricao: 'Destinação adequada de resíduos de obra e logística reversa.',                                                        x: 76, y: 59, sentimento: -12, gri: ['GRI 306'],           ods: [11,12], linkIFRS: false, esg: 'E' as const, impacto: 85, financeira: 58 },
+  { id: 17, nome: 'Diversidade, equidade e inclusão',                 descricao: 'DE&I no quadro próprio, na liderança e na cadeia de subcontratados.',                                                 x: 65, y: 62, sentimento:   9, gri: ['GRI 405','GRI 406'], ods: [5,10],  linkIFRS: false, esg: 'S' as const, impacto: 79, financeira: 52 },
+  { id: 18, nome: 'Adaptação a mudanças climáticas',                  descricao: 'Riscos climáticos físicos sobre obras, supply chain e cronogramas.',                                                  x: 78, y: 60, sentimento:  -8, gri: ['GRI 201-2'],         ods: [13],    linkIFRS: true,  esg: 'E' as const, impacto: 72, financeira: 77 },
+  { id: 19, nome: 'Cultura Organizacional',                           descricao: 'Valores vividos no dia a dia e clima de cooperação entre áreas.',                                                    x: 73, y: 68, sentimento:  15, gri: ['GRI 2-23'],          ods: [8],     linkIFRS: false, esg: 'G' as const, impacto: 44, financeira: 66 },
+  { id: 20, nome: 'Emissão de gases de efeito estufa',                descricao: 'Inventário e trajetória de redução de emissões Escopo 1, 2 e 3.',                                                    x: 68, y: 58, sentimento: -22, gri: ['GRI 305'],           ods: [13],    linkIFRS: true,  esg: 'E' as const, impacto: 92, financeira: 70 },
 ];
 
 function makeBaseline(theme: typeof THEME_SEEDS[0], rand: () => number): VersaoPos {
@@ -142,7 +147,8 @@ function makeProjection(theme: typeof THEME_SEEDS[0], _baseline: VersaoPos, rand
 }
 
 function makePerPublico(theme: typeof THEME_SEEDS[0], rand: () => number): PerPublico[] {
-  return PUBLICOS.map(pub => {
+  // alta_lideranca is stored in theme.alta_lideranca — exclude from por_publico
+  return PUBLICOS.filter(pub => pub.id !== 'alta_lideranca').map(pub => {
     let relevancia = theme.y + Math.round((rand() - 0.5) * 16);
     let sentimento: number | null = theme.sentimento != null ? theme.sentimento + Math.round((rand() - 0.5) * 20) : null;
     let n_amostra = 20 + Math.round(rand() * 180);
@@ -157,6 +163,18 @@ function makePerPublico(theme: typeof THEME_SEEDS[0], rand: () => number): PerPu
     if (theme.id === 4 && pub.id === 'interno') sentimento = -38;
     if (theme.id === 20 && pub.id === 'especialistas') impacto_negocio = 96;
     if (theme.id === 18 && pub.id === 'especialistas') impacto_negocio = 92;
+
+    // Investidores: foco em conformidade regulatória, governança e risco climático
+    if (pub.id === 'investidores') {
+      n_amostra = 8 + Math.round(rand() * 25);
+      if ([7, 3, 6, 11].includes(theme.id)) relevancia += 12;
+      if ([18, 20].includes(theme.id)) { relevancia += 15; if (sentimento != null) sentimento -= 12; }
+      if ([8, 10, 14, 17].includes(theme.id)) relevancia -= 10;
+      if (theme.id === 11 && sentimento != null) sentimento -= 25;
+      if (theme.id === 7  && sentimento != null) sentimento += 20;
+      if (theme.id === 20 && sentimento != null) sentimento -= 18;
+      if (theme.id === 1  && sentimento != null) sentimento -= 8;
+    }
 
     relevancia = Math.max(35, Math.min(100, relevancia));
     impacto_negocio = Math.max(30, Math.min(100, impacto_negocio));
@@ -638,6 +656,10 @@ export function getDimValue(theme: Theme, publicoId: string, dim: string): numbe
 export function recalcEixoY(theme: Theme, activePublicos: string[]): number {
   if (!activePublicos.length) return theme.y;
   let sum = 0, weight = 0;
+  if (activePublicos.includes('alta_lideranca')) {
+    const w = PUBLICO_BY_ID['alta_lideranca']?.peso ?? 1.5;
+    sum += theme.alta_lideranca.impacto_negocio * w; weight += w;
+  }
   theme.por_publico.forEach(pp => {
     if (activePublicos.includes(pp.publico)) {
       const p = PUBLICO_BY_ID[pp.publico];
@@ -651,6 +673,10 @@ export function recalcEixoY(theme: Theme, activePublicos: string[]): number {
 export function recalcSent(theme: Theme, activePublicos: string[]): number | null {
   if (!activePublicos.length) return theme.sentimento;
   let sum = 0, weight = 0;
+  if (activePublicos.includes('alta_lideranca')) {
+    const w = PUBLICO_BY_ID['alta_lideranca']?.peso ?? 1.5;
+    sum += theme.alta_lideranca.sentimento * w; weight += w;
+  }
   theme.por_publico.forEach(pp => {
     if (activePublicos.includes(pp.publico) && pp.sentimento != null) {
       const p = PUBLICO_BY_ID[pp.publico];

@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router';
+import { ArrowRight } from 'lucide-react';
 import { Icon, Pill, Btn } from './icons';
 import { Card, PageHeader, SectionTitle, AIInsight } from './components';
 import { HeatmapSentimentoBlock } from './dimensions';
@@ -18,64 +20,37 @@ import { cn } from '~/lib/utils';
 interface ScoreCardProps {
   label: string;
   value: number | string;
-  tone: 'neutral' | 'danger' | 'warning' | 'success' | 'brand';
+  tone?: string;
   sublabel?: string;
-  icon: string;
+  icon?: string;
+  onClick?: () => void;
 }
 
-export function ScoreCard({ label, value, tone, sublabel, icon }: ScoreCardProps) {
-  const colorMap: Record<string, string> = {
-    neutral: 'text-foreground',
-    danger:  'text-destructive',
-    warning: 'text-amber-600',
-    success: 'text-green-600',
-    brand:   'text-primary',
-  };
-  const bgMap: Record<string, string> = {
-    neutral: 'bg-muted',
-    danger:  'bg-red-100',
-    warning: 'bg-amber-100',
-    success: 'bg-green-100',
-    brand:   'bg-primary/10',
-  };
-  const iconColorMap: Record<string, string> = {
-    neutral: '#525252',
-    danger:  '#C81E1E',
-    warning: '#B45309',
-    success: '#009966',
-    brand:   '#7401C3',
-  };
+export function ScoreCard({ label, value, onClick }: ScoreCardProps) {
   return (
-    <ShadCard className="relative min-h-[122px] p-[18px_18px_16px]">
+    <ShadCard
+      className={cn('p-[14px_16px] border-t-2 border-t-primary/25', onClick && 'cursor-pointer transition-shadow hover:shadow-md hover:border-t-primary/60')}
+      onClick={onClick}
+    >
       <CardContent className="p-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
-              {label}
-            </div>
-            <div className={cn(
-              'font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums',
-              colorMap[tone] ?? 'text-foreground',
-            )}>
-              {value}
-            </div>
-            {sublabel && (
-              <div className="mt-2 text-[11.5px] leading-[1.4] text-muted-foreground">{sublabel}</div>
-            )}
-          </div>
-          <span className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]',
-            bgMap[tone] ?? 'bg-muted',
-          )}>
-            <Icon name={icon} size={16} color={iconColorMap[tone] ?? '#525252'}/>
-          </span>
+        <div className="mb-1 min-h-[2.5em] text-[10px] font-semibold uppercase tracking-widest text-muted-foreground leading-tight">
+          {label}
         </div>
+        <div className="font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums text-foreground">
+          {value}
+        </div>
+        {onClick && (
+          <div className="mt-2 flex items-center gap-0.5 text-[10px] font-semibold text-primary">
+            Ver mais
+            <ArrowRight className="size-3" />
+          </div>
+        )}
       </CardContent>
     </ShadCard>
   );
 }
 
-/* ---------- Públicos dropdown (multi-select) ---------- */
+/* ---------- Públicos dropdown (filtro puro) ---------- */
 interface PublicosDropdownProps {
   active: string[];
   onToggle: (id: string) => void;
@@ -97,49 +72,40 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
   const allSelected = active.length === PUBLICOS.length;
   const isOriginal = allSelected;
 
-  let summary: string;
-  if (allSelected) summary = 'Todos os públicos';
-  else if (active.length === 0) summary = 'Nenhum público';
-  else if (active.length === 1) summary = PUBLICO_BY_ID[active[0]]?.label || '1 público';
-  else summary = `${active.length} de ${PUBLICOS.length} públicos`;
+  const summary =
+    allSelected ? 'Todos os públicos'
+    : active.length === 0 ? 'Nenhum público'
+    : active.length === 1 ? PUBLICO_BY_ID[active[0]]?.label || '1 público'
+    : `${active.length} de ${PUBLICOS.length} públicos`;
 
   return (
-    <div ref={ref} className="relative min-w-[220px]">
-      <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
-        Filtrar por público
-      </div>
+    <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] font-semibold text-foreground">
-        <Icon name="users" size={14} color="#7401C3"/>
-        <span className="flex-1 text-left">{summary}</span>
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground whitespace-nowrap">
+        <Icon name="users" size={12} color="var(--primary)"/>
+        <span className={cn('flex-1 text-left', isOriginal && 'text-muted-foreground')}>
+          {isOriginal ? 'Filtrar por público' : summary}
+        </span>
         {!isOriginal && (
           <span className="rounded-full bg-amber-100 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-amber-600">
             filtrado
           </span>
         )}
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="#AA95BE"/>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="var(--muted-foreground)"/>
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max max-w-[360px] min-w-[300px] rounded-xl border border-border bg-white p-2 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
-          <div className="mb-1.5 flex items-center justify-between border-b border-muted px-1.5 pb-2 pt-1">
-            <span className="text-[11px] text-muted-foreground">
+        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max max-w-[360px] min-w-[280px] rounded-xl border border-border bg-popover p-2 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
+          <div className="mb-1 flex items-center justify-between border-b border-muted px-1.5 pb-2 pt-0.5">
+            <span className="text-xs text-muted-foreground">
               Visão {isOriginal
                 ? <b className="text-green-600">original</b>
                 : <b className="text-amber-600">filtrada</b>}
             </span>
             <div className="flex gap-1">
-              <button
-                onClick={onAll}
-                className="cursor-pointer rounded-md border border-border bg-white px-2 py-[3px] text-[11px] font-semibold text-primary">
-                Todos
-              </button>
-              <button
-                onClick={onNone}
-                className="cursor-pointer rounded-md border border-border bg-white px-2 py-[3px] text-[11px] font-semibold text-muted-foreground">
-                Limpar
-              </button>
+              <button onClick={onAll} className="cursor-pointer rounded-md border border-border bg-background px-2 py-[3px] text-xs font-semibold text-primary">Todos</button>
+              <button onClick={onNone} className="cursor-pointer rounded-md border border-border bg-background px-2 py-[3px] text-xs font-semibold text-muted-foreground">Limpar</button>
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
@@ -151,38 +117,32 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
                   onClick={() => onToggle(pub.id)}
                   className={cn(
                     'flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors duration-[120ms]',
-                    isActive ? 'bg-primary/10' : 'bg-[#FAFAFA] hover:bg-[#F6EDFB]',
+                    isActive ? 'bg-primary/10' : 'bg-muted/40 hover:bg-primary/5',
                   )}>
                   <span className={cn(
                     'flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px]',
-                    isActive
-                      ? 'border-[1.5px] border-primary bg-primary'
-                      : 'border-[1.5px] border-stone-300 bg-white',
+                    isActive ? 'border-[1.5px] border-primary bg-primary' : 'border-[1.5px] border-stone-300 bg-background',
                   )}>
                     {isActive && <Icon name="check" size={10} color="#fff" stroke={3}/>}
                   </span>
-                  <span className={cn(
-                    'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md',
-                    isActive ? 'bg-white' : 'bg-muted',
-                  )}>
+                  <span className={cn('flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md', isActive ? 'bg-background' : 'bg-muted')}>
                     <Icon name={pub.icon} size={11} color={isActive ? '#3C0366' : '#737373'}/>
                   </span>
-                  <span className={cn(
-                    'min-w-0 flex-1 text-[12.5px]',
-                    isActive ? 'font-bold text-[#3C0366]' : 'font-medium text-[#525252]',
-                  )}>{pub.label}</span>
+                  <span className={cn('min-w-0 flex-1 text-sm', isActive ? 'font-bold' : 'font-medium text-muted-foreground')}
+                    style={isActive ? { color: '#3C0366' } : {}}>
+                    {pub.label}
+                  </span>
                   {pub.peso !== 1 && (
-                    <span className={cn(
-                      'rounded-full px-1.5 py-[1px] text-[10px] font-bold',
-                      isActive ? 'bg-white text-[#5A0992]' : 'bg-muted text-muted-foreground',
-                    )}>{pub.peso}×</span>
+                    <span className={cn('rounded-full px-1.5 py-[1px] text-[10px] font-bold', isActive ? 'bg-background text-primary' : 'bg-muted text-muted-foreground')}>
+                      {pub.peso}×
+                    </span>
                   )}
                 </div>
               );
             })}
           </div>
-          <div className="mt-2 rounded-lg bg-[#FAFAFA] px-2.5 py-2 text-[11px] leading-[1.45] text-[#525252]">
-            Para a visão <b className="text-foreground">original</b>, mantenha todos os públicos selecionados. Esta vista não altera a matriz oficial.
+          <div className="mt-2 rounded-lg bg-muted/50 px-2.5 py-2 text-xs leading-[1.45] text-muted-foreground">
+            Para a visão <b className="text-foreground">original</b>, mantenha todos os públicos selecionados.
           </div>
         </div>
       )}
@@ -190,15 +150,23 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
   );
 }
 
-/* ---------- Comparison dropdown ---------- */
-interface ComparisonDropdownProps {
+/* ---------- Compare dropdown (unificado: públicos + períodos) ---------- */
+interface CompareDropdownProps {
   baseId: string;
   compareId: string | null;
-  onChange: (base: string, compare: string | null) => void;
+  onVersionChange: (base: string, compare: string | null) => void;
+  pubCompareMode: boolean;
+  pubActive: string[];
+  onPubCompareModeChange: (enabled: boolean) => void;
+  onPubToggle: (id: string) => void;
 }
 
-export function ComparisonDropdown({ baseId, compareId, onChange }: ComparisonDropdownProps) {
+export function CompareDropdown({
+  baseId, compareId, onVersionChange,
+  pubCompareMode, pubActive, onPubCompareModeChange, onPubToggle,
+}: CompareDropdownProps) {
   const [open, setOpen] = React.useState(false);
+  const [tab, setTab] = React.useState<'publicos' | 'periodos'>('periodos');
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -208,55 +176,158 @@ export function ComparisonDropdown({ baseId, compareId, onChange }: ComparisonDr
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  // Sync tab with active comparison type when opening
+  React.useEffect(() => {
+    if (pubCompareMode) setTab('publicos');
+    else if (compareId) setTab('periodos');
+  }, [pubCompareMode, compareId]);
+
   const baseV = VERSOES.find(v => v.id === baseId) || VERSOES.find(v => v.atual);
   const cmpV  = compareId ? VERSOES.find(v => v.id === compareId) : null;
 
+  const isPubComparing = pubCompareMode && pubActive.length === 2;
+  const isVersionComparing = !!cmpV;
+  const isComparing = isPubComparing || isVersionComparing;
+
+  const handleTabChange = (newTab: 'publicos' | 'periodos') => {
+    if (newTab === 'publicos' && !pubCompareMode) {
+      onVersionChange(baseId, null);
+      onPubCompareModeChange(true);
+    } else if (newTab === 'periodos' && pubCompareMode) {
+      onPubCompareModeChange(false);
+    }
+    setTab(newTab);
+  };
+
+  const clearAll = () => {
+    onPubCompareModeChange(false);
+    onVersionChange(baseId, null);
+  };
+
   return (
-    <div ref={ref} className="relative min-w-[260px]">
-      <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground">
-        Comparar versões
-      </div>
+    <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] font-semibold text-foreground">
-        <Icon name="history" size={14} color="#7401C3"/>
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground whitespace-nowrap">
+        <Icon name="bar-chart" size={12} color="var(--primary)"/>
         <span className="flex-1 text-left">
-          {cmpV ? (
+          {isPubComparing ? (
+            <span className="inline-flex items-center gap-1.5">
+              <b style={{ color: PUBLICO_BY_ID[pubActive[0]]?.color }}>{PUBLICO_BY_ID[pubActive[0]]?.short}</b>
+              <span className="text-muted-foreground text-xs">vs.</span>
+              <b style={{ color: PUBLICO_BY_ID[pubActive[1]]?.color }}>{PUBLICO_BY_ID[pubActive[1]]?.short}</b>
+            </span>
+          ) : isVersionComparing ? (
             <span className="inline-flex items-center gap-1.5">
               <b>{baseV?.curto}</b>
-              <Icon name="arrow-right" size={11} color="#AA95BE"/>
-              <b>{cmpV.curto}</b>
+              <Icon name="arrow-right" size={11} color="var(--muted-foreground)"/>
+              <b>{cmpV!.curto}</b>
             </span>
           ) : (
-            <span className="text-muted-foreground">Selecionar versões para comparar</span>
+            <span className="text-muted-foreground">Comparar</span>
           )}
         </span>
-        {cmpV && (
-          <span className="rounded-full bg-primary/10 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-[#5A0992]">
+        {isComparing && (
+          <span className="rounded-full bg-primary/10 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-primary">
             comparando
           </span>
         )}
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="#AA95BE"/>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="var(--muted-foreground)"/>
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max min-w-[320px] rounded-xl border border-border bg-white p-3 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
-          <div className="flex flex-col gap-3">
-            <VersionPicker label="Versão de referência" value={baseId}
-              onChange={(v) => onChange(v, compareId)}/>
-            <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#AA95BE]">
-              <span className="h-px flex-1 bg-border"/>
-              <Icon name="arrow-right" size={11} color="#AA95BE"/>
-              <span>vs.</span>
-              <span className="h-px flex-1 bg-border"/>
-            </div>
-            <VersionPicker label="Comparar com" value={compareId || ''} allowEmpty
-              onChange={(v) => onChange(baseId, v || null)}/>
+        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-max min-w-[300px] rounded-xl border border-border bg-popover p-2.5 shadow-[0_12px_28px_rgba(60,3,102,0.12)]">
+          {/* Tab toggle */}
+          <div className="mb-3 flex items-center gap-1 rounded-lg border border-border bg-muted p-[3px]">
+            {(['publicos', 'periodos'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => handleTabChange(t)}
+                className={cn(
+                  'flex-1 rounded-md px-3 py-[5px] text-xs font-semibold transition-colors duration-[120ms]',
+                  tab === t ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t === 'publicos' ? 'Públicos' : 'Períodos'}
+              </button>
+            ))}
           </div>
-          {cmpV && (
-            <div className="mt-3 rounded-lg bg-[#F6EDFB] px-2.5 py-2 text-[11px] leading-[1.5] text-[#5A0992]">
-              Pontos com contorno claro são <b>{cmpV.curto}</b>. Linhas tracejadas conectam ao ponto atual ({baseV?.curto}).
+
+          {tab === 'publicos' && (
+            <div>
+              <div className="mb-2 px-1 text-xs text-muted-foreground">
+                {!pubCompareMode
+                  ? <span>Ative para selecionar 2 públicos.</span>
+                  : pubActive.length < 2
+                  ? <b className="text-blue-600">Selecione {2 - pubActive.length} público{2 - pubActive.length > 1 ? 's' : ''}</b>
+                  : <b className="text-green-600">Pronto — 2 selecionados</b>}
+              </div>
+              {!pubCompareMode ? (
+                <button
+                  onClick={() => handleTabChange('publicos')}
+                  className="mb-2 w-full rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/10">
+                  Ativar comparação por público
+                </button>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {PUBLICOS.map(pub => {
+                    const isActive = pubActive.includes(pub.id);
+                    const slotIndex = pubActive.indexOf(pub.id);
+                    const isDisabled = !isActive && pubActive.length >= 2;
+                    return (
+                      <div
+                        key={pub.id}
+                        onClick={() => !isDisabled && onPubToggle(pub.id)}
+                        className={cn(
+                          'flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors duration-[120ms]',
+                          isDisabled ? 'cursor-not-allowed opacity-40' : '',
+                          isActive ? 'bg-[#F0F7FF]' : 'bg-muted/40 hover:bg-primary/5',
+                        )}>
+                        <span
+                          className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[1.5px]', isActive ? 'border-0' : 'border-stone-300 bg-background')}
+                          style={isActive ? { background: pub.color } : {}}>
+                          {isActive && <span className="text-[8px] font-black text-white">{slotIndex + 1}</span>}
+                        </span>
+                        <span className={cn('flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md', isActive ? 'bg-background' : 'bg-muted')}>
+                          <Icon name={pub.icon} size={11} color={isActive ? pub.color : '#737373'}/>
+                        </span>
+                        <span
+                          className={cn('min-w-0 flex-1 text-sm', isActive ? 'font-bold' : 'font-medium text-muted-foreground')}
+                          style={isActive ? { color: pub.color } : {}}>
+                          {pub.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
+
+          {tab === 'periodos' && (
+            <div className="flex flex-col gap-3">
+              <VersionPicker label="Versão de referência" value={baseId} onChange={(v) => onVersionChange(v, compareId)}/>
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                <span className="h-px flex-1 bg-border"/>
+                <Icon name="arrow-right" size={11} color="var(--muted-foreground)"/>
+                <span>vs.</span>
+                <span className="h-px flex-1 bg-border"/>
+              </div>
+              <VersionPicker label="Comparar com" value={compareId || ''} allowEmpty onChange={(v) => onVersionChange(baseId, v || null)}/>
+              {cmpV && (
+                <div className="rounded-lg bg-primary/5 px-2.5 py-2 text-xs leading-[1.5] text-primary">
+                  Pontos com contorno claro são <b>{cmpV.curto}</b>. Linhas tracejadas conectam ao ponto atual ({baseV?.curto}).
+                </div>
+              )}
+            </div>
+          )}
+
+          {isComparing && (
+            <button
+              onClick={clearAll}
+              className="mt-3 w-full rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/60">
+              Limpar comparação
+            </button>
           )}
         </div>
       )}
@@ -273,7 +344,7 @@ function VersionPicker({ label, value, onChange, allowEmpty }: {
   const options = allowEmpty ? [{ id: '', curto: '—', label: 'Sem comparação', status: '', atual: false, draft: false } as Versao & { id: string }, ...VERSOES] : VERSOES;
   return (
     <div>
-      <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
+      <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
       <div className="flex flex-col gap-1">
         {options.map(opt => {
           const isActive = value === opt.id;
@@ -284,22 +355,22 @@ function VersionPicker({ label, value, onChange, allowEmpty }: {
               className={cn(
                 'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors duration-[120ms]',
                 isActive
-                  ? 'border-[#E8D9F2] bg-[#F6EDFB]'
+                  ? 'border-primary/20 bg-primary/5'
                   : 'border-transparent bg-transparent hover:bg-muted/50',
               )}>
               <span className={cn(
-                'h-3.5 w-3.5 shrink-0 rounded-full bg-white',
+                'h-3.5 w-3.5 shrink-0 rounded-full bg-background',
                 isActive ? 'border-[4px] border-primary' : 'border-[1.5px] border-stone-300',
               )}/>
               <span className={cn(
-                'min-w-0 flex-1 text-[12.5px] text-foreground',
+                'min-w-0 flex-1 text-sm text-foreground',
                 isActive ? 'font-bold' : 'font-medium',
               )}>
                 {opt.label || 'Sem comparação'}
               </span>
               {opt.status && (
                 <span className={cn(
-                  'text-[9.5px] font-bold uppercase tracking-[0.06em]',
+                  'text-[10px] font-bold uppercase tracking-[0.06em]',
                   opt.atual ? 'text-green-600' : (opt.draft ? 'text-amber-600' : 'text-muted-foreground'),
                 )}>
                   {opt.atual ? 'atual' : (opt.draft ? 'rascunho' : 'arquivada')}
@@ -314,6 +385,14 @@ function VersionPicker({ label, value, onChange, allowEmpty }: {
 }
 
 /* ---------- Matrix SVG ---------- */
+interface PubCompareSlot {
+  id: string;
+  label: string;
+  color: string;
+  y: number;
+  sent: number | null;
+}
+
 interface MatrixPoint {
   id: number;
   name: string;
@@ -322,7 +401,16 @@ interface MatrixPoint {
   sent: number | null;
   cmp: { x: number; y: number; sentimento?: number } | null;
   tema: Theme;
+  pubCompare?: { pub1: PubCompareSlot; pub2: PubCompareSlot };
 }
+
+const ESG_COLOR: Record<'E' | 'S' | 'G', string> = {
+  E: '#16A34A',
+  S: '#2563EB',
+  G: '#7401C3',
+};
+
+type XDimension = 'negocios' | 'impacto' | 'financeira';
 
 interface MatrixSVGProps {
   themes: Theme[];
@@ -333,33 +421,83 @@ interface MatrixSVGProps {
   onHover?: (point: MatrixPoint | null) => void;
   hoverId?: number;
   selectedId?: number;
+  colorMode?: 'sentiment' | 'esg';
+  pubComparePair?: [string, string];
+  xDimension?: XDimension;
 }
 
-export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick, onHover, hoverId, selectedId }: MatrixSVGProps) {
+export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick, onHover, hoverId, selectedId, colorMode = 'sentiment', pubComparePair, xDimension = 'negocios' }: MatrixSVGProps) {
   const W = 720, H = 480;
   const ML = 60, MR = 30, MT = 24, MB = 50;
-  const minA = 35, maxA = 100;
-  const span = maxA - minA;
 
-  const px = (v: number) => ML + ((v - minA) / span) * (W - ML - MR);
-  const py = (v: number) => H - MB - ((v - minA) / span) * (H - MT - MB);
+  // Compute data extent for dynamic axis scaling
+  const isPubCompareEarly = pubComparePair != null;
+  const _allX: number[] = [], _allY: number[] = [];
+  themes.forEach(t => {
+    const yLive = recalcEixoY(t, activePublicos);
+    const usingFilter = !isPubCompareEarly && activePublicos.length > 0 && activePublicos.length < PUBLICOS.length;
+    const base = basePos ? basePos(t) : { x: t.x, y: yLive };
+    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : base.x;
+    const rawY = usingFilter ? yLive : base.y;
+    _allX.push(rawX); _allY.push(rawY);
+    const cmp = comparePos ? comparePos(t) : null;
+    if (cmp) { _allX.push(cmp.x); _allY.push(cmp.y); }
+    if (isPubCompareEarly) {
+      _allY.push(recalcEixoY(t, [pubComparePair![0]]));
+      _allY.push(recalcEixoY(t, [pubComparePair![1]]));
+    }
+  });
+  const PAD = 5;
+  const minX = Math.max(0,   Math.floor((Math.min(..._allX) - PAD) / 5) * 5);
+  const maxX = Math.min(100, Math.ceil ((Math.max(..._allX) + PAD) / 5) * 5);
+  const minY = Math.max(0,   Math.floor((Math.min(..._allY) - PAD) / 5) * 5);
+  const maxY = Math.min(100, Math.ceil ((Math.max(..._allY) + PAD) / 5) * 5);
+
+  const px = (v: number) => ML + ((v - minX) / (maxX - minX)) * (W - ML - MR);
+  const py = (v: number) => H - MB - ((v - minY) / (maxY - minY)) * (H - MT - MB);
+
+  // Dynamic tick generation (every 5 within range)
+  const xTicks = Array.from({ length: Math.round((maxX - minX) / 5) + 1 }, (_, i) => minX + i * 5);
+  const yTicks = Array.from({ length: Math.round((maxY - minY) / 5) + 1 }, (_, i) => minY + i * 5);
 
   const thresholdX = 75, thresholdY = 65;
+
+  const isPubCompare = pubComparePair != null;
+
+  const xLabel =
+    xDimension === 'impacto'    ? 'Impacto (inside-out) →' :
+    xDimension === 'financeira' ? 'Materialidade Financeira (outside-in) →' :
+    'Relevância para os negócios (Alta Liderança) →';
 
   const points: MatrixPoint[] = themes.map(t => {
     const yLive = recalcEixoY(t, activePublicos);
     const sLive = recalcSent(t, activePublicos);
-    const usingFilter = activePublicos.length > 0 && activePublicos.length < PUBLICOS.length;
+    const usingFilter = !isPubCompare && activePublicos.length > 0 && activePublicos.length < PUBLICOS.length;
     const base = basePos ? basePos(t) : { x: t.x, y: yLive, sentimento: sLive };
-    const cmp  = comparePos ? comparePos(t) : null;
+    const cmp  = comparePos && xDimension === 'negocios' ? comparePos(t) : null;
+
+    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : (usingFilter ? t.x : base.x);
+
+    let pubCompare: MatrixPoint['pubCompare'];
+    if (isPubCompare) {
+      const [id1, id2] = pubComparePair!;
+      const p1 = PUBLICO_BY_ID[id1];
+      const p2 = PUBLICO_BY_ID[id2];
+      pubCompare = {
+        pub1: { id: id1, label: p1?.label ?? id1, color: p1?.color ?? '#7401C3', y: recalcEixoY(t, [id1]), sent: recalcSent(t, [id1]) },
+        pub2: { id: id2, label: p2?.label ?? id2, color: p2?.color ?? '#2563EB', y: recalcEixoY(t, [id2]), sent: recalcSent(t, [id2]) },
+      };
+    }
+
     return {
       id: t.id,
       name: t.nome,
-      x: usingFilter ? t.x : base.x,
+      x: rawX,
       y: usingFilter ? yLive : base.y,
       sent: usingFilter ? sLive : (base.sentimento != null ? base.sentimento : sLive),
       cmp: cmp ? { x: cmp.x, y: cmp.y, sentimento: cmp.sentimento ?? undefined } : null,
       tema: t,
+      pubCompare,
     };
   });
 
@@ -372,65 +510,110 @@ export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick,
       </defs>
 
       {/* Quadrant tints */}
-      <rect x={px(thresholdX)} y={py(maxA)} width={px(maxA) - px(thresholdX)} height={py(thresholdY) - py(maxA)} fill="#FAF5FE"/>
-      <rect x={px(minA)} y={py(thresholdY)} width={px(thresholdX) - px(minA)} height={py(minA) - py(thresholdY)} fill="#FAFCFA"/>
+      {thresholdX > minX && thresholdX < maxX && thresholdY > minY && thresholdY < maxY && (<>
+        <rect x={px(thresholdX)} y={py(maxY)} width={px(maxX) - px(thresholdX)} height={py(thresholdY) - py(maxY)} fill="#FAF5FE"/>
+        <rect x={px(minX)} y={py(thresholdY)} width={px(thresholdX) - px(minX)} height={py(minY) - py(thresholdY)} fill="#FAFCFA"/>
+      </>)}
 
-      {/* Grid lines */}
-      {[50, 65, 75, 85].map(v => (
-        <g key={`vx${v}`}>
-          <line x1={px(v)} y1={py(minA)} x2={px(v)} y2={py(maxA)} stroke="#F0EBF4" strokeWidth="1"/>
-          <line x1={px(minA)} y1={py(v)} x2={px(maxA)} y2={py(v)} stroke="#F0EBF4" strokeWidth="1"/>
-        </g>
+      {/* X grid lines */}
+      {xTicks.filter(v => v > minX && v < maxX).map(v => (
+        <line key={`vx${v}`} x1={px(v)} y1={py(minY)} x2={px(v)} y2={py(maxY)} stroke="#F0EBF4" strokeWidth="1"/>
+      ))}
+      {/* Y grid lines */}
+      {yTicks.filter(v => v > minY && v < maxY).map(v => (
+        <line key={`hy${v}`} x1={px(minX)} y1={py(v)} x2={px(maxX)} y2={py(v)} stroke="#F0EBF4" strokeWidth="1"/>
       ))}
 
       {/* Thresholds dashed */}
-      <line x1={px(thresholdX)} y1={py(minA)} x2={px(thresholdX)} y2={py(maxA)} stroke="#AA95BE" strokeWidth="1" strokeDasharray="4 4" opacity="0.7"/>
-      <line x1={px(minA)} y1={py(thresholdY)} x2={px(maxA)} y2={py(thresholdY)} stroke="#AA95BE" strokeWidth="1" strokeDasharray="4 4" opacity="0.7"/>
+      {thresholdX > minX && thresholdX < maxX && (
+        <line x1={px(thresholdX)} y1={py(minY)} x2={px(thresholdX)} y2={py(maxY)} stroke="#AA95BE" strokeWidth="1" strokeDasharray="4 4" opacity="0.7"/>
+      )}
+      {thresholdY > minY && thresholdY < maxY && (
+        <line x1={px(minX)} y1={py(thresholdY)} x2={px(maxX)} y2={py(thresholdY)} stroke="#AA95BE" strokeWidth="1" strokeDasharray="4 4" opacity="0.7"/>
+      )}
 
       {/* Quadrant labels */}
-      <text x={px(maxA) - 8} y={py(maxA) + 16} textAnchor="end" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#7401C3">PRIORIDADE MÁXIMA</text>
-      <text x={px(minA) + 8} y={py(maxA) + 16} textAnchor="start" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#737373">ENGAJAMENTO</text>
-      <text x={px(maxA) - 8} y={py(minA) - 10} textAnchor="end" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#737373">ESTRATÉGICO</text>
-      <text x={px(minA) + 8} y={py(minA) - 10} textAnchor="start" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#AA95BE">MONITORAR</text>
+      <text x={px(maxX) - 8} y={py(maxY) + 16} textAnchor="end" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#7401C3">PRIORIDADE MÁXIMA</text>
+      <text x={px(minX) + 8} y={py(maxY) + 16} textAnchor="start" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#737373">ENGAJAMENTO</text>
+      <text x={px(maxX) - 8} y={py(minY) - 10} textAnchor="end" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#737373">ESTRATÉGICO</text>
+      <text x={px(minX) + 8} y={py(minY) - 10} textAnchor="start" fontFamily="Lato" fontWeight="700" fontSize="11" letterSpacing="1" fill="#AA95BE">MONITORAR</text>
 
       {/* Axes */}
-      <line x1={px(minA)} y1={py(minA)} x2={px(maxA)} y2={py(minA)} stroke="#0A0A0A" strokeWidth="1.5"/>
-      <line x1={px(minA)} y1={py(minA)} x2={px(minA)} y2={py(maxA)} stroke="#0A0A0A" strokeWidth="1.5"/>
+      <line x1={px(minX)} y1={py(minY)} x2={px(maxX)} y2={py(minY)} stroke="#0A0A0A" strokeWidth="1.5"/>
+      <line x1={px(minX)} y1={py(minY)} x2={px(minX)} y2={py(maxY)} stroke="#0A0A0A" strokeWidth="1.5"/>
 
       {/* X ticks */}
-      {[40, 50, 60, 70, 80, 90, 100].map(t => (
+      {xTicks.map(t => (
         <g key={`xt${t}`}>
-          <line x1={px(t)} y1={py(minA)} x2={px(t)} y2={py(minA) + 4} stroke="#737373" strokeWidth="1"/>
-          <text x={px(t)} y={py(minA) + 18} textAnchor="middle" fontSize="10" fill="#737373" fontFamily="Open Sans">{t}</text>
+          <line x1={px(t)} y1={py(minY)} x2={px(t)} y2={py(minY) + 4} stroke="#737373" strokeWidth="1"/>
+          <text x={px(t)} y={py(minY) + 18} textAnchor="middle" fontSize="10" fill="#737373" fontFamily="Open Sans">{t}</text>
         </g>
       ))}
       {/* Y ticks */}
-      {[40, 50, 60, 70, 80, 90, 100].map(t => (
+      {yTicks.map(t => (
         <g key={`yt${t}`}>
-          <line x1={px(minA) - 4} y1={py(t)} x2={px(minA)} y2={py(t)} stroke="#737373" strokeWidth="1"/>
-          <text x={px(minA) - 8} y={py(t) + 3} textAnchor="end" fontSize="10" fill="#737373" fontFamily="Open Sans">{t}</text>
+          <line x1={px(minX) - 4} y1={py(t)} x2={px(minX)} y2={py(t)} stroke="#737373" strokeWidth="1"/>
+          <text x={px(minX) - 8} y={py(t) + 3} textAnchor="end" fontSize="10" fill="#737373" fontFamily="Open Sans">{t}</text>
         </g>
       ))}
 
       {/* Axis titles */}
-      <text x={W - MR} y={H - 10} textAnchor="end" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância para os negócios (Alta Liderança) →</text>
-      <text x={-py(minA) + 8} y={18} transform="rotate(-90)" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância para os stakeholders →</text>
+      <text x={W - MR} y={H - 10} textAnchor="end" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância financeira →</text>
+      <text x={-py(minY) + 8} y={18} transform="rotate(-90)" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância para os stakeholders →</text>
 
-      {/* Compare mode: arrows */}
-      {points.map(p => p.cmp && (
+      {/* Version compare arrows (existing feature) */}
+      {!isPubCompare && points.map(p => p.cmp && (
         <g key={`cmp${p.id}`}>
           <line x1={px(p.cmp.x)} y1={py(p.cmp.y)} x2={px(p.x)} y2={py(p.y)} stroke="#AA95BE" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.75"/>
           <circle cx={px(p.cmp.x)} cy={py(p.cmp.y)} r="4.5" fill="#fff" stroke="#AA95BE" strokeWidth="1.6"/>
         </g>
       ))}
 
+      {/* Pub compare: connecting lines (render before circles so circles are on top) */}
+      {isPubCompare && points.map(p => {
+        const pc = p.pubCompare!;
+        return (
+          <line key={`pcline${p.id}`}
+            x1={px(p.x)} y1={py(pc.pub1.y)}
+            x2={px(p.x)} y2={py(pc.pub2.y)}
+            stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+        );
+      })}
+
       {/* Points */}
       {points.map(p => {
         const isHover = hoverId === p.id;
         const isSel   = selectedId === p.id;
+
+        if (isPubCompare && p.pubCompare) {
+          const pc = p.pubCompare;
+          const r1 = isHover ? 11 : 9;
+          const r2 = isHover ? 11 : 9;
+          return (
+            <g key={p.id}
+              onMouseEnter={() => onHover && onHover(p)}
+              onMouseLeave={() => onHover && onHover(null)}
+              onClick={() => onPick && onPick(p.id)}
+              style={{ cursor: 'pointer' }}>
+              {isHover && <circle cx={px(p.x)} cy={py(pc.pub1.y)} r={18} fill={pc.pub1.color} opacity={0.15}/>}
+              {isHover && <circle cx={px(p.x)} cy={py(pc.pub2.y)} r={18} fill={pc.pub2.color} opacity={0.15}/>}
+              <circle cx={px(p.x)} cy={py(pc.pub1.y)} r={r1} fill={pc.pub1.color} stroke="#fff" strokeWidth="2"/>
+              <text x={px(p.x)} y={py(pc.pub1.y) + 3.5} textAnchor="middle"
+                fontFamily="Lato" fontWeight="900" fontSize="10" fill="#fff" style={{ pointerEvents: 'none' }}>
+                {String(p.id).padStart(2, '0')}
+              </text>
+              <circle cx={px(p.x)} cy={py(pc.pub2.y)} r={r2} fill={pc.pub2.color} stroke="#fff" strokeWidth="2"/>
+              <text x={px(p.x)} y={py(pc.pub2.y) + 3.5} textAnchor="middle"
+                fontFamily="Lato" fontWeight="900" fontSize="10" fill="#fff" style={{ pointerEvents: 'none' }}>
+                {String(p.id).padStart(2, '0')}
+              </text>
+            </g>
+          );
+        }
+
         const radius = isHover || isSel ? 11 : 9;
         const auraR  = isHover || isSel ? 18 : 14;
-        const fg = sentColor(p.sent);
+        const fg = colorMode === 'esg' ? ESG_COLOR[p.tema.esg] : sentColor(p.sent);
         return (
           <g key={p.id}
             onMouseEnter={() => onHover && onHover(p)}
@@ -464,6 +647,55 @@ export function HoverTooltip({ point, baseLabel, cmpLabel }: HoverTooltipProps) 
   const st = themeStatus(t, point.x, point.y, point.sent);
   const inicCount = INICIATIVAS.filter(i => i.tema_id === t.id).length;
 
+  if (point.pubCompare) {
+    const { pub1, pub2 } = point.pubCompare;
+    const deltaY = pub1.y - pub2.y;
+    const deltaSent = pub1.sent != null && pub2.sent != null ? pub1.sent - pub2.sent : null;
+    return (
+      <div className="pointer-events-none absolute right-3 top-3 z-[5] w-[300px] animate-[hu-fade-in_160ms_ease-out_both] rounded-xl border border-border bg-card/95 backdrop-blur-sm px-[14px] pb-[14px] pt-3 shadow-[0_8px_24px_rgba(60,3,102,0.16)]">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">Tema {String(t.id).padStart(2, '0')}</span>
+          <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="sm">{st.label}</Pill>
+        </div>
+        <div className="mb-2 font-display text-sm font-bold leading-[1.3] text-foreground">{t.nome}</div>
+        <div className="flex flex-col gap-1.5">
+          {([pub1, pub2] as const).map(pub => (
+            <div key={pub.id} className="rounded-lg px-2.5 py-2" style={{ background: `${pub.color}10`, border: `1px solid ${pub.color}30` }}>
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: pub.color }}/>
+                <span className="text-xs font-bold" style={{ color: pub.color }}>{pub.label}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <TipStat label="Stakeholders" value={`${pub.y}%`} delta={null}/>
+                <TipStat label="Sentimento" value={fmtSent(pub.sent)} color={sentColor(pub.sent)} delta={null}/>
+              </div>
+            </div>
+          ))}
+          {(deltaY !== 0 || deltaSent !== null) && (
+            <div className="rounded-lg bg-muted/50 px-2.5 py-1.5">
+              <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground mb-1">Diferença</div>
+              <div className="flex gap-3 text-xs font-bold tabular-nums">
+                <span className={deltaY > 0 ? 'text-green-600' : deltaY < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                  Stakeh. {deltaY > 0 ? '↑' : deltaY < 0 ? '↓' : '='} {Math.abs(deltaY)}
+                </span>
+                {deltaSent !== null && (
+                  <span className={deltaSent > 0 ? 'text-green-600' : deltaSent < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                    Sent. {deltaSent > 0 ? '↑' : deltaSent < 0 ? '↓' : '='} {Math.abs(deltaSent)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="mt-2 border-t border-dashed border-border pt-2 text-xs text-muted-foreground">
+          {inicCount > 0
+            ? <span><b className="text-primary">{inicCount}</b> iniciativa{inicCount > 1 ? 's' : ''} vinculada{inicCount > 1 ? 's' : ''}</span>
+            : <span className="font-semibold text-amber-600">Sem iniciativa</span>}
+        </div>
+      </div>
+    );
+  }
+
   let deltaSent: number | null = null;
   let deltaY: number | null = null;
   let deltaX: number | null = null;
@@ -476,31 +708,31 @@ export function HoverTooltip({ point, baseLabel, cmpLabel }: HoverTooltipProps) 
   }
 
   return (
-    <div className="pointer-events-none absolute right-3 top-3 z-[5] w-[280px] animate-[hu-fade-in_160ms_ease-out_both] rounded-xl border border-border bg-white/[0.98] px-[14px] pb-[14px] pt-3 shadow-[0_8px_24px_rgba(60,3,102,0.16)]">
+    <div className="pointer-events-none absolute right-3 top-3 z-[5] w-[280px] animate-[hu-fade-in_160ms_ease-out_both] rounded-xl border border-border bg-card/95 backdrop-blur-sm px-[14px] pb-[14px] pt-3 shadow-[0_8px_24px_rgba(60,3,102,0.16)]">
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#5A0992]">
+        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">
           Tema {String(t.id).padStart(2, '0')}
         </span>
         <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="sm">{st.label}</Pill>
       </div>
-      <div className="mb-2 font-display text-[14px] font-bold leading-[1.3] text-foreground">
+      <div className="mb-2 font-display text-sm font-bold leading-[1.3] text-foreground">
         {t.nome}
       </div>
-      <div className="mb-2.5 text-[11.5px] leading-[1.4] text-[#525252]">
+      <div className="mb-2.5 text-xs leading-[1.4] text-muted-foreground">
         {t.descricao}
       </div>
-      <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#FAFAFA] px-2.5 py-2">
+      <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 px-2.5 py-2">
         <TipStat label="Negócios" value={`${point.x}%`} delta={cmpLabel ? deltaX : null}/>
         <TipStat label="Stakeh." value={`${point.y}%`} delta={cmpLabel ? deltaY : null}/>
         <TipStat label="Sent." value={fmtSent(point.sent)} color={sentColor(point.sent)} delta={cmpLabel ? deltaSent : null}/>
       </div>
-      <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-[11px] text-muted-foreground">
+      <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-xs text-muted-foreground">
         <span>
           {inicCount > 0
             ? <span><b className="text-primary">{inicCount}</b> iniciativa{inicCount > 1 ? 's' : ''} vinculada{inicCount > 1 ? 's' : ''}</span>
             : <span className="font-semibold text-amber-600">Sem iniciativa</span>}
         </span>
-        {cmpLabel && <span className="font-semibold text-[#AA95BE]">{baseLabel} vs. {cmpLabel}</span>}
+        {cmpLabel && <span className="font-semibold text-muted-foreground/60">{baseLabel} vs. {cmpLabel}</span>}
       </div>
     </div>
   );
@@ -509,7 +741,7 @@ export function HoverTooltip({ point, baseLabel, cmpLabel }: HoverTooltipProps) 
 function TipStat({ label, value, color, delta }: { label: string; value: string; color?: string; delta: number | null }) {
   return (
     <div>
-      <div className="text-[9.5px] font-bold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
       <div
         className="mt-0.5 font-display text-[15px] font-black leading-[1.1] tabular-nums tracking-[-0.01em]"
         style={{ color: color || undefined }}
@@ -547,14 +779,7 @@ export function PriorityList({ themes, activePublicos, onPick }: PriorityListPro
 
   return (
     <Card style={{ padding: '20px 24px 22px' }}>
-      <SectionTitle
-        eyebrow="Top 10 · ordem de prioridade"
-        action={
-          <span className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-            <Icon name="info" size={12} color="#AA95BE"/>
-            <span>{filtered ? 'Ordem segundo filtros selecionados' : 'Ordem oficial da matriz'}</span>
-          </span>
-        }>
+      <SectionTitle eyebrow="Top 10 · ordem de prioridade">
         Ranking de temas materiais
       </SectionTitle>
       <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
@@ -580,28 +805,93 @@ function PriorityCard({ pos, theme, y, s, onPick }: { pos: number; theme: Theme;
   return (
     <div
       onClick={() => onPick(theme.id)}
-      className="grid cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-white px-3 py-2.5 transition-colors duration-[120ms] hover:border-[#E8D9F2] hover:bg-[#FAF5FE] [grid-template-columns:36px_1fr_auto]">
+      className="grid cursor-pointer items-center gap-2.5 rounded-[10px] border border-border bg-background px-3 py-2.5 transition-colors duration-[120ms] hover:border-primary/20 hover:bg-primary/5 [grid-template-columns:36px_1fr_auto]">
       <div className={cn(
         'text-center font-display text-[22px] font-black tabular-nums tracking-[-0.03em]',
-        pos <= 3 ? 'text-primary' : 'text-[#AA95BE]',
+        pos <= 3 ? 'text-primary' : 'text-muted-foreground/60',
       )}>
         {String(pos).padStart(2, '0')}
       </div>
       <div className="min-w-0">
-        <div className="mb-1 truncate text-[12.5px] font-semibold text-foreground">
+        <div className="mb-1 truncate text-sm font-semibold text-foreground">
           {theme.nome}
         </div>
         <div className="flex items-center gap-1.5">
           <span className={cn(
-            'rounded-full px-1.5 py-[1px] text-[9.5px] font-bold uppercase tracking-[0.06em]',
+            'rounded-full px-1.5 py-[1px] text-[10px] font-bold uppercase tracking-[0.06em]',
             tone.fg, tone.bg,
           )}>{st.label}</span>
-          <span className="text-[11px] font-bold tabular-nums" style={{ color: sentColor(s) }}>
+          <span className="text-xs font-bold tabular-nums" style={{ color: sentColor(s) }}>
             {fmtSent(s)}
           </span>
         </div>
       </div>
-      <Icon name="chevron-right" size={14} color="#AA95BE"/>
+      <Icon name="chevron-right" size={14} color="var(--muted-foreground)"/>
+    </div>
+  );
+}
+
+/* ---------- Matrix Ranking Sidebar ---------- */
+interface MatrixRankingSidebarProps {
+  themes: Theme[];
+  activePublicos: string[];
+  colorMode: 'sentiment' | 'esg';
+  hoverId?: number;
+  onHover: (t: Theme | null) => void;
+  onPick: (id: number) => void;
+}
+
+function MatrixRankingSidebar({ themes, activePublicos, colorMode, hoverId, onHover, onPick }: MatrixRankingSidebarProps) {
+  const ranked = themes.map(t => {
+    const y = recalcEixoY(t, activePublicos);
+    const s = recalcSent(t, activePublicos);
+    const sentPenalty = s != null ? Math.max(0, -s) * 0.20 : 0;
+    const score = (t.x + y) / 2 + sentPenalty;
+    return { theme: t, y, s, score };
+  }).sort((a, b) => b.score - a.score);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Ranking · {ranked.length} temas
+      </div>
+      <div className="mat-scroll flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-[2px]">
+          {ranked.map((r, i) => {
+            const isHover = hoverId === r.theme.id;
+            const dotColor = colorMode === 'esg' ? ESG_COLOR[r.theme.esg] : sentColor(r.s);
+            return (
+              <div
+                key={r.theme.id}
+                onMouseEnter={() => onHover(r.theme)}
+                onMouseLeave={() => onHover(null)}
+                onClick={() => onPick(r.theme.id)}
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 rounded-[7px] px-2 py-[5px] transition-colors duration-[120ms]',
+                  isHover ? 'bg-primary/5' : 'hover:bg-primary/5',
+                )}
+              >
+                <span className={cn(
+                  'w-[22px] shrink-0 text-right font-display text-xs font-black tabular-nums leading-none',
+                  i < 3 ? 'text-primary' : 'text-muted-foreground/50',
+                )}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  className="h-[7px] w-[7px] shrink-0 rounded-full"
+                  style={{ background: dotColor }}
+                />
+                <span className={cn(
+                  'min-w-0 flex-1 text-xs leading-[1.3]',
+                  isHover ? 'font-semibold text-foreground' : 'font-normal text-foreground/80',
+                )}>
+                  {r.theme.nome}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -609,25 +899,65 @@ function PriorityCard({ pos, theme, y, s, onPick }: { pos: number; theme: Theme;
 /* ---------- Main Overview ---------- */
 interface OverviewProps {
   onPickTheme: (id: number) => void;
+  activeCycle?: string;
+  externalActive?: string[];
+  onExternalToggle?: (id: string) => void;
+  onExternalSelectAll?: () => void;
+  onExternalSelectNone?: () => void;
 }
 
-export function Overview({ onPickTheme }: OverviewProps) {
-  const [active, setActive] = React.useState(PUBLICOS.map(p => p.id));
+export function Overview({ onPickTheme, activeCycle = 'v2025', externalActive, onExternalToggle, onExternalSelectAll, onExternalSelectNone }: OverviewProps) {
+  const navigate = useNavigate();
+  const [internalActive, setInternalActive] = React.useState(PUBLICOS.map(p => p.id));
+  const active = externalActive ?? internalActive;
   const [hoverPoint, setHoverPoint] = React.useState<MatrixPoint | null>(null);
-  const [baseVersion, setBaseVersion] = React.useState('v2025');
+  const [baseVersion, setBaseVersion] = React.useState(activeCycle);
   const [compareVersion, setCompareVersion] = React.useState<string | null>(null);
+
+  React.useEffect(() => { setBaseVersion(activeCycle); setCompareVersion(null); }, [activeCycle]);
+  const [colorMode, setColorMode] = React.useState<'sentiment' | 'esg'>('sentiment');
+  const [pubCompareMode, setPubCompareMode] = React.useState(false);
+  const [xDimension, setXDimension] = React.useState<XDimension>('negocios');
 
   const allSelected = active.length === PUBLICOS.length;
   const filtered = !allSelected;
 
   const toggle = (id: string) => {
-    setActive(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+    if (onExternalToggle) onExternalToggle(id);
+    else setInternalActive(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
-  const selectAll = () => setActive(PUBLICOS.map(p => p.id));
-  const selectNone = () => setActive([]);
+  const selectAll = () => {
+    if (onExternalSelectAll) onExternalSelectAll();
+    else setInternalActive(PUBLICOS.map(p => p.id));
+  };
+  const selectNone = () => {
+    if (onExternalSelectNone) onExternalSelectNone();
+    else setInternalActive([]);
+  };
+  const pubComparePair: [string, string] | undefined =
+    pubCompareMode && active.length === 2 ? [active[0], active[1]] : undefined;
 
   const sb = scoreboard(THEMES, filtered ? active : []);
   const cob = cobertura(THEMES);
+
+  const totalStakeholders = React.useMemo(() => {
+    const seen = new Map<string, number>();
+    THEMES.forEach(t => t.por_publico.forEach(pp => {
+      seen.set(pp.publico, Math.max(seen.get(pp.publico) ?? 0, pp.n_amostra));
+    }));
+    return Array.from(seen.values()).reduce((s, v) => s + v, 0);
+  }, []);
+
+  const totalComentarios = React.useMemo(() =>
+    THEMES.reduce((s, t) => s + t.por_publico.filter(pp => pp.sentimento != null).reduce((a, pp) => a + pp.n_amostra, 0), 0)
+  , []);
+
+  const temasPrioritarios = React.useMemo(() =>
+    THEMES.filter(t => {
+      const y = recalcEixoY(t, filtered ? active : []);
+      return t.x >= 75 && y >= 65;
+    }).length
+  , [filtered, active]);
 
   const basePos = React.useCallback((t: Theme) => t.por_versao[baseVersion] || { x: t.x, y: t.y, sentimento: t.sentimento }, [baseVersion]);
   const comparePos = React.useCallback((t: Theme) => compareVersion ? (t.por_versao[compareVersion] || null) : null, [compareVersion]);
@@ -652,91 +982,70 @@ export function Overview({ onPickTheme }: OverviewProps) {
 
   return (
     <div className="hu-fade" data-screen-label="Materialidade · Visão geral">
-      <PageHeader
-        eyebrow={`Materialidade · ${ORG.nome}`}
-        title="Matriz de Materialidade · 2025"
-        subtitle="Versão publicada em 08/04/2026 · Próxima revisão prevista para Abr/2027. Cada tema material termina vinculado a iniciativas — não em diagnóstico parado."
-        breadcrumbs={[
-          { label: 'Sustentabilidade' },
-          { label: 'Materialidade' },
-          { label: 'Matriz · 2025' },
-        ]}
-        actions={<Btn variant="secondary" icon="download">Exportar</Btn>}
-      />
-
-      <div className="mat-scorecard px-8 mb-4">
-        <ScoreCard label="Total de temas"   value={sb.total}    tone="neutral" icon="list"           sublabel="20 temas materiais publicados"/>
-        <ScoreCard label="Críticos"         value={sb.crit}     tone="danger"  icon="alert"          sublabel="Alta relev. + sent. negativo"/>
-        <ScoreCard label="Em alerta"        value={sb.alerta}   tone="warning" icon="trending-down"  sublabel="Sent. em deterioração"/>
-        <ScoreCard label="Saudáveis"        value={sb.saudavel} tone="success" icon="check-circle"   sublabel="Iniciativas avançando"/>
-        <ScoreCard label="Sem iniciativa"   value={sb.semIni}   tone="brand"   icon="link"           sublabel="Temas priorit. não cobertos"/>
-      </div>
 
       {filtered && (
         <div className="hu-fade mx-8 mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
           <Icon name="filter" size={16} color="#B45309"/>
-          <div className="flex-1 text-[13px] text-amber-900">
+          <div className="flex-1 text-sm text-amber-900">
             <b>Vista filtrada</b> — você está vendo apenas as percepções de <b>{active.length} público(s)</b> sobre a matriz. Esta não é a matriz oficial.
           </div>
           <Btn size="sm" variant="ghost" icon="x" onClick={selectAll}>Restaurar todos</Btn>
         </div>
       )}
 
-      <div className="mat-overview-grid-v2 px-8 pb-8">
-        {/* LEFT column: AI insight + cobertura */}
-        <div className="mat-overview-sticky flex max-h-[calc(100vh-140px)] flex-col gap-4 overflow-y-auto pr-1">
-          <AIInsight
-            title="Síntese executiva"
-            sintese={sint}
-            prioridades={prioridades}
-            tone={filtered ? 'warning' : 'brand'}
-          />
-          <Card style={{
-            background: 'linear-gradient(135deg, #FAF5FE 0%, #F6EDFB 100%)',
-          }} className="border-[#E8D9F2] p-[14px_16px]">
-            <div className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-[#5A0992]">
-              Cobertura normativa
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <div className="font-display text-[22px] font-black leading-none tracking-[-0.02em] text-[#3C0366]">{cob.gri}</div>
-                <div className="mt-0.5 text-[11px] text-[#5A0992]">normas GRI</div>
-              </div>
-              <div>
-                <div className="font-display text-[22px] font-black leading-none tracking-[-0.02em] text-[#3C0366]">{cob.ods}</div>
-                <div className="mt-0.5 text-[11px] text-[#5A0992]">ODS</div>
-              </div>
-            </div>
-          </Card>
-        </div>
+      <div className="flex flex-col gap-4 px-8 pt-6 pb-8">
 
-        {/* RIGHT column: filters + matrix */}
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card style={{ padding: '16px 20px 18px', overflow: 'visible' }}>
-            <div className="flex flex-wrap items-end gap-[18px]">
+        {/* Matriz + Ranking — lado a lado */}
+        <div className="flex gap-4 items-stretch">
+
+          {/* Ranking — card separado, à esquerda */}
+          <Card className="w-[340px] shrink-0 flex flex-col" style={{ padding: '16px 20px' }}>
+            <MatrixRankingSidebar
+              themes={THEMES}
+              activePublicos={filtered ? active : []}
+              colorMode={colorMode}
+              hoverId={hoverPoint?.id}
+              onHover={(t) => setHoverPoint(t ? ({ id: t.id, name: t.nome, x: t.x, y: recalcEixoY(t, filtered ? active : []), sent: recalcSent(t, filtered ? active : []), cmp: null, tema: t }) : null)}
+              onPick={onPickTheme}
+            />
+          </Card>
+
+          {/* Matriz com filtros integrados */}
+          <Card className="min-w-0 flex-1" style={{ padding: '16px 20px', position: 'relative', overflow: 'visible' }}>
+            <SectionTitle className="mb-3" eyebrow={filtered ? 'Vista filtrada' : (cmpLabel ? `Comparativo · ${baseLabel} vs. ${cmpLabel}` : 'Matriz de Materialidade')}/>
+
+            {/* Filtros integrados — linha única */}
+            <div className="mb-2 flex items-center gap-3 border-b border-border pb-3">
               <PublicosDropdown active={active} onToggle={toggle} onAll={selectAll} onNone={selectNone}/>
-              <ComparisonDropdown baseId={baseVersion} compareId={compareVersion}
-                onChange={(b, c) => { setBaseVersion(b); setCompareVersion(c); }}/>
+              <CompareDropdown
+                baseId={baseVersion} compareId={compareVersion}
+                onVersionChange={(b, c) => { setBaseVersion(b); setCompareVersion(c); }}
+                pubCompareMode={pubCompareMode} pubActive={active}
+                onPubCompareModeChange={(enabled) => { setPubCompareMode(enabled); setActive(enabled ? [] : PUBLICOS.map(p => p.id)); }}
+                onPubToggle={toggle}
+              />
               <div className="min-w-0 flex-1"/>
-              <div className="flex flex-col gap-0.5 text-right text-[11px] text-muted-foreground">
-                <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#AA95BE]">Eixo X (oficial)</span>
-                <span><b className="text-foreground">Alta Liderança</b> · pesquisa direta com C-Level</span>
+              {/* Toggle cor */}
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-[3px]">
+                {(['sentiment', 'esg'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setColorMode(mode)}
+                    className={cn(
+                      'rounded-md px-3 py-1 text-xs font-semibold transition-colors duration-[120ms]',
+                      colorMode === mode
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {mode === 'sentiment' ? 'Sentimento' : 'ESG'}
+                  </button>
+                ))}
               </div>
             </div>
-          </Card>
 
-          <Card style={{ padding: '20px 24px 24px', position: 'relative' }}>
-            <SectionTitle
-              eyebrow={filtered ? 'Vista filtrada' : (cmpLabel ? `Comparativo · ${baseLabel} vs. ${cmpLabel}` : 'Matriz oficial')}
-              action={
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <Icon name="info" size={12} color="#AA95BE"/>
-                  <span>Passe o mouse sobre um tema para ver detalhes</span>
-                </span>
-              }>
-              Relevância para os negócios × stakeholders
-            </SectionTitle>
-            <div className="relative mt-2">
+            {/* SVG + tooltip */}
+            <div className="relative">
               <MatrixSVG
                 themes={THEMES}
                 activePublicos={filtered ? active : []}
@@ -745,45 +1054,96 @@ export function Overview({ onPickTheme }: OverviewProps) {
                 onPick={onPickTheme}
                 onHover={setHoverPoint}
                 hoverId={hoverPoint?.id}
+                colorMode={colorMode}
+                pubComparePair={pubComparePair}
+                xDimension={xDimension}
               />
               <HoverTooltip point={hoverPoint} baseLabel={baseLabel} cmpLabel={cmpLabel}/>
             </div>
-            <div className="mt-3.5 flex flex-wrap items-center gap-4 border-t border-border pt-3.5 text-[11.5px] text-muted-foreground">
-              <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#525252]">Sentimento agregado:</div>
-              {[
-                ['Muito negativo', '#E03131'],
-                ['Negativo',       '#F59E0B'],
-                ['Levemente +',    '#A8D85E'],
-                ['Positivo',       '#00A970'],
-                ['Sem dado',       '#AA95BE'],
-              ].map(([lbl, c]) => (
-                <div key={lbl} className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }}/>
-                  <span>{lbl}</span>
-                </div>
-              ))}
-              {cmpLabel && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full border-[1.5px] border-[#AA95BE] bg-white"/>
-                  <span>Posição em {cmpLabel}</span>
-                </div>
-              )}
-            </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-4 border-t border-border pt-1.5 text-xs text-muted-foreground">
+            {pubComparePair ? (
+              <>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Comparando:</div>
+                {pubComparePair.map(id => {
+                  const pub = PUBLICO_BY_ID[id];
+                  return (
+                    <div key={id} className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: pub?.color }}/>
+                      <span className="font-semibold" style={{ color: pub?.color }}>{pub?.label}</span>
+                    </div>
+                  );
+                })}
+                <span className="text-xs text-muted-foreground">· Linha conecta os dois pontos de cada tema</span>
+              </>
+            ) : colorMode === 'sentiment' ? (
+              <>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sentimento agregado:</div>
+                {[
+                  ['Muito negativo', '#E03131'],
+                  ['Negativo',       '#F59E0B'],
+                  ['Levemente +',    '#A8D85E'],
+                  ['Positivo',       '#00A970'],
+                  ['Sem dado',       '#AA95BE'],
+                ].map(([lbl, c]) => (
+                  <div key={lbl} className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }}/>
+                    <span>{lbl}</span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Dimensão ESG:</div>
+                {([
+                  ['E · Ambiental',   '#16A34A'],
+                  ['S · Social',      '#2563EB'],
+                  ['G · Governança',  '#7401C3'],
+                ] as const).map(([lbl, c]) => (
+                  <div key={lbl} className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }}/>
+                    <span>{lbl}</span>
+                  </div>
+                ))}
+              </>
+            )}
+            {cmpLabel && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full border-[1.5px] border-muted-foreground/40 bg-background"/>
+                <span>Posição em {cmpLabel}</span>
+              </div>
+            )}
+          </div>
           </Card>
+
         </div>
 
-        {/* Full-width heatmap */}
-        <div className="relative col-span-full z-[1] bg-background">
+        {/* Big numbers */}
+        <div className="mat-scorecard">
+          <ScoreCard label="Players analisados"       value="16"                                                                                             onClick={() => navigate('/materialidade/benchmark')}/>
+          <ScoreCard label="Stakeholders consultados" value={totalStakeholders > 999 ? `${(totalStakeholders / 1000).toFixed(1)}k` : String(totalStakeholders)} onClick={() => navigate('/materialidade/stakeholders')}/>
+          <ScoreCard label="Comentários analisados"   value={totalComentarios > 999 ? `${(totalComentarios / 1000).toFixed(1)}k` : String(totalComentarios)}    onClick={() => navigate('/materialidade/comentarios')}/>
+          <ScoreCard label="Temas identificados"      value={sb.total}                                                                                           onClick={() => navigate('/materialidade/temas')}/>
+          <ScoreCard label="Temas prioritários"       value={String(temasPrioritarios).padStart(2, '0')}                                                         onClick={() => navigate('/materialidade/prioritarios')}/>
+        </div>
+
+        {/* Conteúdo de suporte — abaixo da matriz */}
+        <AIInsight
+          title="Síntese executiva"
+          sintese={sint}
+          prioridades={prioridades}
+          tone={filtered ? 'warning' : 'brand'}
+          compact
+        />
+
+        {/* Heatmap */}
+        <div className="relative z-[1] bg-background">
           <HeatmapSentimentoBlock
             themes={THEMES}
             activePublicos={filtered ? active : []}
             onPickTheme={onPickTheme}/>
         </div>
 
-        {/* Full-width ranking */}
-        <div className="relative col-span-full z-[1] bg-background">
-          <PriorityList themes={THEMES} activePublicos={filtered ? active : []} onPick={onPickTheme}/>
-        </div>
+
       </div>
     </div>
   );

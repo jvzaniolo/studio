@@ -66,7 +66,7 @@ export function Mapeamentos({ onPickTheme }: { onPickTheme: (id: number) => void
           </Select>
         </div>
 
-        <label className="flex items-center gap-2 text-[12.5px] text-muted-foreground cursor-pointer select-none">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
           <Checkbox
             checked={mostraPausados}
             onCheckedChange={(checked) => setMostraPausados(checked === true)}
@@ -84,12 +84,12 @@ export function Mapeamentos({ onPickTheme }: { onPickTheme: (id: number) => void
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground">Fonte</TableHead>
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground">Periodicidade</TableHead>
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground">Temas vinculados</TableHead>
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground text-right">Peso</TableHead>
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground">Última ingestão</TableHead>
-                <TableHead className="text-[10.5px] font-bold tracking-widest uppercase text-muted-foreground">Status</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Fonte</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Periodicidade</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Temas vinculados</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground text-right">Peso</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Última ingestão</TableHead>
+                <TableHead className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Status</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -115,7 +115,7 @@ export function Mapeamentos({ onPickTheme }: { onPickTheme: (id: number) => void
       <div className="px-8 pb-9">
         <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 flex gap-3 items-start">
           <Icon name="info" size={16} className="text-primary mt-0.5 shrink-0"/>
-          <p className="text-[12.5px] text-primary/80 leading-relaxed">
+          <p className="text-sm text-primary/80 leading-relaxed">
             <b className="text-primary">Como funciona:</b> cada mapeamento vincula uma fonte operacional (pesquisa, KPI, canal) a um ou mais temas materiais. Quando novos dados chegam à fonte, a plataforma os ingere e atualiza a aba Evolução temporal dos temas vinculados — sem necessidade de gerar uma nova matriz. O peso permite dar maior ou menor influência ao sinal na composição do sentimento agregado.
           </p>
         </div>
@@ -145,7 +145,7 @@ function MapRow({
           </span>
           <div className="min-w-0">
             <div className="text-[13.5px] font-semibold text-foreground">{m.nome}</div>
-            <div className="text-[11px] text-muted-foreground">{f.label}</div>
+            <div className="text-xs text-muted-foreground">{f.label}</div>
           </div>
         </div>
       </TableCell>
@@ -160,20 +160,20 @@ function MapRow({
               <span
                 key={id}
                 onClick={() => onPickTheme(id)}
-                className="text-[10.5px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full cursor-pointer whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis hover:bg-primary/20 transition-colors"
+                className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full cursor-pointer whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis hover:bg-primary/20 transition-colors"
               >
                 {String(id).padStart(2, '0')} · {t ? t.nome.split(' ').slice(0, 2).join(' ') + '…' : id}
               </span>
             );
           })}
           {moreCount > 0 && (
-            <span className="text-[10.5px] font-semibold text-muted-foreground px-1.5 py-0.5">
+            <span className="text-xs font-semibold text-muted-foreground px-1.5 py-0.5">
               +{moreCount}
             </span>
           )}
         </div>
       </TableCell>
-      <TableCell className="text-right font-bold text-foreground text-[13px] tabular-nums">
+      <TableCell className="text-right font-bold text-foreground text-sm tabular-nums">
         {m.peso.toFixed(1)}
       </TableCell>
       <TableCell className="text-xs text-muted-foreground tabular-nums">

@@ -80,8 +80,7 @@ export default function SidebarLayout() {
   const isMaterialidade =
     location.pathname === "/materialidade" ||
     location.pathname.startsWith("/materialidade/tema")
-  const isMapeamentos = location.pathname.startsWith("/materialidade/mapeamentos")
-  const isIniciativas = location.pathname.startsWith("/iniciativas")
+const isIniciativas = location.pathname.startsWith("/iniciativas")
 
   return (
     <TooltipProvider>
@@ -290,40 +289,16 @@ export default function SidebarLayout() {
                   </SidebarMenuItem>
                 </Collapsible>
 
-                <Collapsible defaultOpen className="group/collapsible">
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton tooltip="Materialidade">
-                          <Layers />
-                          <span>Materialidade</span>
-                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            render={<Link to="/materialidade" />}
-                            isActive={isMaterialidade}
-                          >
-                            Matriz
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            render={<Link to="/materialidade/mapeamentos" />}
-                            isActive={isMapeamentos}
-                          >
-                            <Map className="size-3.5" />
-                            Mapeamentos
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Matriz de Materialidade"
+                    isActive={isMaterialidade}
+                    render={<Link to="/materialidade" />}
+                  >
+                    <Layers />
+                    <span>Matriz de Materialidade</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>

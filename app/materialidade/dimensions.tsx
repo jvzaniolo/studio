@@ -83,42 +83,25 @@ interface DimensionRadioProps {
 
 export function DimensionRadio({ value, onChange, options = DIMENSOES }: DimensionRadioProps) {
   return (
-    <RadioGroup
-      value={value}
-      onValueChange={onChange}
-      className="inline-flex items-center gap-1 p-[3px] rounded-full bg-muted/50 border border-border w-auto"
-    >
+    <div className="inline-flex self-start items-center gap-1 rounded-lg border border-border bg-muted p-[3px]">
       {options.map(opt => {
         const isActive = opt.id === value;
         return (
-          <label
+          <button
             key={opt.id}
+            onClick={() => onChange(opt.id)}
             className={cn(
-              'inline-flex items-center gap-[7px] px-[14px] py-[6px] rounded-full cursor-pointer whitespace-nowrap text-[12.5px] font-medium transition-colors duration-150',
+              'rounded-md px-3 py-1 text-xs font-semibold transition-colors duration-[120ms] whitespace-nowrap',
               isActive
-                ? 'bg-primary text-primary-foreground font-bold'
-                : 'text-muted-foreground hover:bg-muted',
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <RadioGroupItem
-              value={opt.id}
-              className="sr-only"
-            />
-            <span
-              className={cn(
-                'inline-flex items-center justify-center w-[14px] h-[14px] rounded-full shrink-0',
-                isActive ? 'bg-white border-0' : 'border-[1.5px] border-muted-foreground/50 bg-transparent',
-              )}
-            >
-              {isActive && (
-                <span className="w-[6px] h-[6px] rounded-full bg-primary" />
-              )}
-            </span>
             {opt.label}
-          </label>
+          </button>
         );
       })}
-    </RadioGroup>
+    </div>
   );
 }
 
@@ -145,7 +128,7 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
   const dimDef = DIM_BY_ID[dim];
 
   const cols = [
-    ...PUBLICOS.map(p => ({ id: p.id, label: p.label, short: p.short, kind: 'publico' as const })),
+    ...PUBLICOS.filter(p => p.id !== 'alta_lideranca' && p.id !== 'especialistas').map(p => ({ id: p.id, label: p.label, short: p.short, kind: 'publico' as const })),
     { id: 'alta_lideranca', label: 'Alta Liderança', short: 'Alta Lid.', kind: 'al' as const },
   ];
 
@@ -158,24 +141,14 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
 
   return (
     <div className="hu-fade flex flex-col gap-[14px]">
-      <div className="flex items-end justify-between gap-[18px] flex-wrap">
-        <div className="min-w-0">
-          <div className="text-[11px] font-bold tracking-[0.10em] uppercase text-muted-foreground mb-1">
-            Sentimento por público
-          </div>
-          <h3 className="font-heading font-bold text-[18px] text-foreground tracking-[-0.01em] m-0">
-            Comparação multi-stakeholder em 3 dimensões
-          </h3>
+      <div className="flex flex-col gap-3">
+        <div className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground">
+          Análise multi-stakeholder em 2 dimensões
         </div>
-        <div className="flex items-center gap-[10px] flex-wrap">
-          <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
-            Dimensão
-          </span>
-          <DimensionRadio value={dim} onChange={setDim} />
-        </div>
+        <DimensionRadio value={dim} onChange={setDim} />
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap text-[11.5px] text-muted-foreground">
+      <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
         <span>
           Faixa:{' '}
           <b className="text-foreground font-semibold tabular-nums">
@@ -194,7 +167,7 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
           <Table className="min-w-[1000px] border-0 rounded-none max-h-none">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="text-left px-4 py-3 text-[11.5px] font-semibold text-muted-foreground border-b border-border w-80 min-w-[280px] tracking-[0.02em]">
+                <TableHead className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground border-b border-border w-80 min-w-[280px] tracking-[0.02em]">
                   Tema
                 </TableHead>
                 {cols.map(c => {
@@ -203,7 +176,7 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
                     <TableHead
                       key={c.id}
                       className={cn(
-                        'text-center px-2 py-3 text-[11px] font-semibold border-b border-border tracking-[0.02em] whitespace-nowrap transition-opacity',
+                        'text-center px-2 py-3 text-xs font-semibold border-b border-border tracking-[0.02em] whitespace-nowrap transition-opacity',
                         c.kind === 'al'
                           ? 'text-primary border-l border-primary/20 bg-primary/5'
                           : 'text-muted-foreground',
@@ -234,7 +207,7 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
 
         <div className="px-5 py-3 bg-[#FCFAFD] border-t border-border flex items-center gap-4 flex-wrap">
           <ScaleLegend dim={dim} />
-          <div className="flex-1 min-w-[200px] text-[11px] text-muted-foreground leading-[1.55]">
+          <div className="flex-1 min-w-[200px] text-xs text-muted-foreground leading-[1.55]">
             {dimDef.nota}
           </div>
         </div>
@@ -255,12 +228,12 @@ function HeatmapRow({ theme, cols, dim, onClick, isDimmed }: {
       onClick={onClick}
       className="cursor-pointer hover:bg-muted/50 transition-colors"
     >
-      <TableCell className="px-4 py-[11px] border-b border-border text-[13px] font-medium text-foreground hover:font-bold">
+      <TableCell className="px-4 py-[11px] border-b border-border text-sm font-medium text-foreground hover:font-bold">
         <div className="flex items-center gap-[10px]">
-          <span className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[6px] shrink-0 bg-primary/10 text-primary font-heading font-black text-[10.5px] tracking-[-0.02em]">
+          <span className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[6px] shrink-0 bg-primary/10 text-primary font-heading font-black text-xs tracking-[-0.02em]">
             {String(theme.id).padStart(2, '0')}
           </span>
-          <span className="whitespace-nowrap overflow-hidden text-ellipsis inline-block max-w-[260px]">
+          <span className="leading-snug">
             {theme.nome}
           </span>
         </div>
@@ -304,13 +277,13 @@ function ScaleLegend({ dim }: { dim: string }) {
     ];
     return (
       <div className="flex items-center gap-[6px]">
-        <span className="text-[10.5px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+        <span className="text-xs font-bold tracking-[0.06em] uppercase text-muted-foreground">
           Escala
         </span>
         {stops.map(s => (
           <span
             key={s.v}
-            className="inline-flex items-center justify-center min-w-[36px] h-[22px] rounded border border-border text-[10.5px] font-bold text-muted-foreground tabular-nums"
+            className="inline-flex items-center justify-center min-w-[36px] h-[22px] rounded border border-border text-xs font-bold text-muted-foreground tabular-nums"
             style={{ background: s.bg }}
           >
             {s.v}
@@ -327,13 +300,13 @@ function ScaleLegend({ dim }: { dim: string }) {
   ];
   return (
     <div className="flex items-center gap-[6px]">
-      <span className="text-[10.5px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+      <span className="text-xs font-bold tracking-[0.06em] uppercase text-muted-foreground">
         Escala
       </span>
       {stops.map(s => (
         <span
           key={s.v}
-          className="inline-flex items-center justify-center min-w-[56px] h-[22px] rounded border border-border text-[10.5px] font-bold text-muted-foreground tabular-nums"
+          className="inline-flex items-center justify-center min-w-[56px] h-[22px] rounded border border-border text-xs font-bold text-muted-foreground tabular-nums"
           style={{ background: s.bg }}
         >
           {s.v}
@@ -400,12 +373,12 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
             <div className="text-[16px] font-semibold text-foreground">
               Visão dos stakeholders sobre o tema
             </div>
-            <div className="text-[13px] text-muted-foreground mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               Comparativo dos 5 públicos consultados + leitura direta da Alta Liderança.
             </div>
           </div>
           <div className="flex items-center gap-[10px] flex-wrap">
-            <span className="text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground">
+            <span className="text-xs font-bold tracking-[0.06em] uppercase text-muted-foreground">
               Dimensão
             </span>
             <DimensionRadio value={dim} onChange={setDim} />
@@ -429,18 +402,18 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
           ))}
 
           <div className="mx-1 mt-[10px] mb-[6px] pt-3 pb-1 border-t border-dashed border-primary/30 flex items-center gap-2">
-            <span className="text-[10.5px] font-bold tracking-[0.10em] uppercase text-primary/50">
+            <span className="text-xs font-bold tracking-[0.10em] uppercase text-primary/50">
               Consulta direta
             </span>
           </div>
           <VisaoRow row={alRow} theme={theme} dim={dim} isAL />
         </div>
 
-        <div className="px-6 py-3 bg-[#FCFAFD] border-t border-border text-[11.5px] text-muted-foreground leading-[1.55]">
+        <div className="px-6 py-3 bg-[#FCFAFD] border-t border-border text-xs text-muted-foreground leading-[1.55]">
           {dimDef.nota}
         </div>
 
-        <div className="bg-muted/50 border-t border-border px-6 py-3 flex items-center gap-[10px] text-[11.5px] text-muted-foreground">
+        <div className="bg-muted/50 border-t border-border px-6 py-3 flex items-center gap-[10px] text-xs text-muted-foreground">
           <Icon name="shield" size={14} color="#7401C3" />
           <span>
             <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
@@ -564,7 +537,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
           <div className="flex items-center gap-[6px] flex-wrap">
             <span
               className={cn(
-                'text-[13px] whitespace-nowrap',
+                'text-sm whitespace-nowrap',
                 isHighlight || isAL ? 'font-bold' : 'font-medium',
                 isAL ? 'text-primary' : 'text-foreground',
               )}
@@ -572,18 +545,18 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
               {row.label}
             </span>
             {row.isMax && (
-              <Badge className="text-[9.5px] tracking-[0.06em] uppercase bg-primary/10 text-primary border-0 rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+              <Badge className="text-[10px] tracking-[0.06em] uppercase bg-primary/10 text-primary border-0 rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
                 Maior relev.
               </Badge>
             )}
             {row.isMin && (
-              <Badge variant="outline" className="text-[9.5px] tracking-[0.06em] uppercase rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+              <Badge variant="outline" className="text-[10px] tracking-[0.06em] uppercase rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
                 Menor
               </Badge>
             )}
           </div>
           {row.hint && (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {row.hint}
               {row.hasCargo && <span> · clique para ver por cargo</span>}
             </div>
@@ -602,7 +575,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
 
       <div
         className={cn(
-          'text-right text-[11.5px] tabular-nums',
+          'text-right text-xs tabular-nums',
           v == null ? 'text-[#AA95BE] italic' : 'text-muted-foreground',
         )}
       >
@@ -678,18 +651,18 @@ export function CargoSubRow({ cargo, dim }: { cargo: { cargo: string; cargo_labe
     >
       <div className="flex items-center gap-2">
         <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
-        <span className="text-[12px] text-muted-foreground">{cargo.cargo_label}</span>
+        <span className="text-xs text-muted-foreground">{cargo.cargo_label}</span>
       </div>
       <div>{barRender}</div>
       <div
-        className="text-right font-heading font-bold text-[12.5px] tabular-nums"
+        className="text-right font-heading font-bold text-sm tabular-nums"
         style={{ color: cargo.insuficiente ? '#AA95BE' : (isSent ? sentColor(cargo.sentimento) : '#5B21B6') }}
       >
         {cargo.insuficiente ? '—' : fmtDimValue(dim, v)}
       </div>
       <div
         className={cn(
-          'text-right text-[11px] tabular-nums',
+          'text-right text-xs tabular-nums',
           cargo.insuficiente
             ? 'text-destructive font-semibold italic'
             : 'text-muted-foreground',

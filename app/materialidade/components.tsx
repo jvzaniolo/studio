@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ThumbsUp, ThumbsDown, ArrowRight, X } from 'lucide-react';
+import { Sparkles, ThumbsUp, ThumbsDown, ArrowRight, X, ChevronDown } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { sentColor, sentLabel, fmtSent } from './data';
 import {
@@ -125,7 +125,7 @@ export function PageHeader({ eyebrow, title, titlePill, subtitle, breadcrumbs, a
 /* ----- SectionTitle ----- */
 interface SectionTitleProps {
   eyebrow?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   action?: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
@@ -176,7 +176,7 @@ export function Donut({ value, size = 140, stroke = 14, color = 'var(--primary)'
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
         <div className="font-bold text-foreground" style={{ fontSize: size * 0.26, lineHeight: 1 }}>{label}</div>
-        {sublabel && <div className="text-[11px] text-muted-foreground">{sublabel}</div>}
+        {sublabel && <div className="text-xs text-muted-foreground">{sublabel}</div>}
       </div>
     </div>
   );
@@ -306,6 +306,8 @@ interface AIInsightProps {
 }
 
 export function AIInsight({ title, sintese, prioridades, tone = 'brand', compact = false, style, className }: AIInsightProps) {
+  const [open, setOpen] = React.useState(true);
+
   const toneClasses = {
     brand:   'from-primary/5 via-card to-card ring-1 ring-primary/15',
     warning: 'from-amber-50 via-card to-card ring-1 ring-amber-200',
@@ -330,9 +332,13 @@ export function AIInsight({ title, sintese, prioridades, tone = 'brand', compact
       )}
       style={style}
     >
-      <CardContent className={cn('flex flex-col gap-4', compact ? 'p-4' : 'p-5')}>
-        <div className="flex items-center gap-2.5">
-          <div className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg border bg-background', `border-current/20`)}>
+      <CardContent className={cn('flex flex-col', compact ? 'p-4' : 'p-5')}>
+        {/* Header — sempre visível, clicável */}
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex w-full items-center gap-2.5 text-left"
+        >
+          <div className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg border bg-background', 'border-current/20')}>
             <Sparkles className={cn('size-3.5', toneText[tone] || toneText.brand)} />
           </div>
           <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide', toneBadge[tone] || toneBadge.brand)}>
@@ -342,30 +348,40 @@ export function AIInsight({ title, sintese, prioridades, tone = 'brand', compact
           {title && (
             <span className={cn('font-semibold text-sm', toneText[tone] || toneText.brand)}>{title}</span>
           )}
-        </div>
+          <ChevronDown className={cn(
+            'ml-auto size-4 shrink-0 transition-transform duration-200',
+            toneText[tone] || toneText.brand,
+            open ? 'rotate-180' : 'rotate-0',
+          )} />
+        </button>
 
-        {sintese && (
-          <p className={cn('text-sm leading-relaxed', toneText[tone] === 'text-primary' ? 'text-foreground/80' : toneText[tone])}>
-            {sintese}
-          </p>
-        )}
+        {/* Conteúdo colapsável */}
+        {open && (
+          <div className="flex flex-col gap-4 mt-4">
+            {sintese && (
+              <p className={cn('text-sm leading-relaxed', toneText[tone] === 'text-primary' ? 'text-foreground/80' : toneText[tone])}>
+                {sintese}
+              </p>
+            )}
 
-        {prioridades && prioridades.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className={cn('text-[10px] font-bold uppercase tracking-widest opacity-70', toneText[tone] || toneText.brand)}>
-              Próximas prioridades
-            </p>
-            {prioridades.map((p, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                <span className={cn(
-                  'flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold bg-background',
-                  toneText[tone] || toneText.brand,
-                )}>
-                  {i + 1}
-                </span>
-                <span className="text-sm leading-snug text-foreground/80 pt-0.5">{p}</span>
+            {prioridades && prioridades.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className={cn('text-[10px] font-bold uppercase tracking-widest opacity-70', toneText[tone] || toneText.brand)}>
+                  Próximas prioridades
+                </p>
+                {prioridades.map((p, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <span className={cn(
+                      'flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold bg-background',
+                      toneText[tone] || toneText.brand,
+                    )}>
+                      {i + 1}
+                    </span>
+                    <span className="text-sm leading-snug text-foreground/80 pt-0.5">{p}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </CardContent>

@@ -1,14 +1,15 @@
 import React from 'react';
+import { PageHeader } from '~/components/page-header';
 import { Icon, Pill, Btn } from './icons';
-import { PageHeader, FloatingAIButton } from './components';
-import { EvolucaoBlock, PercepcaoBlock } from './theme-tabs-a';
-import { ComentariosBlock, KPIsBlock, IniciativasBlock, ApendiceBlock } from './theme-tabs-b';
+import { FloatingAIButton } from './components';
+import { EvolucaoBlock } from './theme-tabs-a';
+import { ComentariosBlock, KPIsBlock, IniciativasBlock } from './theme-tabs-b';
 import { VisaoStakeholdersBlock } from './dimensions';
 import {
   THEME_BY_ID, INICIATIVAS, KPIS, SINAIS, SUGESTOES_VINCULO,
   sentColor, fmtSent,
   kpiOnTrackStats, iniciativaEmDiaStats,
-  themeStatus, quadrant,
+  themeStatus,
   type Theme, type KPI, type Iniciativa, type Sinal,
 } from './data';
 import { Card, CardContent } from '~/components/ui/card';
@@ -41,64 +42,140 @@ export function ThemeDetail({
   const sugestoes = SUGESTOES_VINCULO[theme.id] || [];
 
   const st = themeStatus(theme, theme.x, theme.y, theme.sentimento);
+  const kpiStats = kpiOnTrackStats(kpis);
+  const iniStats = iniciativaEmDiaStats(inics);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const slug = theme.nome
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+
+  const kpiSubtitle = kpis.length === 0
+    ? '0 indicadores conectados a este tema'
+    : `${kpis.length} indicador${kpis.length === 1 ? '' : 'es'} conectado${kpis.length === 1 ? '' : 's'} a este tema${kpiStats.onTrack > 0 ? ` · ${kpiStats.onTrack} On Track` : ''}`;
+
+  const iniSubtitle = inics.length === 0
+    ? '0 iniciativas conectadas a este tema · 0 em dia'
+    : `${inics.length} iniciativa${inics.length === 1 ? '' : 's'} conectada${inics.length === 1 ? '' : 's'} a este tema · ${iniStats.emDia} em dia`;
+
   return (
     <div className="hu-fade" data-screen-label={`Tema ${String(theme.id).padStart(2, '0')} · ${theme.nome}`}>
+
+      {/* ── Sticky header bar ── */}
       <PageHeader
-        eyebrow={`Tema material · ${String(theme.id).padStart(2, '0')}`}
-        title={theme.nome}
-        titlePill={
-          <Pill tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'} size="md" className="px-3 py-1 text-[13px] font-semibold">{st.label}</Pill>
+        title={
+          <span className="flex items-center gap-1.5 text-sm font-normal">
+            <span className="text-muted-foreground">Estratégia</span>
+            <span className="text-muted-foreground/40">›</span>
+            <span
+              className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+              onClick={onBack}
+            >
+              Matriz de Materialidade
+            </span>
+            <span className="text-muted-foreground/40">›</span>
+            <span className="font-medium text-foreground truncate max-w-[280px]">{theme.nome}</span>
+          </span>
         }
-        subtitle={theme.descricao}
-        breadcrumbs={[
-          { label: 'Materialidade', onClick: onBack },
-          { label: 'Matriz · 2025', onClick: onBack },
-          { label: `Tema ${String(theme.id).padStart(2, '0')}` },
-        ]}
         actions={
-          <>
-            <Btn variant="ghost" icon="settings" className="text-foreground/80">Configurar dados</Btn>
-            <Btn variant="secondary" icon="edit">Editar tema</Btn>
+          <div className="flex items-center gap-2">
             <Btn variant="primary" icon="link" onClick={() => scrollTo('sec-iniciativas')}>
               Vincular iniciativa
             </Btn>
-          </>
+          </div>
         }
       />
 
+      {/* ── Theme meta section ── */}
+      <div className="px-8 pt-5 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-muted-foreground">
+              Tema material · {String(theme.id).padStart(2, '0')}
+            </span>
+            <Pill
+              tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'}
+              size="md"
+              className="px-2.5 py-0.5 text-xs font-semibold"
+            >
+              {st.label}
+            </Pill>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">v2025 · {slug}</span>
+        </div>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">{theme.nome}</h1>
+        <p className="text-sm text-muted-foreground">{theme.descricao}</p>
+      </div>
+
+      {/* ── 5-card hero strip ── */}
       <HeroV2
         theme={theme} inics={inics} kpis={kpis} sinais={sinais}
         onScrollKPIs={() => scrollTo('sec-kpis')}
         onScrollIniciativas={() => scrollTo('sec-iniciativas')}
       />
 
-      <ThemeBlock id="sec-evolucao" eyebrow="Evolução" title="Linha do tempo">
+      {/* ── Sections ── */}
+      <ThemeBlock id="sec-evolucao" title="Linha do tempo do sentimento" subtitle="Evolução">
         <EvolucaoBlock theme={theme} sinais={sinais} inics={inics} kpis={kpis}/>
       </ThemeBlock>
 
-      <ThemeBlock id="sec-percepcao" eyebrow="Percepção" title="Visão dos stakeholders sobre o tema">
+      <ThemeBlock
+        id="sec-percepcao"
+        title="Visão dos stakeholders sobre o tema"
+        subtitle="Comparativo dos públicos consultados + leitura direta da Alta Liderança."
+      >
         <VisaoStakeholdersBlock theme={theme}/>
       </ThemeBlock>
 
-      <ThemeBlock id="sec-comentarios" eyebrow="Qualitativo" title="Comentários dos stakeholders sobre o tema">
+      <ThemeBlock
+        id="sec-comentarios"
+        title="Comentários dos stakeholders sobre o tema"
+        subtitle="Seleção dos comentários mais relevantes consolidados pela IA."
+        action={
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
+            <Icon name="download" size={13} color="var(--primary)"/>
+            Exportar comentários (Excel)
+          </button>
+        }
+      >
         <ComentariosBlock theme={theme}/>
       </ThemeBlock>
 
-      <ThemeBlock id="sec-kpis" eyebrow="Mensuração" title="KPIs vinculados" tone="brand">
+      <ThemeBlock
+        id="sec-kpis"
+        title="KPIs vinculados"
+        subtitle={kpiSubtitle}
+        action={
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
+            <Icon name="link" size={13} color="var(--primary)"/>
+            Vincular KPI
+          </button>
+        }
+      >
         <KPIsBlock theme={theme} kpis={kpis} sugestoes={sugestoes}/>
       </ThemeBlock>
 
-      <ThemeBlock id="sec-iniciativas" eyebrow="Ação" title="Iniciativas vinculadas" tone="brand">
+      <ThemeBlock
+        id="sec-iniciativas"
+        title="Iniciativas vinculadas"
+        subtitle={iniSubtitle}
+        action={
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
+            <Icon name="link" size={13} color="var(--primary)"/>
+            Vincular Iniciativa
+          </button>
+        }
+      >
         <IniciativasBlock theme={theme} inics={inics} sugestoes={sugestoes}/>
       </ThemeBlock>
 
-      <ApendiceBlock theme={theme}/>
+      <div className="pb-8"/>
 
       <FloatingAIButton themeName={theme.nome}/>
     </div>
@@ -106,44 +183,36 @@ export function ThemeDetail({
 }
 
 /* ===========================================================
-   ThemeBlock — section wrapper
+   ThemeBlock — section wrapper (simplified)
    =========================================================== */
 
 function ThemeBlock({
   id,
-  eyebrow,
   title,
+  subtitle,
   children,
-  tone,
+  action,
 }: {
   id: string;
-  eyebrow: string;
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
-  tone?: string;
+  action?: React.ReactNode;
 }) {
-  const isAction = tone === 'brand';
   return (
-    <section id={id} className="px-8 pt-6 pb-2">
-      <div className={cn(
-        'flex items-center gap-[14px] mb-[18px] pb-[14px]',
-        isAction ? 'border-b-2 border-primary/20' : 'border-b border-border',
-      )}>
-        <span className={cn(
-          'w-1 h-8 rounded-sm flex-shrink-0',
-          isAction ? 'bg-primary' : 'bg-primary/80',
-        )}/>
-        <div>
-          <div className={cn(
-            'text-[11px] font-bold tracking-[0.12em] uppercase mb-0.5',
-            isAction ? 'text-primary' : 'text-muted-foreground',
-          )}>{eyebrow}</div>
-          <h2 className="font-display font-bold text-[22px] text-foreground tracking-[-0.01em] leading-[1.2]">
-            {title}
-          </h2>
+    <section id={id} className="px-8 pt-3 pb-0">
+      <Card>
+        <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border/50">
+          <div>
+            <h2 className="text-[15px] font-bold text-foreground tracking-tight leading-snug">{title}</h2>
+            {subtitle && (
+              <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          {action && <div className="shrink-0 mt-1">{action}</div>}
         </div>
-      </div>
-      <div className="mb-8">{children}</div>
+        <div className="overflow-hidden rounded-b-xl">{children}</div>
+      </Card>
     </section>
   );
 }
@@ -186,125 +255,77 @@ function HeroV2({
   const kpiStats = kpiOnTrackStats(kpis);
   const iniStats = iniciativaEmDiaStats(inics);
 
+  const sentNumColor = sentTone === 'danger' ? 'text-destructive' : sentTone === 'warning' ? 'text-amber-500' : sentTone === 'success' ? 'text-green-600' : 'text-foreground';
+
   return (
-    <div className="px-8 pb-1">
+    <div className="px-8 pb-1 pt-4">
       <div className="mat-hero5-grid grid grid-cols-5 gap-3 mb-[18px]">
         <HeroCard
           eyebrow="Relevância"
           sublabel="Alta Liderança"
-          icon="compass"
-          tone="brand"
           number={`${theme.x}%`}
-          comparativo={
-            <span className="text-muted-foreground italic">consulta direta · Eixo X</span>
-          }
+          comparativo={<span className="italic">Consulta direta · eixo X</span>}
         />
 
         <HeroCard
           eyebrow="Relevância"
           sublabel="Stakeholders"
-          icon="users"
-          tone="brand"
           number={`${theme.y}%`}
           comparativo={<DeltaInline value={deltaY} label="vs Matriz 2024"/>}
         />
 
         <HeroCard
           eyebrow="Sentimento"
-          icon="thermometer"
-          tone={sentTone}
           number={
-            <div className="flex items-center gap-[10px]">
-              <MiniGauge value={theme.sentimento} size={42}/>
-              <span
-                className="font-display font-bold text-[26px] tracking-[-0.02em] tabular-nums leading-none"
-                style={{ color: sentColor(theme.sentimento) }}
-              >{fmtSent(theme.sentimento)}</span>
-            </div>
+            <span className={sentNumColor}>{fmtSent(theme.sentimento)}</span>
           }
           comparativo={
             trendDelta != null ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className={cn('font-bold', trendDelta < 0 ? 'text-destructive' : 'text-green-600')}>
+              <span className="inline-flex items-center gap-1">
+                <span className={trendDelta < 0 ? 'text-destructive' : 'text-green-600'}>
                   {trendDelta < 0 ? '↓' : '↑'} {Math.abs(trendDelta)}pp
                 </span>
-                <span className="text-muted-foreground">em {trendSpan}</span>
+                <span>em {trendSpan}</span>
               </span>
-            ) : <span className="text-muted-foreground">Sem evolução medida</span>
+            ) : 'Sem evolução medida'
           }
         />
 
         <HeroCard
           eyebrow="KPIs"
-          sublabel="On Track"
-          icon="bar-chart"
-          tone={kpiStats.tone}
+          sublabel="On track"
           number={
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
-                {kpiStats.withMeta === 0 ? '—' : kpiStats.onTrack}
-              </span>
+            <span>
+              {kpiStats.withMeta === 0 ? '—' : kpiStats.onTrack}
               {kpiStats.withMeta > 0 && (
-                <span className="font-display font-semibold text-base text-muted-foreground tabular-nums">
-                  / {kpiStats.withMeta}
-                </span>
-              )}
-            </div>
-          }
-          comparativo={
-            <span className="inline-flex items-center gap-2 flex-wrap">
-              <span className="text-muted-foreground">
-                {kpis.length === 0 ? 'sem mensuração'
-                  : `de ${kpis.length} indicador${kpis.length === 1 ? '' : 'es'}`}
-              </span>
-              {kpiStats.semMeta > 0 && (
-                <span className="text-amber-600 font-semibold">
-                  · {kpiStats.semMeta} sem meta
-                </span>
+                <span className="text-[18px] font-semibold text-muted-foreground">/{kpiStats.withMeta}</span>
               )}
             </span>
           }
+          comparativo={kpis.length === 0 ? 'sem mensuração' : `${kpis.length} indicador${kpis.length === 1 ? '' : 'es'} vinculado${kpis.length === 1 ? '' : 's'}`}
           onClick={onScrollKPIs}
         />
 
         <HeroCard
           eyebrow="Iniciativas"
           sublabel="Em dia"
-          icon="flag"
-          tone={iniStats.tone}
           number={
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
-                {inics.length === 0 ? '—' : iniStats.emDia}
-              </span>
+            <span>
+              {inics.length === 0 ? '—' : iniStats.emDia}
               {inics.length > 0 && (
-                <span className="font-display font-semibold text-base text-muted-foreground tabular-nums">
-                  / {iniStats.total}
-                </span>
-              )}
-            </div>
-          }
-          comparativo={
-            <span className="inline-flex items-center gap-2 flex-wrap">
-              <span className="text-muted-foreground">
-                {inics.length === 0 ? 'sem ação operacional'
-                  : `de ${inics.length} iniciativa${inics.length === 1 ? '' : 's'}`}
-              </span>
-              {iniStats.atrasadas > 0 && (
-                <span className="text-destructive font-semibold">
-                  · {iniStats.atrasadas} atrasada{iniStats.atrasadas === 1 ? '' : 's'}
-                </span>
+                <span className="text-[18px] font-semibold text-muted-foreground">/{iniStats.total}</span>
               )}
             </span>
           }
+          comparativo={inics.length === 0 ? '0 iniciativas vinculadas' : `${inics.length} iniciativa${inics.length === 1 ? '' : 's'} vinculada${inics.length === 1 ? '' : 's'}`}
           onClick={onScrollIniciativas}
         />
       </div>
 
       <style>{`
-        @media (max-width: 1380px) { .mat-hero5-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
-        @media (max-width: 900px)  { .mat-hero5-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
-        @media (max-width: 560px)  { .mat-hero5-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 800px) { .mat-hero5-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+        @media (max-width: 520px) { .mat-hero5-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+        @media (max-width: 340px) { .mat-hero5-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   );
@@ -314,73 +335,40 @@ function HeroV2({
    HeroCard
    =========================================================== */
 
-const toneDotClass: Record<string, string> = {
-  success: 'bg-green-600 shadow-[0_0_0_3px_rgba(0,169,112,0.13)]',
-  warning: 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.13)]',
-  danger:  'bg-destructive shadow-[0_0_0_3px_rgba(224,49,49,0.13)]',
-  brand:   'bg-primary shadow-[0_0_0_3px_rgba(116,1,195,0.13)]',
-  neutral: '',
-};
-
 function HeroCard({
   eyebrow,
   sublabel,
-  icon,
-  tone,
   number,
   comparativo,
   onClick,
 }: {
   eyebrow: string;
   sublabel?: string;
-  icon: string;
-  tone: string;
   number: React.ReactNode;
   comparativo?: React.ReactNode;
   onClick?: () => void;
 }) {
-  const dot = tone !== 'neutral' ? toneDotClass[tone] ?? null : null;
-
   return (
     <Card
       onClick={onClick}
       className={cn(
-        'relative flex flex-col min-h-[130px] transition-transform duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
-        onClick ? 'cursor-pointer hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(60,3,102,0.08)]' : 'cursor-default',
+        'flex flex-col transition-shadow duration-[180ms]',
+        onClick ? 'cursor-pointer hover:shadow-md' : 'cursor-default',
       )}
     >
-      <CardContent className="flex flex-col flex-1 p-[16px_18px_14px]">
-        <div className="mb-[10px] flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
-              {eyebrow}
-            </div>
-            {sublabel && (
-              <div className="text-[12.5px] font-semibold text-foreground/80 mt-0.5">
-                {sublabel}
-              </div>
-            )}
+      <CardContent className="flex flex-col p-[12px_14px]">
+        <div className="h-[30px]">
+          <div className="text-[11px] text-muted-foreground font-medium leading-tight">{eyebrow}</div>
+          <div className="text-[11px] font-medium text-muted-foreground leading-tight min-h-[14px]">
+            {sublabel ?? ''}
           </div>
-          {dot && tone !== 'brand' && (
-            <span
-              title="Estado agregado"
-              className={cn('w-[9px] h-[9px] rounded-full flex-shrink-0 mt-1.5', dot)}
-            />
-          )}
         </div>
-        <div className="flex-1 flex items-center">
-          {typeof number === 'string' ? (
-            <div className="font-display font-bold text-[30px] leading-none text-foreground tracking-[-0.02em] tabular-nums">
-              {number}
-            </div>
-          ) : number}
+        <div className="font-display font-bold text-[22px] leading-none tracking-[-0.02em] tabular-nums text-foreground mt-1.5 mb-2">
+          {number}
         </div>
-        {comparativo && (
-          <div className="mt-3 pt-[10px] border-t border-border/60 text-[11.5px] text-muted-foreground flex items-center justify-between gap-1.5">
-            <span>{comparativo}</span>
-            {onClick && <Icon name="chevron-right" size={12} color="#AA95BE"/>}
-          </div>
-        )}
+        <div className="text-[11px] text-muted-foreground leading-tight min-h-[14px]">
+          {comparativo ?? ''}
+        </div>
       </CardContent>
     </Card>
   );
