@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import {
-  Plus, Search, MoreHorizontal, ChevronRight, ChevronDown, Edit2, Trash2, Link2,
-  Target, TrendingUp, AlertTriangle, AlertOctagon, CheckCircle2, X, Sparkles,
-  Building2, Users, GitBranch, Lock, Settings2, History, ThumbsUp, ThumbsDown,
+  Plus, Search, MoreHorizontal, ChevronRight, Edit2, Trash2, Link2,
+  Target, TrendingUp, AlertTriangle, AlertOctagon, CheckCircle2, X, Filter,
+  Building2, Users, GitBranch, Lock, History,
 } from "lucide-react"
 
 import { PageHeader } from "~/components/page-header"
@@ -26,6 +26,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from "~/components/ui/dropdown-menu"
+import { Checkbox } from "~/components/ui/checkbox"
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+} from "~/components/ui/sheet"
 import { cn } from "~/lib/utils"
 import {
   KPI_CATALOG, useOkrShared, registerKeyResults,
@@ -68,10 +72,17 @@ interface SubKR {
   unidade: string
 }
 
+interface Acao {
+  id: string
+  texto: string
+  concluida: boolean
+}
+
 interface KeyResult {
   id: string
   descricao: string
   tipo: KRTipo
+  responsavel: { nome: string; iniciais: string }
   atual: number
   meta: number
   unidade: string
@@ -79,6 +90,7 @@ interface KeyResult {
   kpiId: string | null
   subResultados: SubKR[]
   historico: CheckIn[]
+  acoes: Acao[]
 }
 
 interface Objetivo {
@@ -121,6 +133,10 @@ function perspectivaStyle(p: string): { bg: string; color: string } {
   return PERSPECTIVA_CONFIG[p] ?? { bg: "bg-muted", color: "text-muted-foreground" }
 }
 
+function mkAcoes(...textos: string[]): Acao[] {
+  return textos.map((texto, i) => ({ id: `a${i + 1}`, texto, concluida: false }))
+}
+
 const AREA_BY_TEAM: Record<string, string> = {
   "RH": "Pessoas & Cultura",
   "Diversidade & Inclusão": "Pessoas & Cultura",
@@ -149,8 +165,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 5,
     perspectiva: "Pessoas",
     keyResults: [
-      { id: "OBJ-000-kr1", descricao: "Elevar o índice de saúde organizacional (eNPS + engajamento) para 65 pontos", tipo: "manual", atual: 58, meta: 65, unidade: "pts", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-000-kr2", descricao: "Manter todas as áreas com OKRs ativos publicados", tipo: "manual", atual: 5, meta: 6, unidade: "áreas", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-000-kr1", descricao: "Elevar o índice de saúde organizacional (eNPS + engajamento) para 65 pontos", tipo: "manual", responsavel: { nome: "Ana Lima", iniciais: "AL" }, atual: 58, meta: 65, unidade: "pts", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Consolidar dados de eNPS e engajamento em um painel único", "Apresentar resultado trimestral ao comitê executivo") },
+      { id: "OBJ-000-kr2", descricao: "Manter todas as áreas com OKRs ativos publicados", tipo: "manual", responsavel: { nome: "Ana Lima", iniciais: "AL" }, atual: 5, meta: 6, unidade: "áreas", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Cobrar publicação do ciclo pendente da área Cultura", "Revisar OKRs publicados em reunião mensal") },
     ],
   },
   {
@@ -166,22 +182,30 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     keyResults: [
       {
         id: "OBJ-001-kr1", descricao: "Elevar eNPS de 42 para 60 pontos (sincronizado com a Pesquisa de Clima)", tipo: "auto",
+        responsavel: { nome: "Ana Lima", iniciais: "AL" },
         atual: 48, meta: 60, unidade: "pts", concluido: false, kpiId: "kpi1", subResultados: [], historico: [],
+        acoes: mkAcoes("Acompanhar resultado mensal da Pesquisa de Clima", "Compartilhar destaques com lideranças"),
       },
       {
-        id: "OBJ-001-kr2", descricao: "Lançar canal de escuta contínua", tipo: "binario", atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null,
+        id: "OBJ-001-kr2", descricao: "Lançar canal de escuta contínua", tipo: "binario",
+        responsavel: { nome: "Elena Souza", iniciais: "ES" },
+        atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null,
         subResultados: [],
         historico: [
           { id: "ck1", data: "2026-06-15", usuario: "Ana Lima", valorAnterior: 0, valorNovo: 1, comentario: "Canal lançado com pesquisa mensal para todo o público interno." },
         ],
+        acoes: mkAcoes("Divulgar canal no onboarding", "Definir SLA de resposta às mensagens"),
       },
       {
-        id: "OBJ-001-kr3", descricao: "Realizar 4 rodadas de pulse survey", tipo: "manual", atual: 3, meta: 4, unidade: "rodadas", concluido: false, kpiId: null,
+        id: "OBJ-001-kr3", descricao: "Realizar 4 rodadas de pulse survey", tipo: "manual",
+        responsavel: { nome: "Ana Lima", iniciais: "AL" },
+        atual: 3, meta: 4, unidade: "rodadas", concluido: false, kpiId: null,
         subResultados: [
           { id: "sub1", descricao: "Rodada — RH corporativo", atual: 1, meta: 1, unidade: "rodada" },
           { id: "sub2", descricao: "Rodada — canteiros de obra", atual: 2, meta: 3, unidade: "rodadas" },
         ],
         historico: [],
+        acoes: mkAcoes("Agendar rodada dos canteiros restante", "Consolidar resultados da rodada RH corporativo"),
       },
     ],
   },
@@ -196,9 +220,9 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 3,
     perspectiva: "Pessoas",
     keyResults: [
-      { id: "OBJ-002-kr1", descricao: "Elevar liderança feminina de 28% para 40% (via KPI de Diversidade)", tipo: "auto", atual: 32, meta: 40, unidade: "%", concluido: false, kpiId: "kpi2", subResultados: [], historico: [] },
-      { id: "OBJ-002-kr2", descricao: "Formar 2 coortes do programa acelerador", tipo: "manual", atual: 1, meta: 2, unidade: "coortes", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-002-kr3", descricao: "Mapear pipeline de sucessão diverso", tipo: "manual", atual: 60, meta: 100, unidade: "%", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-002-kr1", descricao: "Elevar liderança feminina de 28% para 40% (via KPI de Diversidade)", tipo: "auto", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 32, meta: 40, unidade: "%", concluido: false, kpiId: "kpi2", subResultados: [], historico: [], acoes: mkAcoes("Mapear posições de liderança em aberto", "Acompanhar indicador mensalmente com D&I") },
+      { id: "OBJ-002-kr2", descricao: "Formar 2 coortes do programa acelerador", tipo: "manual", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 1, meta: 2, unidade: "coortes", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Selecionar participantes da 2ª coorte", "Definir mentoras para o programa") },
+      { id: "OBJ-002-kr3", descricao: "Mapear pipeline de sucessão diverso", tipo: "manual", responsavel: { nome: "Bruno Carvalho", iniciais: "BC" }, atual: 60, meta: 100, unidade: "%", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Mapear sucessoras por posição crítica", "Validar pipeline com liderança de cada área") },
     ],
   },
   {
@@ -212,9 +236,9 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 3,
     perspectiva: "Processos",
     keyResults: [
-      { id: "OBJ-003-kr1", descricao: "Implementar check-ins trimestrais em todas as áreas", tipo: "binario", atual: 100, meta: 100, unidade: "%", concluido: true, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-003-kr2", descricao: "Calibrar performance com comitê", tipo: "manual", atual: 3, meta: 4, unidade: "ciclos", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-003-kr3", descricao: "Reduzir turnover voluntário para 8,2%", tipo: "manual", atual: 7, meta: 10, unidade: "pp reduzidos", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-003-kr1", descricao: "Implementar check-ins trimestrais em todas as áreas", tipo: "binario", responsavel: { nome: "Bruno Carvalho", iniciais: "BC" }, atual: 100, meta: 100, unidade: "%", concluido: true, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Documentar processo de check-in trimestral", "Treinar gestores no novo formato") },
+      { id: "OBJ-003-kr2", descricao: "Calibrar performance com comitê", tipo: "manual", responsavel: { nome: "Bruno Carvalho", iniciais: "BC" }, atual: 3, meta: 4, unidade: "ciclos", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Agendar calibração do próximo ciclo", "Revisar critérios de calibração com RH") },
+      { id: "OBJ-003-kr3", descricao: "Reduzir turnover voluntário para 8,2%", tipo: "manual", responsavel: { nome: "Bruno Carvalho", iniciais: "BC" }, atual: 7, meta: 10, unidade: "pp reduzidos", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Entrevistar desligamentos voluntários recentes", "Implementar plano de retenção por área crítica") },
     ],
   },
   {
@@ -228,9 +252,9 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 4,
     perspectiva: "ESG & Compliance",
     keyResults: [
-      { id: "OBJ-004-kr1", descricao: "Concluir diagnóstico e plano de adequação", tipo: "binario", atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-004-kr2", descricao: "Publicar relatório GRI", tipo: "binario", atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-004-kr3", descricao: "Obter aprovação em auditoria externa", tipo: "binario", atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-004-kr1", descricao: "Concluir diagnóstico e plano de adequação", tipo: "binario", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Arquivar relatório de diagnóstico", "Compartilhar plano de adequação com diretoria") },
+      { id: "OBJ-004-kr2", descricao: "Publicar relatório GRI", tipo: "binario", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Publicar relatório no site institucional", "Enviar relatório para stakeholders-chave") },
+      { id: "OBJ-004-kr3", descricao: "Obter aprovação em auditoria externa", tipo: "binario", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 1, meta: 1, unidade: "un", concluido: true, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Arquivar certificado de auditoria", "Planejar manutenção anual da certificação") },
     ],
   },
   {
@@ -244,9 +268,9 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 2,
     perspectiva: "Pessoas",
     keyResults: [
-      { id: "OBJ-005-kr1", descricao: "Lançar 3 trilhas de aprendizagem digital", tipo: "manual", atual: 1, meta: 3, unidade: "trilhas", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-005-kr2", descricao: "Capacitar 200 colaboradores", tipo: "manual", atual: 22, meta: 200, unidade: "pessoas", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-005-kr3", descricao: "Firmar parceria com EdTechs", tipo: "manual", atual: 1, meta: 2, unidade: "parcerias", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-005-kr1", descricao: "Lançar 3 trilhas de aprendizagem digital", tipo: "manual", responsavel: { nome: "Diego Rocha", iniciais: "DR" }, atual: 1, meta: 3, unidade: "trilhas", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Finalizar conteúdo da 2ª trilha", "Selecionar fornecedor para a 3ª trilha") },
+      { id: "OBJ-005-kr2", descricao: "Capacitar 200 colaboradores", tipo: "manual", responsavel: { nome: "Diego Rocha", iniciais: "DR" }, atual: 22, meta: 200, unidade: "pessoas", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Divulgar inscrições para o próximo lote", "Acompanhar taxa de conclusão dos cursos") },
+      { id: "OBJ-005-kr3", descricao: "Firmar parceria com EdTechs", tipo: "manual", responsavel: { nome: "Diego Rocha", iniciais: "DR" }, atual: 1, meta: 2, unidade: "parcerias", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Negociar segunda parceria com EdTech", "Formalizar contrato da parceria atual") },
     ],
   },
   {
@@ -260,8 +284,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 2,
     perspectiva: "Pessoas",
     keyResults: [
-      { id: "OBJ-006-kr1", descricao: "Treinar lideranças em segurança psicológica", tipo: "manual", atual: 18, meta: 100, unidade: "%", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-006-kr2", descricao: "Lançar pesquisa de clima trimestral", tipo: "binario", atual: 0, meta: 1, unidade: "un", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-006-kr1", descricao: "Treinar lideranças em segurança psicológica", tipo: "manual", responsavel: { nome: "Elena Souza", iniciais: "ES" }, atual: 18, meta: 100, unidade: "%", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Agendar treinamento para lideranças restantes", "Avaliar eficácia do treinamento piloto") },
+      { id: "OBJ-006-kr2", descricao: "Lançar pesquisa de clima trimestral", tipo: "binario", responsavel: { nome: "Elena Souza", iniciais: "ES" }, atual: 0, meta: 1, unidade: "un", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Definir escopo da pesquisa trimestral", "Selecionar ferramenta de aplicação") },
     ],
   },
   {
@@ -275,8 +299,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     peso: 3,
     perspectiva: "Pessoas",
     keyResults: [
-      { id: "OBJ-007-kr1", descricao: "Elevar eNPS das lideranças de 55 para 70 pontos", tipo: "manual", atual: 55, meta: 70, unidade: "pts", concluido: false, kpiId: null, subResultados: [], historico: [] },
-      { id: "OBJ-007-kr2", descricao: "Publicar dashboard de sentimento por liderança", tipo: "binario", atual: 0, meta: 1, unidade: "un", concluido: false, kpiId: null, subResultados: [], historico: [] },
+      { id: "OBJ-007-kr1", descricao: "Elevar eNPS das lideranças de 55 para 70 pontos", tipo: "manual", responsavel: { nome: "Ana Lima", iniciais: "AL" }, atual: 55, meta: 70, unidade: "pts", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Definir cadência de medição do eNPS de lideranças", "Cruzar dados com Pesquisa de Clima") },
+      { id: "OBJ-007-kr2", descricao: "Publicar dashboard de sentimento por liderança", tipo: "binario", responsavel: { nome: "Ana Lima", iniciais: "AL" }, atual: 0, meta: 1, unidade: "un", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Especificar métricas do dashboard", "Validar protótipo com RH") },
     ],
   },
 ]
@@ -366,12 +390,6 @@ const CICLO_STATUS_CONFIG: Record<CicloStatus, { label: string; color: string; b
   encerrado: { label: "Encerrado", color: "text-muted-foreground", bg: "bg-muted" },
 }
 
-const CICLO_TIPO_LABEL: Record<CicloTipo, string> = {
-  trimestre: "Trimestre",
-  semestre: "Semestre",
-  ano: "Ano",
-}
-
 // Base UI's <Select> only renders the selected item's label via `items` — passing
 // just <SelectItem> children shows the raw value instead. See base-vs-radix notes.
 const CICLO_TIPO_ITEMS = [
@@ -403,21 +421,6 @@ const KPI_SELECT_ITEMS_WITH_NONE = [
   { label: "Nenhum — valor manual", value: "none" },
   ...KPI_CATALOG.map((k) => ({ label: k.nome, value: k.id })),
 ]
-
-// ─── AI Coach heuristics ─────────────────────────────────────────────────────
-
-const VERBOS_FORTES = [
-  "aumentar", "reduzir", "elevar", "atingir", "implementar", "lançar", "criar",
-  "consolidar", "garantir", "ampliar", "diminuir", "dobrar", "triplicar",
-  "alcançar", "obter", "construir", "fortalecer", "manter",
-]
-
-function precisaMelhorRedacao(nome: string): boolean {
-  const lower = nome.toLowerCase()
-  const temVerboForte = VERBOS_FORTES.some((v) => lower.startsWith(v))
-  const temNumero = /\d/.test(nome)
-  return !(temVerboForte && temNumero)
-}
 
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
@@ -491,6 +494,71 @@ function SubKrRow({ sub, onUpdate, onRemove }: { sub: SubKR; onUpdate: (atual: n
   )
 }
 
+// ─── Actions checklist (dashed box, editável) ───────────────────────────────
+
+function ActionsChecklist({
+  acoes,
+  dashed = true,
+  onAdd,
+  onToggle,
+  onRemove,
+}: {
+  acoes: Acao[]
+  dashed?: boolean
+  onAdd: (texto: string) => void
+  onToggle: (id: string, concluida: boolean) => void
+  onRemove: (id: string) => void
+}) {
+  const [adding, setAdding] = useState(false)
+  const [novoTexto, setNovoTexto] = useState("")
+
+  function submit() {
+    if (novoTexto.trim()) onAdd(novoTexto.trim())
+    setNovoTexto("")
+    setAdding(false)
+  }
+
+  return (
+    <div className={cn("rounded-lg p-2.5", dashed ? "border-2 border-dashed border-border" : "border bg-muted/20")}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Ações</span>
+        <button onClick={() => setAdding((v) => !v)} className="shrink-0 text-muted-foreground hover:text-foreground">
+          <Edit2 className="size-3" />
+        </button>
+      </div>
+      {acoes.length === 0 && !adding && (
+        <p className="text-[11px] italic text-muted-foreground">Nenhuma ação cadastrada.</p>
+      )}
+      {acoes.length > 0 && (
+        <ul className="space-y-1">
+          {acoes.map((a) => (
+            <li key={a.id} className="flex items-center gap-1.5">
+              <Checkbox checked={a.concluida} onCheckedChange={(v) => onToggle(a.id, v === true)} />
+              <span className={cn("min-w-0 flex-1 truncate text-xs", a.concluida && "text-muted-foreground line-through")}>{a.texto}</span>
+              <button onClick={() => onRemove(a.id)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                <X className="size-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {adding && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <Input
+            autoFocus
+            value={novoTexto}
+            onChange={(e) => setNovoTexto(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="Nova ação..."
+            className="h-6 flex-1 text-[11px]"
+          />
+          <Button size="sm" className="h-6 px-2 text-[11px]" onClick={submit}>OK</Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Key Result row ──────────────────────────────────────────────────────────
 
 function KeyResultRow({
@@ -506,6 +574,9 @@ function KeyResultRow({
   onRemoveSub,
   onLinkIniciativa,
   onUnlinkIniciativa,
+  onAddAcao,
+  onToggleAcao,
+  onRemoveAcao,
 }: {
   kr: KeyResult
   linkedIniciativas: RegistryItem[]
@@ -519,11 +590,15 @@ function KeyResultRow({
   onRemoveSub: (subId: string) => void
   onLinkIniciativa: (iniciativaId: string) => void
   onUnlinkIniciativa: (iniciativaId: string) => void
+  onAddAcao: (texto: string) => void
+  onToggleAcao: (acaoId: string, concluida: boolean) => void
+  onRemoveAcao: (acaoId: string) => void
 }) {
   const [panel, setPanel] = useState<null | "checkin" | "kpi" | "subform" | "binario">(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [subListOpen, setSubListOpen] = useState(true)
   const [iniOpen, setIniOpen] = useState(false)
+  const [acoesOpen, setAcoesOpen] = useState(false)
   const [valorForm, setValorForm] = useState("")
   const [comentario, setComentario] = useState("")
   const [kpiChoice, setKpiChoice] = useState<string>("")
@@ -609,10 +684,20 @@ function KeyResultRow({
             >
               {linkedIniciativas.length > 0 ? `${linkedIniciativas.length} iniciativa${linkedIniciativas.length > 1 ? "s" : ""}` : "vincular iniciativa"}
             </button>
+            <button
+              onClick={() => setAcoesOpen((v) => !v)}
+              className="shrink-0 text-[10px] font-medium text-muted-foreground underline decoration-dotted hover:text-foreground"
+            >
+              {kr.acoes.length > 0 ? `${kr.acoes.length} ação${kr.acoes.length > 1 ? "ões" : ""}` : "adicionar ações"}
+            </button>
           </div>
           <div className="mt-1 flex items-center gap-2">
             <Progress value={progress} className="w-32 gap-0" />
             <span className="text-xs text-muted-foreground tabular-nums">{progress}%</span>
+            <span className="ml-1 flex shrink-0 items-center gap-1">
+              <AvatarInitials iniciais={kr.responsavel.iniciais} size={16} />
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">{kr.responsavel.nome}</span>
+            </span>
           </div>
         </div>
 
@@ -741,6 +826,17 @@ function KeyResultRow({
           onUnlink={onUnlinkIniciativa}
         />
       )}
+
+      {acoesOpen && (
+        <div className="ml-4 mt-2 max-w-md">
+          <ActionsChecklist
+            acoes={kr.acoes}
+            onAdd={onAddAcao}
+            onToggle={onToggleAcao}
+            onRemove={onRemoveAcao}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -824,6 +920,9 @@ function ObjectiveCard({
   onRemoveSub,
   onLinkIniciativa,
   onUnlinkIniciativa,
+  onAddAcao,
+  onToggleAcao,
+  onRemoveAcao,
 }: {
   objetivo: Objetivo
   ciclo: Ciclo | undefined
@@ -841,6 +940,9 @@ function ObjectiveCard({
   onRemoveSub: (krId: string, subId: string) => void
   onLinkIniciativa: (krId: string, iniciativaId: string) => void
   onUnlinkIniciativa: (krId: string, iniciativaId: string) => void
+  onAddAcao: (krId: string, texto: string) => void
+  onToggleAcao: (krId: string, acaoId: string, concluida: boolean) => void
+  onRemoveAcao: (krId: string, acaoId: string) => void
 }) {
   const [open, setOpen] = useState(true)
   const progress = objProgress(objetivo)
@@ -922,6 +1024,9 @@ function ObjectiveCard({
                 onRemoveSub={(subId) => onRemoveSub(kr.id, subId)}
                 onLinkIniciativa={(iniciativaId) => onLinkIniciativa(kr.id, iniciativaId)}
                 onUnlinkIniciativa={(iniciativaId) => onUnlinkIniciativa(kr.id, iniciativaId)}
+                onAddAcao={(texto) => onAddAcao(kr.id, texto)}
+                onToggleAcao={(acaoId, concluida) => onToggleAcao(kr.id, acaoId, concluida)}
+                onRemoveAcao={(acaoId) => onRemoveAcao(kr.id, acaoId)}
               />
             ))}
           </div>
@@ -931,203 +1036,227 @@ function ObjectiveCard({
   )
 }
 
-// ─── AI Coach ────────────────────────────────────────────────────────────────
+// ─── Objective tree diagram (Objetivo → Key Results → Ações) ────────────────
 
-function AICoachPanel({ objetivos, ciclo }: { objetivos: Objetivo[]; ciclo: Ciclo | undefined }) {
-  const [open, setOpen] = useState(true)
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(null)
+const KR_TREE_COLORS = [
+  { border: "border-blue-300", bg: "bg-blue-50", dot: "bg-blue-500" },
+  { border: "border-green-300", bg: "bg-green-50", dot: "bg-green-500" },
+  { border: "border-orange-300", bg: "bg-orange-50", dot: "bg-orange-500" },
+  { border: "border-purple-300", bg: "bg-purple-50", dot: "bg-purple-500" },
+]
 
-  const sugestoes = objetivos.filter((o) => precisaMelhorRedacao(o.nome)).slice(0, 3)
-
-  const alertas = objetivos
-    .flatMap((o) => o.keyResults.map((kr) => ({ obj: o, kr, progress: krProgress(kr) })))
-    .filter((a) => a.progress < 40)
-    .sort((a, b) => a.progress - b.progress)
-    .slice(0, 4)
-
-  const tudoOk = sugestoes.length === 0 && alertas.length === 0
-
+function TreeConnector({ n }: { n: number }) {
   return (
-    <Card className="relative overflow-hidden bg-linear-to-br from-primary/8 via-card to-card ring-1 ring-primary/20 p-0 mb-4">
-      <CardContent className="p-4 flex flex-col">
-        <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2.5 text-left">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border bg-background border-primary/20">
-            <Sparkles className="size-3.5 text-primary" />
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-            <span className="size-1.5 rounded-full bg-primary" />IA · Coach
-          </span>
-          <span className="font-semibold text-sm text-primary">
-            {ciclo ? `Sugestões para ${ciclo.nome}` : "Sugestões de OKR"}
-          </span>
-          <ChevronDown className={cn("ml-auto size-4 shrink-0 text-primary transition-transform duration-200", open ? "rotate-180" : "rotate-0")} />
-        </button>
-
-        {open && (
-          <div className="mt-4 flex flex-col gap-4">
-            {tudoOk ? (
-              <p className="text-sm text-foreground/80">Nenhum alerta no momento — os objetivos deste ciclo estão bem redigidos e sem KRs críticos.</p>
-            ) : (
-              <>
-                {sugestoes.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Sugestões de redação</p>
-                    {sugestoes.map((o) => (
-                      <div key={o.id} className="flex items-start gap-2.5">
-                        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                        <span className="text-sm leading-snug text-foreground/80">
-                          <b className="font-semibold text-foreground">"{o.nome}"</b> pode ficar mais forte com um verbo de ação e uma meta numérica clara — ex.: "Aumentar/Reduzir [métrica] de X para Y até {ciclo?.nome ?? "o fim do ciclo"}".
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {alertas.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">KRs em risco</p>
-                    {alertas.map(({ obj, kr, progress }) => (
-                      <div key={kr.id} className="flex items-start gap-2.5">
-                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
-                        <span className="text-sm leading-snug text-foreground/80">
-                          <b className="font-semibold text-foreground">"{kr.descricao}"</b> (objetivo "{obj.nome}") está em apenas <b>{progress}%</b> — considere revisar o plano de ação ou os recursos alocados.
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-            <div className="flex items-center gap-2 border-t border-primary/15 pt-2.5 text-xs text-muted-foreground">
-              <span>Esta informação foi útil?</span>
-              <Button variant="ghost" size="icon-xs" onClick={() => setFeedback(feedback === "up" ? null : "up")} className={feedback === "up" ? "text-green-600" : ""}>
-                <ThumbsUp className="size-3" />
-              </Button>
-              <Button variant="ghost" size="icon-xs" onClick={() => setFeedback(feedback === "down" ? null : "down")} className={feedback === "down" ? "text-destructive" : ""}>
-                <ThumbsDown className="size-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ─── Árvore de alinhamento ───────────────────────────────────────────────────
-
-function TreeRow({
-  depth, icon: Icon, label, sub, progress, expandable, expanded, onToggle,
-}: {
-  depth: number
-  icon: React.FC<{ className?: string }>
-  label: string
-  sub?: string
-  progress: number
-  expandable?: boolean
-  expanded?: boolean
-  onToggle?: () => void
-}) {
-  return (
-    <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted/40" style={{ paddingLeft: 12 + depth * 22 }}>
-      {expandable ? (
-        <button onClick={onToggle} className="shrink-0 text-muted-foreground hover:text-foreground">
-          <ChevronRight className={cn("size-3.5 transition-transform", expanded && "rotate-90")} />
-        </button>
-      ) : (
-        <span className="w-3.5 shrink-0" />
+    <>
+      <div className="h-6 w-px bg-border" />
+      {n > 1 && (
+        <div className="relative w-full">
+          <div className="absolute top-0 h-px bg-border" style={{ left: `${50 / n}%`, right: `${50 / n}%` }} />
+        </div>
       )}
-      <Icon className="size-3.5 shrink-0 text-primary" />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{label}</span>
-      {sub && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{sub}</span>}
-      <div className="flex w-28 shrink-0 items-center gap-2">
-        <Progress value={progress} className="gap-0" />
-        <span className="w-8 shrink-0 text-right text-xs font-semibold tabular-nums">{progress}%</span>
-      </div>
-    </div>
+    </>
   )
 }
 
-function ObjectiveLeaf({ depth, objetivo }: { depth: number; objetivo: Objetivo }) {
-  const progress = objProgress(objetivo)
-  const status = objStatus(progress)
-  return (
-    <div className="flex items-center gap-2.5 px-3 py-2 hover:bg-muted/40" style={{ paddingLeft: 12 + depth * 22 }}>
-      <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
-      <span className="min-w-0 flex-1 truncate text-sm text-foreground">{objetivo.nome}</span>
-      <StatusBadge status={status} />
-      <div className="flex w-28 shrink-0 items-center gap-2">
-        <Progress value={progress} className="gap-0" />
-        <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{progress}%</span>
-      </div>
-    </div>
-  )
-}
-
-function AlignmentTree({ objetivos }: { objetivos: Objetivo[] }) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-
-  function toggle(key: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
-      return next
-    })
-  }
-
+function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
+  const overall = weightedProgress(objetivos)
   const empresaObjs = objetivos.filter((o) => o.nivel === "empresa")
   const timeObjs = objetivos.filter((o) => o.nivel === "time")
-  const areas = Array.from(new Set(timeObjs.map((o) => AREA_BY_TEAM[o.time ?? ""] ?? "Outras áreas")))
-  const overall = weightedProgress(objetivos)
+  const times = Array.from(new Set(timeObjs.map((o) => o.time as string)))
+
+  const lanes = [
+    ...(empresaObjs.length > 0 ? [{ key: "empresa", label: "Objetivos da empresa", objetivos: empresaObjs }] : []),
+    ...times.map((time) => ({ key: time, label: time, objetivos: timeObjs.filter((o) => o.time === time) })),
+  ]
 
   if (objetivos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-lg border py-16 text-muted-foreground">
-        <GitBranch className="size-8 opacity-40" />
-        <p className="text-sm">Nenhum objetivo neste ciclo para montar a árvore de alinhamento.</p>
+        <Building2 className="size-8 opacity-40" />
+        <p className="text-sm">Nenhum objetivo neste ciclo para montar a árvore.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border divide-y divide-border/60">
-      <TreeRow
-        depth={0} icon={Building2} label="Humanizadas" sub="Empresa" progress={overall}
-        expandable expanded={!collapsed.has("empresa")} onToggle={() => toggle("empresa")}
-      />
-      {!collapsed.has("empresa") && (
-        <>
-          {empresaObjs.map((o) => <ObjectiveLeaf key={o.id} depth={1} objetivo={o} />)}
-          {areas.map((area) => {
-            const areaObjs = timeObjs.filter((o) => (AREA_BY_TEAM[o.time ?? ""] ?? "Outras áreas") === area)
-            const areaProgress = weightedProgress(areaObjs)
-            const times = Array.from(new Set(areaObjs.map((o) => o.time as string)))
-            const areaKey = `area:${area}`
+    <div className="overflow-x-auto p-6">
+      <div className="mx-auto flex flex-col items-center" style={{ minWidth: `${Math.max(lanes.length, 1) * 260}px` }}>
+        {/* Linha 1 — Organização */}
+        <div className="flex w-60 flex-col gap-1.5 rounded-xl border-2 border-primary/50 bg-primary/10 px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            <Building2 className="size-4 shrink-0 text-primary" />
+            <span className="text-sm font-bold text-foreground">Humanizadas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Progress value={overall} className="h-1.5 flex-1 gap-0" />
+            <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{overall}%</span>
+          </div>
+        </div>
+
+        <TreeConnector n={lanes.length} />
+
+        {/* Linha 2 — Times */}
+        <div className="flex w-full justify-center gap-8">
+          {lanes.map((lane) => {
+            const laneProgress = weightedProgress(lane.objetivos)
             return (
-              <div key={area}>
-                <TreeRow
-                  depth={1} icon={Users} label={area} sub="Área" progress={areaProgress}
-                  expandable expanded={!collapsed.has(areaKey)} onToggle={() => toggle(areaKey)}
-                />
-                {!collapsed.has(areaKey) && times.map((time) => {
-                  const timeObjsFiltered = areaObjs.filter((o) => o.time === time)
-                  const timeProgress = weightedProgress(timeObjsFiltered)
-                  const timeKey = `${areaKey}/time:${time}`
-                  return (
-                    <div key={time}>
-                      <TreeRow
-                        depth={2} icon={Target} label={time} sub="Time" progress={timeProgress}
-                        expandable expanded={!collapsed.has(timeKey)} onToggle={() => toggle(timeKey)}
-                      />
-                      {!collapsed.has(timeKey) && timeObjsFiltered.map((o) => <ObjectiveLeaf key={o.id} depth={3} objetivo={o} />)}
-                    </div>
-                  )
-                })}
+              <div key={lane.key} className="flex flex-col items-center">
+                <div className="h-6 w-px bg-border" />
+                <div className="flex w-56 flex-col gap-1.5 rounded-xl border-2 border-border bg-muted/40 px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="size-3.5 shrink-0 text-foreground" />
+                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">{lane.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={laneProgress} className="h-1.5 flex-1 gap-0" />
+                    <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{laneProgress}%</span>
+                  </div>
+                </div>
+
+                <TreeConnector n={lane.objetivos.length} />
+
+                {/* Linha 3 — Objetivos (OKRs) */}
+                <div className="flex gap-4">
+                  {lane.objetivos.map((obj) => {
+                    const objProg = objProgress(obj)
+                    const objSt = objStatus(objProg)
+                    return (
+                      <div key={obj.id} className="flex w-48 flex-col items-center">
+                        <div className="h-6 w-px bg-border" />
+                        <div className="flex w-full flex-col gap-1.5 rounded-xl border-2 border-primary/30 bg-background px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <Target className="size-3.5 shrink-0 text-primary" />
+                            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{obj.nome}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Progress value={objProg} className="h-1.5 flex-1 gap-0" />
+                            <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{objProg}%</span>
+                          </div>
+                          <StatusBadge status={objSt} />
+                        </div>
+
+                        <div className="h-6 w-px bg-border" />
+
+                        {/* Linha 4 — Key Results */}
+                        <div className="flex w-full flex-col gap-1.5">
+                          {obj.keyResults.map((kr, i) => {
+                            const palette = KR_TREE_COLORS[i % KR_TREE_COLORS.length]
+                            const progress = krProgress(kr)
+                            return (
+                              <div key={kr.id} className={cn("flex items-center gap-1.5 rounded-lg border px-2 py-1.5", palette.border, palette.bg)}>
+                                <span className={cn("size-1.5 shrink-0 rounded-full", palette.dot)} />
+                                <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{kr.descricao}</span>
+                                <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )
           })}
-        </>
-      )}
+        </div>
+      </div>
     </div>
+  )
+}
+
+// ─── Filtros ─────────────────────────────────────────────────────────────────
+
+function FiltersSheet({
+  statusFiltro,
+  onChangeStatus,
+  searchQuery,
+  onChangeSearch,
+  total,
+  activeCount,
+  onClear,
+}: {
+  statusFiltro: "todos" | Status
+  onChangeStatus: (s: "todos" | Status) => void
+  searchQuery: string
+  onChangeSearch: (v: string) => void
+  total: number
+  activeCount: number
+  onClear: () => void
+}) {
+  const statusOptions: { value: "todos" | Status; label: string }[] = [
+    { value: "todos", label: "Todos" },
+    { value: "no_prazo", label: "No prazo" },
+    { value: "atencao", label: "Atenção" },
+    { value: "risco", label: "Em risco" },
+    { value: "concluido", label: "Concluído" },
+  ]
+
+  return (
+    <Sheet>
+      <SheetTrigger
+        render={
+          <Button variant={activeCount > 0 ? "default" : "outline"} size="sm" className="h-8 text-xs gap-1.5" />
+        }
+      >
+        <Filter className="size-3.5" />
+        Filtros
+        {activeCount > 0 && (
+          <span className="ml-0.5 rounded-full bg-white text-primary text-[10px] font-bold px-1.5 py-0 leading-4">
+            {activeCount}
+          </span>
+        )}
+      </SheetTrigger>
+      <SheetContent className="flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <SheetTitle>Filtros</SheetTitle>
+          <SheetDescription>Refine os objetivos por status ou busque por nome.</SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Buscar</p>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                className="pl-8 h-8 text-sm"
+                placeholder="Buscar objetivo..."
+                value={searchQuery}
+                onChange={(e) => onChangeSearch(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => onChangeSearch("")}>
+                  <X className="size-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</p>
+            <div className="flex flex-wrap gap-1.5">
+              {statusOptions.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => onChangeStatus(s.value)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    statusFiltro === s.value ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t shrink-0 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {total} objetivo{total !== 1 ? "s" : ""} {total !== 1 ? "visíveis" : "visível"}
+          </span>
+          <button onClick={onClear} className="text-xs text-primary hover:underline">
+            Limpar filtros
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -1135,20 +1264,14 @@ function AlignmentTree({ objetivos }: { objetivos: Objetivo[] }) {
 
 const EMPTY_CICLO_FORM = { nome: "", tipo: "trimestre" as CicloTipo, dataInicio: "", dataFim: "" }
 
-function CicloManagerDialog({
-  open, ciclos, objetivos, onClose, onCreate, onActivate, onEncerrar, onDelete,
+function NovoCicloDialog({
+  open, onClose, onCreate,
 }: {
   open: boolean
-  ciclos: Ciclo[]
-  objetivos: Objetivo[]
   onClose: () => void
   onCreate: (data: typeof EMPTY_CICLO_FORM) => void
-  onActivate: (id: string) => void
-  onEncerrar: (id: string) => void
-  onDelete: (id: string) => void
 }) {
   const [form, setForm] = useState(EMPTY_CICLO_FORM)
-  const countByCiclo = (id: string) => objetivos.filter((o) => o.cicloId === id).length
   const isValid = form.nome.trim().length > 0 && !!form.dataInicio && !!form.dataFim && form.dataFim >= form.dataInicio
 
   function submit() {
@@ -1159,89 +1282,45 @@ function CicloManagerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Gestão de ciclos</DialogTitle>
+          <DialogTitle>Novo ciclo</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4">
-          <div className="space-y-1.5">
-            {[...ciclos].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio)).map((c) => {
-              const cfg = CICLO_STATUS_CONFIG[c.status]
-              const count = countByCiclo(c.id)
-              return (
-                <div key={c.id} className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold">{c.nome}</span>
-                      <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium", cfg.bg, cfg.color)}>
-                        {c.status === "rascunho" && <Lock className="size-2.5" />}{cfg.label}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">{CICLO_TIPO_LABEL[c.tipo]}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{fmtDate(c.dataInicio)} – {fmtDate(c.dataFim)} · {count} objetivo{count !== 1 ? "s" : ""}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {c.status !== "ativo" && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onActivate(c.id)}>
-                        {c.status === "rascunho" ? "Publicar" : "Ativar"}
-                      </Button>
-                    )}
-                    {c.status === "ativo" && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onEncerrar(c.id)}>Encerrar</Button>
-                    )}
-                    <Button
-                      size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive"
-                      disabled={count > 0}
-                      title={count > 0 ? "Não é possível excluir: há objetivos neste ciclo" : "Excluir ciclo"}
-                      onClick={() => onDelete(c.id)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Novo ciclo</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs">Nome</Label>
-                <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Q1 2027" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo</Label>
-                <Select items={CICLO_TIPO_ITEMS} value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as CicloTipo }))}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trimestre">Trimestre</SelectItem>
-                    <SelectItem value="semestre">Semestre</SelectItem>
-                    <SelectItem value="ano">Ano</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div />
-              <div className="space-y-1">
-                <Label className="text-xs">Data início</Label>
-                <Input type="date" value={form.dataInicio} onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Data fim</Label>
-                <Input type="date" value={form.dataFim} onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))} />
-              </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1 col-span-2">
+              <Label className="text-xs">Nome</Label>
+              <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Q1 2027" />
             </div>
-            <Button size="sm" className="h-8 text-xs gap-1.5" disabled={!isValid} onClick={submit}>
-              <Plus className="size-3.5" />Criar ciclo (rascunho)
-            </Button>
+            <div className="space-y-1">
+              <Label className="text-xs">Tipo</Label>
+              <Select items={CICLO_TIPO_ITEMS} value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as CicloTipo }))}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="trimestre">Trimestre</SelectItem>
+                  <SelectItem value="semestre">Semestre</SelectItem>
+                  <SelectItem value="ano">Ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div />
+            <div className="space-y-1">
+              <Label className="text-xs">Data início</Label>
+              <Input type="date" value={form.dataInicio} onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Data fim</Label>
+              <Input type="date" value={form.dataFim} onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))} />
+            </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!isValid} onClick={submit}>
+            <Plus className="size-3.5" />Criar ciclo (rascunho)
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1254,6 +1333,7 @@ interface KrFormRow {
   id?: string
   descricao: string
   tipo: KRTipo
+  responsavel: string
   atual: string
   meta: string
   unidade: string
@@ -1261,7 +1341,7 @@ interface KrFormRow {
   kpiId: string
 }
 
-const EMPTY_KR_FORM: KrFormRow = { descricao: "", tipo: "manual", meta: "", atual: "", unidade: "", concluido: false, kpiId: "" }
+const EMPTY_KR_FORM: KrFormRow = { descricao: "", tipo: "manual", responsavel: USERS[0].nome, meta: "", atual: "", unidade: "", concluido: false, kpiId: "" }
 
 function emptyObjForm(defaultCicloId: string) {
   return {
@@ -1317,6 +1397,7 @@ function ObjectiveModal({
             id: kr.id,
             descricao: kr.descricao,
             tipo: kr.tipo,
+            responsavel: kr.responsavel.nome,
             meta: String(kr.meta),
             atual: String(kr.atual),
             unidade: kr.unidade,
@@ -1340,7 +1421,7 @@ function ObjectiveModal({
     form.keyResults.some((kr) => kr.descricao.trim().length > 0 && (kr.tipo === "binario" || kr.kpiId || kr.meta.trim().length > 0))
 
   function addKr() {
-    set("keyResults", [...form.keyResults, { ...EMPTY_KR_FORM }])
+    set("keyResults", [...form.keyResults, { ...EMPTY_KR_FORM, responsavel: form.responsavel }])
   }
 
   function updateKr<K extends keyof KrFormRow>(idx: number, field: K, value: KrFormRow[K]) {
@@ -1523,6 +1604,15 @@ function ObjectiveModal({
                         </label>
                       )}
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground shrink-0">Responsável</Label>
+                      <Select value={kr.responsavel} onValueChange={(v) => updateKr(idx, "responsavel", v)}>
+                        <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {USERS.map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )
               })}
@@ -1558,7 +1648,7 @@ export default function OkrsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [modalObjId, setModalObjId] = useState<string | null>(null)
-  const [cicloManagerOpen, setCicloManagerOpen] = useState(false)
+  const [novoCicloOpen, setNovoCicloOpen] = useState(false)
 
   const shared = useOkrShared()
 
@@ -1667,6 +1757,27 @@ export default function OkrsPage() {
     }))
   }
 
+  function handleAddAcao(objId: string, krId: string, texto: string) {
+    updateKrIn(objId, krId, (kr) => ({
+      ...kr,
+      acoes: [...kr.acoes, { id: nextId("acao"), texto, concluida: false }],
+    }))
+  }
+
+  function handleToggleAcao(objId: string, krId: string, acaoId: string, concluida: boolean) {
+    updateKrIn(objId, krId, (kr) => ({
+      ...kr,
+      acoes: kr.acoes.map((a) => (a.id === acaoId ? { ...a, concluida } : a)),
+    }))
+  }
+
+  function handleRemoveAcao(objId: string, krId: string, acaoId: string) {
+    updateKrIn(objId, krId, (kr) => ({
+      ...kr,
+      acoes: kr.acoes.filter((a) => a.id !== acaoId),
+    }))
+  }
+
   function handleSaveObjetivo(data: ReturnType<typeof emptyObjForm>) {
     const responsavel = USERS.find((u) => u.nome === data.responsavel) ?? USERS[0]
     const previous = modalObjId ? objetivos.find((o) => o.id === modalObjId) : undefined
@@ -1675,10 +1786,12 @@ export default function OkrsPage() {
       .filter((kr) => kr.descricao.trim().length > 0 && (kr.tipo === "binario" || kr.kpiId || kr.meta.trim().length > 0))
       .map((kr) => {
         const existing = kr.id ? previous?.keyResults.find((p) => p.id === kr.id) : undefined
+        const krResponsavel = USERS.find((u) => u.nome === kr.responsavel) ?? responsavel
         return {
           id: kr.id ?? nextId("kr"),
           descricao: kr.descricao,
           tipo: kr.tipo,
+          responsavel: krResponsavel,
           meta: parseFloat(kr.meta.replace(",", ".")) || 0,
           atual: parseFloat(kr.atual.replace(",", ".")) || 0,
           unidade: kr.unidade || "un",
@@ -1686,6 +1799,7 @@ export default function OkrsPage() {
           kpiId: kr.tipo === "auto" ? (kr.kpiId || null) : null,
           subResultados: existing?.subResultados ?? [],
           historico: existing?.historico ?? [],
+          acoes: existing?.acoes ?? [],
         }
       })
 
@@ -1734,19 +1848,6 @@ export default function OkrsPage() {
     }))
   }
 
-  function handleEncerrarCiclo(id: string) {
-    setCiclos((list) => list.map((c) => (c.id === id ? { ...c, status: "encerrado" } : c)))
-  }
-
-  function handleDeleteCiclo(id: string) {
-    if (objetivos.some((o) => o.cicloId === id)) return
-    setCiclos((list) => list.filter((c) => c.id !== id))
-    if (activeCicloId === id) {
-      const remaining = ciclos.filter((c) => c.id !== id)
-      setActiveCicloId(remaining[0]?.id ?? "")
-    }
-  }
-
   return (
     <div className="flex flex-col h-svh overflow-hidden">
       <PageHeader title="OKRs" />
@@ -1756,29 +1857,13 @@ export default function OkrsPage() {
         <Button size="sm" className="h-8 text-xs gap-1.5" onClick={openCreate}>
           <Plus className="size-3.5" />Novo objetivo
         </Button>
-        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setCicloManagerOpen(true)}>
-          <Settings2 className="size-3.5" />Gerenciar ciclos
-        </Button>
 
         <Separator orientation="vertical" className="h-5" />
-
-        <Select items={cicloSelectItems} value={activeCicloId} onValueChange={setActiveCicloId}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Ciclo" />
-          </SelectTrigger>
-          <SelectContent>
-            {[...ciclos].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio)).map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.nome} {c.status === "rascunho" ? "· rascunho" : c.status === "encerrado" ? "· encerrado" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         <div className="flex rounded-md border overflow-hidden">
           {([
             { value: "lista", label: "Lista" },
-            { value: "arvore", label: "Árvore de alinhamento", icon: GitBranch },
+            { value: "arvore", label: "Árvore geral", icon: GitBranch },
           ] as { value: "lista" | "arvore"; label: string; icon?: React.FC<{ className?: string }> }[]).map((v) => (
             <button
               key={v.value}
@@ -1793,45 +1878,36 @@ export default function OkrsPage() {
           ))}
         </div>
 
-        {view === "lista" && (
-          <div className="flex rounded-md border overflow-hidden">
-            {([
-              { value: "todos", label: "Todos" },
-              { value: "no_prazo", label: "No prazo" },
-              { value: "atencao", label: "Atenção" },
-              { value: "risco", label: "Em risco" },
-              { value: "concluido", label: "Concluído" },
-            ] as { value: "todos" | Status; label: string }[]).map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setStatusFiltro(s.value)}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
-                  statusFiltro === s.value ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setNovoCicloOpen(true)}>
+            <Plus className="size-3.5" />Novo ciclo
+          </Button>
 
-        {view === "lista" && (
-          <div className="relative ml-auto min-w-[180px] max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
-              className="pl-8 h-8 text-sm"
-              placeholder="Buscar objetivo..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+          <Select items={cicloSelectItems} value={activeCicloId} onValueChange={setActiveCicloId}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Ciclo" />
+            </SelectTrigger>
+            <SelectContent>
+              {[...ciclos].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio)).map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome} {c.status === "rascunho" ? "· rascunho" : c.status === "encerrado" ? "· encerrado" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {view === "lista" && (
+            <FiltersSheet
+              statusFiltro={statusFiltro}
+              onChangeStatus={setStatusFiltro}
+              searchQuery={searchQuery}
+              onChangeSearch={setSearchQuery}
+              total={filtered.length}
+              activeCount={(statusFiltro !== "todos" ? 1 : 0) + (searchQuery.trim() ? 1 : 0)}
+              onClear={() => { setSearchQuery(""); setStatusFiltro("todos") }}
             />
-            {searchQuery && (
-              <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setSearchQuery("")}>
-                <X className="size-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -1848,38 +1924,37 @@ export default function OkrsPage() {
           </div>
         )}
 
-        <AICoachPanel objetivos={objetivosDoCiclo} ciclo={ciclo} />
-
-        {/* Summary */}
-        <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4">
-          <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
-            <CardContent className="p-0">
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Objetivos no ciclo</div>
-              <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{objetivosDoCiclo.length}</div>
-            </CardContent>
-          </Card>
-          <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
-            <CardContent className="p-0">
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Progresso do ciclo</div>
-              <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{progressoCiclo}%</div>
-            </CardContent>
-          </Card>
-          <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
-            <CardContent className="p-0">
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Concluídos</div>
-              <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-green-700">{concluidos}</div>
-            </CardContent>
-          </Card>
-          <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
-            <CardContent className="p-0">
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Atrasados</div>
-              <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-red-600">{atrasados}</div>
-            </CardContent>
-          </Card>
-        </div>
+        {view === "lista" && (
+          <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4">
+            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+              <CardContent className="p-0">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Objetivos no ciclo</div>
+                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{objetivosDoCiclo.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+              <CardContent className="p-0">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Progresso do ciclo</div>
+                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{progressoCiclo}%</div>
+              </CardContent>
+            </Card>
+            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+              <CardContent className="p-0">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Concluídos</div>
+                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-green-700">{concluidos}</div>
+              </CardContent>
+            </Card>
+            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+              <CardContent className="p-0">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Atrasados</div>
+                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-red-600">{atrasados}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {view === "arvore" ? (
-          <AlignmentTree objetivos={objetivosDoCiclo} />
+          <OrgTreeView objetivos={objetivosDoCiclo} />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Target className="size-8 opacity-40" />
@@ -1909,6 +1984,9 @@ export default function OkrsPage() {
                 onRemoveSub={(krId, subId) => handleRemoveSub(obj.id, krId, subId)}
                 onLinkIniciativa={(krId, iniciativaId) => linkKrIniciativa(krId, iniciativaId)}
                 onUnlinkIniciativa={(krId, iniciativaId) => unlinkKrIniciativa(krId, iniciativaId)}
+                onAddAcao={(krId, texto) => handleAddAcao(obj.id, krId, texto)}
+                onToggleAcao={(krId, acaoId, concluida) => handleToggleAcao(obj.id, krId, acaoId, concluida)}
+                onRemoveAcao={(krId, acaoId) => handleRemoveAcao(obj.id, krId, acaoId)}
               />
             ))}
           </div>
@@ -1925,15 +2003,10 @@ export default function OkrsPage() {
         onSave={handleSaveObjetivo}
       />
 
-      <CicloManagerDialog
-        open={cicloManagerOpen}
-        ciclos={ciclos}
-        objetivos={objetivos}
-        onClose={() => setCicloManagerOpen(false)}
+      <NovoCicloDialog
+        open={novoCicloOpen}
+        onClose={() => setNovoCicloOpen(false)}
         onCreate={handleCreateCiclo}
-        onActivate={handleActivateCiclo}
-        onEncerrar={handleEncerrarCiclo}
-        onDelete={handleDeleteCiclo}
       />
     </div>
   )
