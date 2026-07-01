@@ -6,8 +6,8 @@ import {
   ClipboardCheck,
   Cog,
   Layers,
+  ListChecks,
   Map,
-  Rocket,
   Settings2,
 } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router"
@@ -80,7 +80,8 @@ export default function SidebarLayout() {
   const isMaterialidade =
     location.pathname === "/materialidade" ||
     location.pathname.startsWith("/materialidade/tema")
-const isIniciativas = location.pathname.startsWith("/iniciativas")
+  const isOkrs = location.pathname.startsWith("/okrs")
+  const isIniciativas = location.pathname.startsWith("/iniciativas")
 
   return (
     <TooltipProvider>
@@ -160,16 +161,39 @@ const isIniciativas = location.pathname.startsWith("/iniciativas")
 
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Iniciativas"
-                    render={<Link to="/iniciativas" />}
-                    isActive={isIniciativas}
-                  >
-                    <Rocket />
-                    <span>Iniciativas</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton tooltip="Ações">
+                          <ListChecks />
+                          <span>Ações</span>
+                          <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/okrs" />}
+                            isActive={isOkrs}
+                          >
+                            OKRs
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link to="/iniciativas" />}
+                            isActive={isIniciativas}
+                          >
+                            Iniciativas
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
 
                 <Collapsible defaultOpen className="group/collapsible">
                   <SidebarMenuItem>

@@ -22,6 +22,7 @@ export default [
     route("materialidade/comentarios", "routes/materialidade.comentarios.tsx"),
     route("materialidade/temas", "routes/materialidade.temas.tsx"),
     route("materialidade/prioritarios", "routes/materialidade.prioritarios.tsx"),
+    route("okrs", "routes/okrs.tsx"),
     route("iniciativas", "routes/iniciativas.tsx"),
     route("configuracoes", "routes/configuracoes.tsx"),
   ]),

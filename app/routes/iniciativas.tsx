@@ -32,6 +32,10 @@ import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from "~/components/ui/sheet"
 import { cn } from "~/lib/utils"
+import {
+  KPI_CATALOG as MOCK_KPIS_LIST,
+  useOkrShared, registerIniciativas, setLinksForIniciativa,
+} from "~/lib/okr-shared"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -91,22 +95,6 @@ const MOCK_USERS = [
 
 const MOCK_TEAMS = ["RH", "Diversidade & Inclusão", "People Analytics", "Desenvolvimento", "Sustentabilidade", "Cultura"]
 
-const MOCK_OKRS = [
-  { id: "okr1", nome: "Aumentar eNPS para 60 até Q4", progresso: 68 },
-  { id: "okr2", nome: "Atingir 40% de liderança feminina", progresso: 34 },
-  { id: "okr3", nome: "Reduzir turnover voluntário em 15%", progresso: 52 },
-  { id: "okr4", nome: "Certificação ESG Tier 1 até dez/26", progresso: 100 },
-  { id: "okr5", nome: "Implementar academia interna de competências", progresso: 20 },
-]
-
-const MOCK_KPIS_LIST = [
-  { id: "kpi1", nome: "eNPS", valor_atual: 48, meta: 60, unidade: "pts" },
-  { id: "kpi2", nome: "Liderança Feminina", valor_atual: 32, meta: 40, unidade: "%" },
-  { id: "kpi3", nome: "Turnover Voluntário", valor_atual: 8.2, meta: 6.5, unidade: "%" },
-  { id: "kpi4", nome: "Engajamento Geral", valor_atual: 74, meta: 80, unidade: "%" },
-  { id: "kpi5", nome: "Horas de Treinamento", valor_atual: 22, meta: 40, unidade: "h/ano" },
-]
-
 const INITIAL_INITIATIVES: Initiative[] = [
   {
     id: "INI-0001",
@@ -123,7 +111,7 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 280000,
     custo_realizado: 112000,
     retorno_estimado: 520000,
-    okrs_vinculados: [{ id: "okr1", nome: "Aumentar eNPS para 60 até Q4", progresso: 68 }],
+    okrs_vinculados: [{ id: "OBJ-001-kr1", nome: "Aumentar eNPS para 60 até Q4 › Elevar eNPS de 42 para 60 pontos", progresso: 80 }],
     kpis_vinculados: [{ id: "kpi1", nome: "eNPS", valor_atual: 48, meta: 60, unidade: "pts" }],
     atualizado_em: "2026-06-10",
     criado_em: "2026-01-15",
@@ -148,7 +136,7 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 450000,
     custo_realizado: 135000,
     retorno_estimado: null,
-    okrs_vinculados: [{ id: "okr2", nome: "Atingir 40% de liderança feminina", progresso: 34 }],
+    okrs_vinculados: [{ id: "OBJ-002-kr1", nome: "Atingir 40% de liderança feminina › Elevar liderança feminina de 28% para 40%", progresso: 80 }],
     kpis_vinculados: [{ id: "kpi2", nome: "Liderança Feminina", valor_atual: 32, meta: 40, unidade: "%" }],
     atualizado_em: "2026-06-01",
     criado_em: "2025-12-10",
@@ -171,7 +159,7 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 90000,
     custo_realizado: 65000,
     retorno_estimado: 180000,
-    okrs_vinculados: [{ id: "okr3", nome: "Reduzir turnover voluntário em 15%", progresso: 52 }],
+    okrs_vinculados: [{ id: "OBJ-003-kr3", nome: "Reduzir turnover voluntário em 15% › Reduzir turnover voluntário para 8,2%", progresso: 70 }],
     kpis_vinculados: [
       { id: "kpi4", nome: "Engajamento Geral", valor_atual: 74, meta: 80, unidade: "%" },
       { id: "kpi3", nome: "Turnover Voluntário", valor_atual: 8.2, meta: 6.5, unidade: "%" },
@@ -198,7 +186,7 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 320000,
     custo_realizado: null,
     retorno_estimado: 600000,
-    okrs_vinculados: [{ id: "okr5", nome: "Implementar academia interna de competências", progresso: 20 }],
+    okrs_vinculados: [{ id: "OBJ-005-kr1", nome: "Implementar academia interna de competências › Lançar 3 trilhas de aprendizagem digital", progresso: 33 }],
     kpis_vinculados: [{ id: "kpi5", nome: "Horas de Treinamento", valor_atual: 22, meta: 40, unidade: "h/ano" }],
     atualizado_em: "2026-06-01",
     criado_em: "2026-05-20",
@@ -240,7 +228,7 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 45000,
     custo_realizado: 17000,
     retorno_estimado: 90000,
-    okrs_vinculados: [{ id: "okr1", nome: "Aumentar eNPS para 60 até Q4", progresso: 68 }],
+    okrs_vinculados: [{ id: "OBJ-001-kr2", nome: "Aumentar eNPS para 60 até Q4 › Lançar canal de escuta contínua", progresso: 100 }],
     kpis_vinculados: [],
     atualizado_em: "2026-05-15",
     criado_em: "2025-12-20",
@@ -264,7 +252,11 @@ const INITIAL_INITIATIVES: Initiative[] = [
     orcamento_estimado: 180000,
     custo_realizado: 162000,
     retorno_estimado: 500000,
-    okrs_vinculados: [{ id: "okr4", nome: "Certificação ESG Tier 1 até dez/26", progresso: 100 }],
+    okrs_vinculados: [
+      { id: "OBJ-004-kr1", nome: "Certificação ESG Tier 1 › Concluir diagnóstico e plano de adequação", progresso: 100 },
+      { id: "OBJ-004-kr2", nome: "Certificação ESG Tier 1 › Publicar relatório GRI", progresso: 100 },
+      { id: "OBJ-004-kr3", nome: "Certificação ESG Tier 1 › Obter aprovação em auditoria externa", progresso: 100 },
+    ],
     kpis_vinculados: [],
     atualizado_em: "2026-04-01",
     criado_em: "2025-06-10",
@@ -997,6 +989,7 @@ function InitiativeModal({
   mode,
   initial,
   initiatives,
+  okrOptions,
   onClose,
   onSave,
 }: {
@@ -1004,6 +997,7 @@ function InitiativeModal({
   mode: "create" | "edit"
   initial?: Initiative
   initiatives: Initiative[]
+  okrOptions: { id: string; nome: string; progresso: number }[]
   onClose: () => void
   onSave: (data: Partial<Initiative>) => void
 }) {
@@ -1093,7 +1087,7 @@ function InitiativeModal({
     })
   }
 
-  const filteredOkrs = MOCK_OKRS.filter(
+  const filteredOkrs = okrOptions.filter(
     o => o.nome.toLowerCase().includes(okrSearch.toLowerCase()) &&
     !form.okrs_vinculados.some(v => v.id === o.id)
   )
@@ -2252,6 +2246,15 @@ export default function Iniciativas() {
 
   const searchRef = useRef<HTMLInputElement>(null)
 
+  const shared = useOkrShared()
+  const okrOptions = Object.values(shared.keyResults)
+
+  // Publica o registro desta iniciativa (nome + progresso) para a página de OKRs ler —
+  // é o que sustenta o vínculo bidirecional OKR ↔ Iniciativa.
+  useEffect(() => {
+    registerIniciativas(initiatives.map((i) => ({ id: i.id, nome: i.nome, progresso: i.progresso })))
+  }, [initiatives])
+
   const drawerInit = drawerInitId ? initiatives.find(i => i.id === drawerInitId) ?? null : null
 
   const activeFiltersCount =
@@ -2402,6 +2405,7 @@ export default function Iniciativas() {
         historico_check_ins: [],
       }
       setInitiatives(list => [...list, newIni])
+      setLinksForIniciativa(newIni.id, newIni.okrs_vinculados.map(o => o.id))
       setModalOpen(false)
       addToast({
         message: "Iniciativa criada com sucesso.",
@@ -2409,6 +2413,7 @@ export default function Iniciativas() {
       })
     } else if (modalMode === "edit" && modalInitId) {
       setInitiatives(list => list.map(i => i.id === modalInitId ? { ...i, ...data, atualizado_em: TODAY } : i))
+      setLinksForIniciativa(modalInitId, (data.okrs_vinculados ?? []).map(o => o.id))
       setModalOpen(false)
       addToast({ message: "Iniciativa atualizada." })
     }
@@ -2537,6 +2542,7 @@ export default function Iniciativas() {
         mode={modalMode}
         initial={modalInitId ? initiatives.find(i => i.id === modalInitId) : undefined}
         initiatives={initiatives}
+        okrOptions={okrOptions}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />
