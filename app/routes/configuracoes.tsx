@@ -1638,22 +1638,22 @@ function SegurancaSection() {
               <AlertCircle className="size-5 text-destructive" />
               Tornar workspace Privado?
             </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm">
-                <p>
-                  Você está prestes a tornar este workspace{" "}
-                  <strong>invisível</strong> para toda a organização.
-                </p>
-                <p>
-                  Membros que acessam por visibilidade organizacional{" "}
-                  <strong>perderão o acesso imediatamente</strong>. Apenas
-                  membros explicitamente convidados continuarão com acesso.
-                </p>
-                <p className="font-medium text-destructive">
-                  Esta ação remove o acesso de forma imediata e não pode ser desfeita sem uma nova
-                  alteração manual.
-                </p>
-              </div>
+            <AlertDialogDescription
+              render={<div className="space-y-2 text-sm" />}
+            >
+              <p>
+                Você está prestes a tornar este workspace{" "}
+                <strong>invisível</strong> para toda a organização.
+              </p>
+              <p>
+                Membros que acessam por visibilidade organizacional{" "}
+                <strong>perderão o acesso imediatamente</strong>. Apenas
+                membros explicitamente convidados continuarão com acesso.
+              </p>
+              <p className="font-medium text-destructive">
+                Esta ação remove o acesso de forma imediata e não pode ser desfeita sem uma nova
+                alteração manual.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

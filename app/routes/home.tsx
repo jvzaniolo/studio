@@ -20,8 +20,8 @@ export default function Home() {
             <p>You may now add components and start building.</p>
             <p>We&apos;ve already added the button component for you.</p>
             <Dialog>
-              <DialogTrigger asChild>
-                <Button className="mt-2">Button</Button>
+              <DialogTrigger render={<Button className="mt-2" />}>
+                Button
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
