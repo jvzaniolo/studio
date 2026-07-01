@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import { PageHeader } from '~/components/page-header';
 import { Card as ShadCard } from '~/components/ui/card';
+import { MaterialidadeBreadcrumb } from '~/materialidade/components';
 import { THEMES, themeStatus } from '~/materialidade/data';
 import { cn } from '~/lib/utils';
 
@@ -32,7 +33,7 @@ export default function TemasPage() {
   return (
     <>
       <PageHeader
-        title="Temas identificados"
+        title={<MaterialidadeBreadcrumb current="Temas identificados" />}
         actions={
           <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-[3px]">
             {(['todos', 'E', 'S', 'G'] as const).map(f => (

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import { PageHeader } from '~/components/page-header';
 import { Card as ShadCard, CardContent } from '~/components/ui/card';
+import { MaterialidadeBreadcrumb } from '~/materialidade/components';
 import { THEMES } from '~/materialidade/data';
 import { cn } from '~/lib/utils';
 
@@ -28,7 +29,7 @@ export default function PrioritariosPage() {
 
   return (
     <>
-      <PageHeader title="Temas prioritários" />
+      <PageHeader title={<MaterialidadeBreadcrumb current="Temas prioritários" />} />
 
       <div className="flex flex-col gap-6 px-8 pt-6 pb-8">
 

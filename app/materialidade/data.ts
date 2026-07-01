@@ -711,6 +711,32 @@ export function themeStatus(theme: Theme, x: number, y: number, sent: number | n
   return                                          { label: 'Monitorar', tone: 'neutral' };
 }
 
+export function themeStatusReason(theme: Theme, x: number, y: number, sent: number | null): string {
+  const inTopRight = x >= 75 && y >= 65;
+  const sinais = SINAIS[theme.id];
+  const sigDrop = (() => {
+    if (!sinais || sinais.length < 2) return false;
+    const sorted = [...sinais].sort((a, b) => a.data.localeCompare(b.data));
+    return sorted[sorted.length - 1].sentimento < sorted[0].sentimento - 10;
+  })();
+  if (inTopRight && sent != null && sent < -10) {
+    return `Prioridade máxima — relevância de ${x}% para a Alta Liderança e ${y}% para stakeholders, combinada a sentimento negativo (${fmtSent(sent)}).`;
+  }
+  if (sigDrop) {
+    return 'O sentimento caiu mais de 10 pontos entre o primeiro e o último sinal operacional medido no período.';
+  }
+  if (sent != null && sent >= 10 && (theme.linkIFRS || x >= 75 || y >= 65)) {
+    return `Sentimento positivo (${fmtSent(sent)}) em um tema de alta relevância${theme.linkIFRS ? ', também vinculado a risco IFRS' : ''}.`;
+  }
+  if (sent == null) {
+    return 'Ainda não há sentimento agregado medido para este tema.';
+  }
+  if (sent < -10) {
+    return `Sentimento agregado negativo (${fmtSent(sent)}), mas sem os demais critérios de criticidade.`;
+  }
+  return 'Sem sinais de risco ou destaque no momento — tema dentro da faixa neutra de acompanhamento.';
+}
+
 export function scoreboard(themes: Theme[], activePublicos: string[]) {
   let total = themes.length, crit = 0, alerta = 0, saudavel = 0, semIni = 0;
   themes.forEach(t => {

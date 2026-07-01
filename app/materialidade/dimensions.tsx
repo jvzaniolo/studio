@@ -1,6 +1,5 @@
 import React from 'react';
 import { Icon } from './icons';
-import { AIFlat } from './components';
 import { Card } from './components';
 import { PUBLICOS, PUBLICO_BY_ID, getDimValue, sentColor, type Theme } from './data';
 import { cn } from '~/lib/utils';
@@ -342,7 +341,7 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
   const stakeholderRows = [
     { id: 'agregado', label: 'Stakeholders (agregado)', highlight: true, hint: 'média ponderada', hasCargo: false, isMax: false, isMin: false },
     ...PUBLICOS.map(p => ({
-      id: p.id, label: p.label, icon: p.icon, hint: `peso ${p.peso}×`,
+      id: p.id, label: p.label, hint: `peso ${p.peso}×`,
       n_amostra: theme.por_publico.find(pp => pp.publico === p.id)?.n_amostra,
       isMax: p.id === maxPub?.publico && gapRel > 0,
       isMin: p.id === minPub?.publico && gapRel > 0 && minPub !== maxPub,
@@ -353,73 +352,46 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
   const alRow = { id: 'alta_lideranca', label: 'Alta Liderança', hint: 'consulta direta · Eixo X' };
 
   return (
-    <div className="hu-fade flex flex-col gap-[14px]">
-      {gapRel >= 12 && maxPub && minPub && (
-        <AIFlat tone="warning" footer={false}
-          title="Divergência entre públicos"
-          sintese={
-            <span>
-              Há <b>{gapRel}pp</b> de diferença na relevância entre os públicos.{' '}
-              <b>{PUBLICO_BY_ID[maxPub.publico]?.label}</b> avalia em <b>{maxPub.relevancia}%</b>;{' '}
-              <b>{PUBLICO_BY_ID[minPub.publico]?.label}</b> em <b>{minPub.relevancia}%</b>. Vale endereçar antes do próximo ciclo.
-            </span>
-          }
-        />
-      )}
+    <div className="hu-fade">
+      <div className="px-6 py-3.5 flex items-center gap-2.5 flex-wrap border-b border-border/50">
+        <span className="text-sm font-medium text-muted-foreground">Dimensão:</span>
+        <DimensionRadio value={dim} onChange={setDim} />
+      </div>
 
-      <div className="bg-white border border-border rounded-xl overflow-hidden">
-        <div className="px-6 pt-[18px] pb-[14px] flex items-start justify-between gap-[14px] flex-wrap">
-          <div className="min-w-0">
-            <div className="text-[16px] font-semibold text-foreground">
-              Visão dos stakeholders sobre o tema
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Comparativo dos 5 públicos consultados + leitura direta da Alta Liderança.
-            </div>
-          </div>
-          <div className="flex items-center gap-[10px] flex-wrap">
-            <span className="text-xs font-bold tracking-[0.06em] uppercase text-muted-foreground">
-              Dimensão
-            </span>
-            <DimensionRadio value={dim} onChange={setDim} />
-          </div>
-        </div>
+      <div className="px-6 py-3">
+        {stakeholderRows.map(r => (
+          <React.Fragment key={r.id}>
+            <VisaoRow
+              row={r}
+              theme={theme}
+              dim={dim}
+              expanded={expanded.includes(r.id)}
+              onToggle={r.hasCargo ? () => toggleExpand(r.id) : null}
+            />
+            {r.hasCargo && expanded.includes(r.id) && theme.por_cargo?.map(c => (
+              <CargoSubRow key={c.cargo} cargo={c} dim={dim} />
+            ))}
+          </React.Fragment>
+        ))}
 
-        <div className="px-6 py-2">
-          {stakeholderRows.map(r => (
-            <React.Fragment key={r.id}>
-              <VisaoRow
-                row={r}
-                theme={theme}
-                dim={dim}
-                expanded={expanded.includes(r.id)}
-                onToggle={r.hasCargo ? () => toggleExpand(r.id) : null}
-              />
-              {r.hasCargo && expanded.includes(r.id) && theme.por_cargo?.map(c => (
-                <CargoSubRow key={c.cargo} cargo={c} dim={dim} />
-              ))}
-            </React.Fragment>
-          ))}
-
-          <div className="mx-1 mt-[10px] mb-[6px] pt-3 pb-1 border-t border-dashed border-primary/30 flex items-center gap-2">
-            <span className="text-xs font-bold tracking-[0.10em] uppercase text-primary/50">
-              Consulta direta
-            </span>
-          </div>
-          <VisaoRow row={alRow} theme={theme} dim={dim} isAL />
-        </div>
-
-        <div className="px-6 py-3 bg-[#FCFAFD] border-t border-border text-xs text-muted-foreground leading-[1.55]">
-          {dimDef.nota}
-        </div>
-
-        <div className="bg-muted/50 border-t border-border px-6 py-3 flex items-center gap-[10px] text-xs text-muted-foreground">
-          <Icon name="shield" size={14} color="#7401C3" />
-          <span>
-            <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
-            <i> "amostra insuficiente"</i> para evitar reidentificação.
+        <div className="mx-1 mt-[10px] mb-[6px] pt-3 pb-1 border-t border-dashed border-border flex items-center gap-2">
+          <span className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground">
+            Consulta direta
           </span>
         </div>
+        <VisaoRow row={alRow} theme={theme} dim={dim} isAL />
+      </div>
+
+      <div className="px-6 py-3 border-t border-border/50 text-xs text-muted-foreground leading-[1.55]">
+        {dimDef.nota}
+      </div>
+
+      <div className="bg-muted/30 border-t border-border/50 px-6 py-3 flex items-center gap-[10px] text-xs text-muted-foreground">
+        <Icon name="shield" size={14} color="var(--primary)" />
+        <span>
+          <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
+          <i> "amostra insuficiente"</i> para evitar reidentificação.
+        </span>
       </div>
     </div>
   );
@@ -429,7 +401,6 @@ interface VisaoRowProps {
   row: {
     id: string;
     label: string;
-    icon?: string;
     hint?: string;
     highlight?: boolean;
     hasCargo?: boolean;
@@ -465,8 +436,6 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
   } else if (isSent) {
     const valPct = Math.abs(v) / 100 * 50;
     const pos = v >= 0;
-    const gradPos = 'linear-gradient(to right, #7AE2AB, #00A970)';
-    const gradNeg = 'linear-gradient(to left, #F8B4B4, #E03131)';
     barRender = (
       <div className="w-full relative" style={{ height: BAR_H }}>
         <div className="absolute inset-0 bg-muted rounded-full" />
@@ -477,7 +446,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
             height: BAR_H,
             left: pos ? '50%' : (50 - valPct) + '%',
             width: valPct + '%',
-            background: pos ? gradPos : gradNeg,
+            background: pos ? '#00A970' : '#E03131',
           }}
         />
       </div>
@@ -491,7 +460,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
           style={{
             height: BAR_H,
             width: v + '%',
-            background: 'linear-gradient(to right, #B280E0, #7401C3)',
+            background: 'var(--primary)',
           }}
         />
         {[25, 50, 75].map(t => (
@@ -518,19 +487,9 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
       )}
     >
       <div className="flex items-center gap-2 min-w-0">
-        {row.icon && (
-          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-muted inline-flex items-center justify-center">
-            <Icon name={row.icon} size={12} color="#525252" />
-          </span>
-        )}
         {isAL && (
           <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary text-primary-foreground inline-flex items-center justify-center font-heading font-black text-[10px] tracking-[-0.02em]">
             AL
-          </span>
-        )}
-        {isHighlight && (
-          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary/10 inline-flex items-center justify-center">
-            <Icon name="users" size={12} color="#5A0992" />
           </span>
         )}
         <div className="min-w-0 flex-1">

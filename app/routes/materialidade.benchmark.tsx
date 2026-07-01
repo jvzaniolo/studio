@@ -2,6 +2,7 @@ import React from 'react';
 import { PageHeader } from '~/components/page-header';
 import { cn } from '~/lib/utils';
 import { Card as ShadCard, CardContent } from '~/components/ui/card';
+import { MaterialidadeBreadcrumb } from '~/materialidade/components';
 
 const TEMAS = [
   'Processos, tecnologia e infraestrutura',
@@ -74,7 +75,7 @@ export default function BenchmarkPage() {
   return (
     <>
       <PageHeader
-        title="Benchmark · Temas Materiais"
+        title={<MaterialidadeBreadcrumb current="Benchmark · Temas Materiais" />}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             {SETORES.map(s => (

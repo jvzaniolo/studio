@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon, Pill, StatusDot, Btn } from './icons';
-import { Card, SectionTitle, EmptyState } from './components';
+import { Card, SectionTitle, EmptyState, AIInsight } from './components';
 import { AIFlat } from './components';
 import { DimensionRadio, DIM_BY_ID } from './dimensions';
 import {
@@ -16,12 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table';
-import { Textarea } from '~/components/ui/textarea';
 import {
   Card as ShadCard,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '~/components/ui/card';
 
 /* ============================================================
@@ -216,7 +213,7 @@ export function EvolucaoBlock({ theme, sinais }: EvolucaoBlockProps) {
     <div className="mat-evolucao-outer grid gap-3" style={{ gridTemplateColumns: '300px minmax(0, 1fr)' }}>
 
       {/* ── AI Diagnosis — standalone card ── */}
-      <AIAnalysePanel theme={theme} dim={dim}/>
+      <ThemeAIInsight theme={theme} dim={dim}/>
 
       {/* ── Timeline + filters — single card ── */}
       <ShadCard className="flex flex-col gap-0 overflow-hidden p-0">
@@ -277,131 +274,31 @@ export function EvolucaoBlock({ theme, sinais }: EvolucaoBlockProps) {
   );
 }
 
-/* ---------- AI Analysis Panel (editable) ---------- */
-interface AIAnalysePanelProps {
+/* ---------- AI Analysis (read-only, same formatting as Matriz de Materialidade) ---------- */
+interface ThemeAIInsightProps {
   theme: Theme;
   dim?: string;
 }
 
-export function AIAnalysePanel({ theme, dim = 'sentimento' }: AIAnalysePanelProps) {
+function ThemeAIInsight({ theme, dim = 'sentimento' }: ThemeAIInsightProps) {
   const defaults = getAIDefaults(theme, dim);
-  const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState(defaults);
-  const [values, setValues] = React.useState(defaults);
-
-  React.useEffect(() => {
-    const d = getAIDefaults(theme, dim);
-    setValues(d);
-    setDraft(d);
-    setEditing(false);
-  }, [theme.id, dim]);
-
-  const save = () => { setValues(draft); setEditing(false); };
-  const discard = () => { setDraft(values); setEditing(false); };
-  const regen = () => { setDraft(getAIDefaults(theme, dim)); };
-
-  const TextLinkButton = ({ icon, color, onClick, children }: { icon?: string; color: string; onClick: () => void; children: React.ReactNode }) => (
-    <button onClick={onClick} style={{ color }}
-      className="inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0 text-sm font-semibold">
-      {icon && <Icon name={icon} size={12} color={color}/>}
-      {children}
-    </button>
-  );
+  const prioridades = defaults.prioridades
+    .split('\n')
+    .filter(l => l.trim())
+    .map(l => l.replace(/^\s*\d+\.\s*/, ''));
+  const tone =
+    theme.sentimento != null && theme.sentimento < -20 ? 'danger'
+    : theme.sentimento != null && theme.sentimento < 0  ? 'warning'
+    : 'brand';
 
   return (
-    <ShadCard className="flex flex-col min-w-0 self-start">
-      <CardContent className="p-[18px_20px] flex flex-col gap-3.5">
-        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Icon name="sparkles" size={14} color="#525252"/>
-            <span className="text-sm font-semibold text-foreground" style={{ color: '#525252' }}>Análise IA</span>
-          </div>
-          {!editing && (
-            <TextLinkButton color="var(--primary)" onClick={() => setEditing(true)}>Editar tudo</TextLinkButton>
-          )}
-        </div>
-
-        <EditableField
-          eyebrow="Diagnóstico"
-          value={editing ? draft.diagnostico : values.diagnostico}
-          editing={editing}
-          rows={4}
-          onChange={(v) => setDraft(d => ({ ...d, diagnostico: v }))}
-        />
-        <EditableField
-          eyebrow="Estado atual"
-          value={editing ? draft.estado : values.estado}
-          editing={editing}
-          rows={3}
-          onChange={(v) => setDraft(d => ({ ...d, estado: v }))}
-        />
-        <EditableField
-          eyebrow="Prioridades de evolução"
-          value={editing ? draft.prioridades : values.prioridades}
-          editing={editing}
-          rows={4}
-          onChange={(v) => setDraft(d => ({ ...d, prioridades: v }))}
-          formatList
-        />
-
-        {editing && (
-          <div className="flex items-center gap-[18px] flex-wrap pt-2.5 border-t border-border">
-            <TextLinkButton icon="check" color="var(--primary)" onClick={save}>Salvar</TextLinkButton>
-            <TextLinkButton icon="x" color="#525252" onClick={discard}>Descartar</TextLinkButton>
-            <TextLinkButton icon="sparkles" color="var(--primary)" onClick={regen}>Regenerar com IA</TextLinkButton>
-          </div>
-        )}
-
-        {!editing && (
-          <div className="flex items-center gap-2.5 pt-2 border-t border-border text-xs text-muted-foreground">
-            <span>Esta informação foi útil?</span>
-            <Icon name="thumbs-up" size={13} color="#AA95BE"/>
-            <Icon name="thumbs-down" size={13} color="#AA95BE"/>
-          </div>
-        )}
-      </CardContent>
-    </ShadCard>
-  );
-}
-
-export function EditableField({ eyebrow, value, editing, rows = 3, onChange, formatList }: {
-  eyebrow: string;
-  value: string;
-  editing: boolean;
-  rows?: number;
-  onChange: (v: string) => void;
-  formatList?: boolean;
-}) {
-  return (
-    <div>
-      <div className="text-xs font-bold tracking-[0.04em] uppercase mb-1.5" style={{ color: '#525252' }}>
-        {eyebrow}
-      </div>
-      {editing ? (
-        <Textarea
-          value={value}
-          rows={rows}
-          onChange={(e) => onChange(e.target.value)}
-          className="resize-y text-sm leading-[1.55] text-foreground bg-white border-border rounded-lg outline-none font-[inherit] transition-colors focus-visible:ring-0 focus-visible:border-primary"
-          style={{ boxSizing: 'border-box' }}
-        />
-      ) : formatList && /^\s*\d+\./m.test(value) ? (
-        <div className="text-[13.5px] leading-[1.55] text-foreground" style={{ color: '#1a1a1a' }}>
-          {(() => {
-            const items = value.split('\n').filter(l => l.trim()).map(l => l.replace(/^\s*\d+\.\s*/, ''));
-            return items.map((t, i) => (
-              <span key={i}>
-                <b>({i + 1})</b> {t}{i < items.length - 1 ? '; ' : '.'}
-              </span>
-            ));
-          })()}
-        </div>
-      ) : (
-        <div className="text-[13.5px] leading-[1.55] whitespace-pre-wrap" style={{ color: '#1a1a1a' }}>
-          {value}
-        </div>
-      )}
-    </div>
+    <AIInsight
+      title="Diagnóstico do tema"
+      sintese={`${defaults.diagnostico} ${defaults.estado}`}
+      prioridades={prioridades}
+      tone={tone}
+      className="min-w-0 self-start"
+    />
   );
 }
 

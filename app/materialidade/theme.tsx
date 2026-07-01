@@ -9,10 +9,11 @@ import {
   THEME_BY_ID, INICIATIVAS, KPIS, SINAIS, SUGESTOES_VINCULO,
   sentColor, fmtSent,
   kpiOnTrackStats, iniciativaEmDiaStats,
-  themeStatus,
+  themeStatus, themeStatusReason,
   type Theme, type KPI, type Iniciativa, type Sinal,
 } from './data';
 import { Card, CardContent } from '~/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
 
 /* ===========================================================
@@ -71,8 +72,6 @@ export function ThemeDetail({
       <PageHeader
         title={
           <span className="flex items-center gap-1.5 text-sm font-normal">
-            <span className="text-muted-foreground">Estratégia</span>
-            <span className="text-muted-foreground/40">›</span>
             <span
               className="text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
               onClick={onBack}
@@ -99,13 +98,20 @@ export function ThemeDetail({
             <span className="text-xs font-semibold text-muted-foreground">
               Tema material · {String(theme.id).padStart(2, '0')}
             </span>
-            <Pill
-              tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'}
-              size="md"
-              className="px-2.5 py-0.5 text-xs font-semibold"
-            >
-              {st.label}
-            </Pill>
+            <Tooltip>
+              <TooltipTrigger render={<span className="cursor-help" />}>
+                <Pill
+                  tone={st.tone as 'success' | 'danger' | 'warning' | 'info' | 'neutral' | 'brand'}
+                  size="md"
+                  className="px-2.5 py-0.5 text-xs font-semibold"
+                >
+                  {st.label}
+                </Pill>
+              </TooltipTrigger>
+              <TooltipContent>
+                {themeStatusReason(theme, theme.x, theme.y, theme.sentimento)}
+              </TooltipContent>
+            </Tooltip>
           </div>
           <span className="text-xs text-muted-foreground font-mono">v2025 · {slug}</span>
         </div>
@@ -121,6 +127,20 @@ export function ThemeDetail({
       />
 
       {/* ── Sections ── */}
+      <ThemeBlock
+        id="sec-kpis"
+        title="KPIs vinculados"
+        subtitle={kpiSubtitle}
+        action={
+          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
+            <Icon name="link" size={13} color="var(--primary)"/>
+            Vincular KPI
+          </button>
+        }
+      >
+        <KPIsBlock theme={theme} kpis={kpis}/>
+      </ThemeBlock>
+
       <section id="sec-evolucao" className="px-8 pt-3">
         <EvolucaoBlock theme={theme} sinais={sinais} inics={inics} kpis={kpis}/>
       </section>
@@ -145,20 +165,6 @@ export function ThemeDetail({
         }
       >
         <ComentariosBlock theme={theme}/>
-      </ThemeBlock>
-
-      <ThemeBlock
-        id="sec-kpis"
-        title="KPIs vinculados"
-        subtitle={kpiSubtitle}
-        action={
-          <button className="inline-flex items-center gap-1.5 bg-transparent border-0 cursor-pointer p-0 text-primary text-sm font-semibold">
-            <Icon name="link" size={13} color="var(--primary)"/>
-            Vincular KPI
-          </button>
-        }
-      >
-        <KPIsBlock theme={theme} kpis={kpis} sugestoes={sugestoes}/>
       </ThemeBlock>
 
       <ThemeBlock
@@ -382,7 +388,7 @@ function HeroCard({
             {sublabel ?? ''}
           </div>
         </div>
-        <div className="font-display font-bold text-[22px] leading-none tracking-[-0.02em] tabular-nums text-foreground mt-1.5 mb-2">
+        <div className="font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums text-foreground mt-1.5 mb-2">
           {number}
         </div>
         <div className="text-[11px] text-muted-foreground leading-tight min-h-[14px]">

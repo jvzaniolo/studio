@@ -11,7 +11,11 @@ import { cn } from '~/lib/utils';
 import {
   Card as UiCard,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
 import {
   Table,
   TableBody,
@@ -200,87 +204,89 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
   const publicos = [...new Set(individuais.map(c => c.publico))];
 
   return (
-    <div>
-      <div className="px-6 py-3.5 flex items-center gap-2.5 flex-wrap border-b border-border/50">
-        <span className="text-sm font-medium text-muted-foreground">Dimensão:</span>
-        <ClassificacaoFilter value={dimFilter} onChange={setDimFilter}/>
-      </div>
-
-      <div className="mat-coment-grid grid gap-4 px-6 py-5" style={{ gridTemplateColumns: '320px minmax(0, 1.6fr)' }}>
-        {/* Left: síntese */}
-        <UiCard className="rounded-lg border border-border self-start">
-          <CardContent className="p-5 flex flex-col gap-4">
-            <div className="text-sm font-semibold text-foreground">Síntese</div>
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  Total de comentários
-                </div>
-                <div className="text-sm text-foreground">
-                  {individuais.length} comentário{individuais.length === 1 ? '' : 's'} neste tema
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  Públicos
-                </div>
-                <div className="text-sm text-foreground">{publicos.join(', ')}</div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  Distribuição
-                </div>
-                <div className="flex flex-col gap-1">
-                  {(['Força', 'Oportunidade', 'Fraqueza'] as const).map(cl => {
-                    const count = individuais.filter(c => c.classificacao === cl).length;
-                    if (count === 0) return null;
-                    return (
-                      <div key={cl} className="flex items-center gap-2 text-xs">
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[10px]"
-                          style={cl === 'Força' ? { background: '#EFE3F8', color: '#5B21B6' }
-                            : cl === 'Oportunidade' ? { background: '#DEF7EC', color: '#065F46' }
-                            : { background: '#FEF3C7', color: '#92400E' }}
-                        >
-                          {cl}
-                        </span>
-                        <span className="text-muted-foreground">{count} comentário{count === 1 ? '' : 's'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+    <div className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-3">
+      {/* Left: AI Insights — mesma estrutura das páginas de indicadores */}
+      <UiCard className="relative self-start overflow-hidden bg-linear-to-br from-primary/8 via-card to-card ring-1 ring-primary/20 lg:col-span-1">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="sparkles" size={14} color="var(--primary)"/>
+            AI Insights
+          </CardTitle>
+          <CardDescription>
+            Síntese consolidada dos comentários deste tema.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Total de comentários
             </div>
-
-            <div className="pt-3 border-t border-border flex items-center gap-2.5 text-xs text-muted-foreground">
-              <span>Esta informação foi útil?</span>
-              <button
-                onClick={() => setUseful(useful === 'up' ? null : 'up')}
-                title="Útil"
-                className={cn(
-                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
-                  useful === 'up' ? 'text-green-600' : 'text-muted-foreground',
-                )}
-              >
-                <Icon name="thumbs-up" size={13} color="currentColor"/>
-              </button>
-              <button
-                onClick={() => setUseful(useful === 'down' ? null : 'down')}
-                title="Não útil"
-                className={cn(
-                  'w-6 h-6 p-0 rounded-md cursor-pointer border border-transparent bg-transparent inline-flex items-center justify-center',
-                  useful === 'down' ? 'text-destructive' : 'text-muted-foreground',
-                )}
-              >
-                <Icon name="thumbs-down" size={13} color="currentColor"/>
-              </button>
+            <div className="text-sm text-foreground">
+              {individuais.length} comentário{individuais.length === 1 ? '' : 's'} neste tema
             </div>
-          </CardContent>
-        </UiCard>
+          </div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Públicos
+            </div>
+            <div className="text-sm text-foreground">{publicos.join(', ')}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Distribuição
+            </div>
+            <div className="flex flex-col gap-1">
+              {(['Força', 'Oportunidade', 'Fraqueza'] as const).map(cl => {
+                const count = individuais.filter(c => c.classificacao === cl).length;
+                if (count === 0) return null;
+                return (
+                  <div key={cl} className="flex items-center gap-2 text-xs">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[10px]"
+                      style={cl === 'Força' ? { background: '#EFE3F8', color: '#5B21B6' }
+                        : cl === 'Oportunidade' ? { background: '#DEF7EC', color: '#065F46' }
+                        : { background: '#FEF3C7', color: '#92400E' }}
+                    >
+                      {cl}
+                    </span>
+                    <span className="text-muted-foreground">{count} comentário{count === 1 ? '' : 's'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-        {/* Right: individual comments */}
-        <div className="flex flex-col min-w-0 max-h-[600px] overflow-y-auto divide-y divide-border/60">
+          <div className="mt-1 flex items-center gap-2 border-t pt-3 text-xs text-muted-foreground">
+            <span>Esta informação foi útil?</span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setUseful(useful === 'up' ? null : 'up')}
+              className={useful === 'up' ? 'text-green-600' : ''}
+              aria-label="Útil"
+            >
+              <Icon name="thumbs-up" size={13} color="currentColor"/>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setUseful(useful === 'down' ? null : 'down')}
+              className={useful === 'down' ? 'text-destructive' : ''}
+              aria-label="Não útil"
+            >
+              <Icon name="thumbs-down" size={13} color="currentColor"/>
+            </Button>
+          </div>
+        </CardContent>
+      </UiCard>
+
+      {/* Right: individual comments */}
+      <div className="flex min-w-0 flex-col gap-3 lg:col-span-2">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className="text-sm font-medium text-muted-foreground">Dimensão:</span>
+          <ClassificacaoFilter value={dimFilter} onChange={setDimFilter}/>
+        </div>
+        <div className="flex flex-col max-h-[600px] overflow-y-auto divide-y divide-border/60 rounded-lg border border-border">
           {filtered.length === 0 ? (
             <EmptyState icon="message"
               title="Sem comentários para este filtro"
@@ -290,12 +296,6 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
           ))}
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 1080px) {
-          .mat-coment-grid { grid-template-columns: minmax(0, 1fr) !important; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -308,7 +308,7 @@ function ComentarioItem({ comment }: { comment: CommentItem }) {
   };
   const s = styles[comment.classificacao] || styles['Força'];
   return (
-    <div className="py-4 flex flex-col gap-2">
+    <div className="px-4 py-4 flex flex-col gap-2">
       <div className="flex items-center gap-2 flex-wrap">
         <span
           className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
@@ -541,18 +541,10 @@ function getComentarios(themeId: number): ComentariosData {
 export function KPIsBlock({
   theme,
   kpis,
-  sugestoes,
 }: {
   theme: Theme;
   kpis: KPI[];
-  sugestoes: SugestaoVinculo[];
 }) {
-  const kpiSugestoes = sugestoes.filter(s => s.kind === 'kpi');
-  const [sugState, setSugState] = React.useState<Record<number, string>>({});
-  const visibleSugs = kpiSugestoes
-    .map((s, idx) => ({ s, idx }))
-    .filter(x => !sugState[x.idx]);
-
   return (
     <div className="flex flex-col gap-4">
       {kpis.length === 0 ? (
@@ -569,15 +561,6 @@ export function KPIsBlock({
         />
       ) : (
         <KPITable kpis={kpis}/>
-      )}
-
-      {visibleSugs.length > 0 && (
-        <SugestoesIAVinculo
-          title="Sugestões de vínculo (IA)"
-          kind="kpi"
-          sugs={visibleSugs}
-          onAction={(idx, action) => setSugState(s => ({ ...s, [idx]: action }))}
-        />
       )}
     </div>
   );

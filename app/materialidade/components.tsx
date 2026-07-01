@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router';
 import { Sparkles, ThumbsUp, ThumbsDown, ArrowRight, X, ChevronDown } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { sentColor, sentLabel, fmtSent } from './data';
@@ -30,6 +31,23 @@ import {
 } from '~/components/ui/empty';
 import { Badge } from '~/components/ui/badge';
 import { Separator } from '~/components/ui/separator';
+
+/* ----- MaterialidadeBreadcrumb ----- */
+/* Caminho coerente para páginas abertas a partir da Matriz de Materialidade. */
+export function MaterialidadeBreadcrumb({ current }: { current: string }) {
+  return (
+    <span className="flex items-center gap-1.5 text-sm font-normal">
+      <Link
+        to="/materialidade"
+        className="text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Matriz de Materialidade
+      </Link>
+      <span className="text-muted-foreground/40">›</span>
+      <span className="font-medium text-foreground truncate max-w-[280px]">{current}</span>
+    </span>
+  );
+}
 
 /* ----- Card ----- */
 interface CardProps {

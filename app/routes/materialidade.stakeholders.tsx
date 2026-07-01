@@ -1,6 +1,7 @@
 import React from 'react';
 import { PageHeader } from '~/components/page-header';
 import { Card as ShadCard, CardContent } from '~/components/ui/card';
+import { MaterialidadeBreadcrumb } from '~/materialidade/components';
 import { PUBLICOS, THEMES } from '~/materialidade/data';
 import { cn } from '~/lib/utils';
 
@@ -30,7 +31,7 @@ export default function StakeholdersPage() {
 
   return (
     <>
-      <PageHeader title="Stakeholders consultados" />
+      <PageHeader title={<MaterialidadeBreadcrumb current="Stakeholders consultados" />} />
 
       <div className="flex flex-col gap-6 px-8 pt-6 pb-8">
 
