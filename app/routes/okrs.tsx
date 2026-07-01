@@ -688,7 +688,7 @@ function KeyResultRow({
               onClick={() => setAcoesOpen((v) => !v)}
               className="shrink-0 text-[10px] font-medium text-muted-foreground underline decoration-dotted hover:text-foreground"
             >
-              {kr.acoes.length > 0 ? `${kr.acoes.length} ação${kr.acoes.length > 1 ? "ões" : ""}` : "adicionar ações"}
+              {kr.acoes.length > 0 ? `${kr.acoes.length} ${kr.acoes.length > 1 ? "ações" : "ação"}` : "adicionar ações"}
             </button>
           </div>
           <div className="mt-1 flex items-center gap-2">
@@ -1058,7 +1058,50 @@ function TreeConnector({ n }: { n: number }) {
   )
 }
 
-function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
+type OrgTreeSelection =
+  | { kind: "org" }
+  | { kind: "lane"; laneKey: string }
+  | { kind: "objetivo"; objId: string }
+  | { kind: "kr"; objId: string; krId: string }
+
+function OrgTreeView({
+  objetivos,
+  iniciativaRegistry,
+  linksByKr,
+  onEdit,
+  onDelete,
+  onUpdateKr,
+  onToggleBinario,
+  onLinkKpi,
+  onUnlinkKpi,
+  onAddSub,
+  onUpdateSub,
+  onRemoveSub,
+  onLinkIniciativa,
+  onUnlinkIniciativa,
+  onAddAcao,
+  onToggleAcao,
+  onRemoveAcao,
+}: {
+  objetivos: Objetivo[]
+  iniciativaRegistry: RegistryItem[]
+  linksByKr: (krId: string) => RegistryItem[]
+  onEdit: (objId: string) => void
+  onDelete: (objId: string) => void
+  onUpdateKr: (objId: string, krId: string, atual: number, comentario: string) => void
+  onToggleBinario: (objId: string, krId: string, concluido: boolean, comentario: string) => void
+  onLinkKpi: (objId: string, krId: string, kpiId: string) => void
+  onUnlinkKpi: (objId: string, krId: string) => void
+  onAddSub: (objId: string, krId: string, descricao: string, meta: number, unidade: string) => void
+  onUpdateSub: (objId: string, krId: string, subId: string, atual: number) => void
+  onRemoveSub: (objId: string, krId: string, subId: string) => void
+  onLinkIniciativa: (krId: string, iniciativaId: string) => void
+  onUnlinkIniciativa: (krId: string, iniciativaId: string) => void
+  onAddAcao: (objId: string, krId: string, texto: string) => void
+  onToggleAcao: (objId: string, krId: string, acaoId: string, concluida: boolean) => void
+  onRemoveAcao: (objId: string, krId: string, acaoId: string) => void
+}) {
+  const [selected, setSelected] = useState<OrgTreeSelection | null>(null)
   const overall = weightedProgress(objetivos)
   const empresaObjs = objetivos.filter((o) => o.nivel === "empresa")
   const timeObjs = objetivos.filter((o) => o.nivel === "time")
@@ -1080,18 +1123,21 @@ function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
 
   return (
     <div className="overflow-x-auto p-6">
-      <div className="mx-auto flex flex-col items-center" style={{ minWidth: `${Math.max(lanes.length, 1) * 260}px` }}>
+      <div className="mx-auto flex flex-col items-center" style={{ minWidth: `${Math.max(lanes.length, 1) * 280}px` }}>
         {/* Linha 1 — Organização */}
-        <div className="flex w-60 flex-col gap-1.5 rounded-xl border-2 border-primary/50 bg-primary/10 px-4 py-3">
-          <div className="flex items-center gap-1.5">
-            <Building2 className="size-4 shrink-0 text-primary" />
-            <span className="text-sm font-bold text-foreground">Humanizadas</span>
+        <button
+          onClick={() => setSelected({ kind: "org" })}
+          className="flex w-64 flex-col gap-1.5 rounded-xl border-2 border-primary/50 bg-primary/10 px-4 py-3 text-left transition-shadow hover:shadow-md"
+        >
+          <div className="flex items-start gap-1.5">
+            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1 break-words text-sm font-bold text-foreground">Humanizadas</span>
           </div>
           <div className="flex items-center gap-2">
             <Progress value={overall} className="h-1.5 flex-1 gap-0" />
             <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{overall}%</span>
           </div>
-        </div>
+        </button>
 
         <TreeConnector n={lanes.length} />
 
@@ -1102,16 +1148,19 @@ function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
             return (
               <div key={lane.key} className="flex flex-col items-center">
                 <div className="h-6 w-px bg-border" />
-                <div className="flex w-56 flex-col gap-1.5 rounded-xl border-2 border-border bg-muted/40 px-3 py-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Users className="size-3.5 shrink-0 text-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">{lane.label}</span>
+                <button
+                  onClick={() => setSelected({ kind: "lane", laneKey: lane.key })}
+                  className="flex w-60 flex-col gap-1.5 rounded-xl border-2 border-border bg-muted/40 px-3 py-2.5 text-left transition-shadow hover:shadow-md"
+                >
+                  <div className="flex items-start gap-1.5">
+                    <Users className="mt-0.5 size-3.5 shrink-0 text-foreground" />
+                    <span className="min-w-0 flex-1 break-words text-xs font-semibold text-foreground">{lane.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Progress value={laneProgress} className="h-1.5 flex-1 gap-0" />
                     <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{laneProgress}%</span>
                   </div>
-                </div>
+                </button>
 
                 <TreeConnector n={lane.objetivos.length} />
 
@@ -1121,19 +1170,22 @@ function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
                     const objProg = objProgress(obj)
                     const objSt = objStatus(objProg)
                     return (
-                      <div key={obj.id} className="flex w-48 flex-col items-center">
+                      <div key={obj.id} className="flex w-56 flex-col items-center">
                         <div className="h-6 w-px bg-border" />
-                        <div className="flex w-full flex-col gap-1.5 rounded-xl border-2 border-primary/30 bg-background px-3 py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <Target className="size-3.5 shrink-0 text-primary" />
-                            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{obj.nome}</span>
+                        <button
+                          onClick={() => setSelected({ kind: "objetivo", objId: obj.id })}
+                          className="flex w-full flex-col gap-1.5 rounded-xl border-2 border-primary/30 bg-background px-3 py-2.5 text-left transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex items-start gap-1.5">
+                            <Target className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                            <span className="min-w-0 flex-1 break-words text-xs font-medium text-foreground">{obj.nome}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Progress value={objProg} className="h-1.5 flex-1 gap-0" />
                             <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{objProg}%</span>
                           </div>
                           <StatusBadge status={objSt} />
-                        </div>
+                        </button>
 
                         <div className="h-6 w-px bg-border" />
 
@@ -1143,11 +1195,15 @@ function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
                             const palette = KR_TREE_COLORS[i % KR_TREE_COLORS.length]
                             const progress = krProgress(kr)
                             return (
-                              <div key={kr.id} className={cn("flex items-center gap-1.5 rounded-lg border px-2 py-1.5", palette.border, palette.bg)}>
-                                <span className={cn("size-1.5 shrink-0 rounded-full", palette.dot)} />
-                                <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{kr.descricao}</span>
+                              <button
+                                key={kr.id}
+                                onClick={() => setSelected({ kind: "kr", objId: obj.id, krId: kr.id })}
+                                className={cn("flex items-start gap-1.5 rounded-lg border px-2 py-1.5 text-left transition-shadow hover:shadow-md", palette.border, palette.bg)}
+                              >
+                                <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", palette.dot)} />
+                                <span className="min-w-0 flex-1 break-words text-[10px] font-medium text-foreground">{kr.descricao}</span>
                                 <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">{progress}%</span>
-                              </div>
+                              </button>
                             )
                           })}
                         </div>
@@ -1158,6 +1214,232 @@ function OrgTreeView({ objetivos }: { objetivos: Objetivo[] }) {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      <Dialog open={selected !== null} onOpenChange={(v) => !v && setSelected(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          {selected?.kind === "org" && <OrgDetailContent />}
+          {selected?.kind === "lane" && (() => {
+            const lane = lanes.find((l) => l.key === selected.laneKey)
+            return lane ? <LaneDetailContent lane={lane} onSelectObjetivo={(objId) => setSelected({ kind: "objetivo", objId })} /> : null
+          })()}
+          {selected?.kind === "objetivo" && (() => {
+            const obj = objetivos.find((o) => o.id === selected.objId)
+            return obj ? (
+              <ObjetivoDetailContent
+                obj={obj}
+                iniciativaRegistry={iniciativaRegistry}
+                linksByKr={linksByKr}
+                onEditRequest={() => { onEdit(obj.id); setSelected(null) }}
+                onDeleteRequest={() => { onDelete(obj.id); setSelected(null) }}
+                onUpdateKr={onUpdateKr}
+                onToggleBinario={onToggleBinario}
+                onLinkKpi={onLinkKpi}
+                onUnlinkKpi={onUnlinkKpi}
+                onAddSub={onAddSub}
+                onUpdateSub={onUpdateSub}
+                onRemoveSub={onRemoveSub}
+                onLinkIniciativa={onLinkIniciativa}
+                onUnlinkIniciativa={onUnlinkIniciativa}
+                onAddAcao={onAddAcao}
+                onToggleAcao={onToggleAcao}
+                onRemoveAcao={onRemoveAcao}
+              />
+            ) : null
+          })()}
+          {selected?.kind === "kr" && (() => {
+            const obj = objetivos.find((o) => o.id === selected.objId)
+            const kr = obj?.keyResults.find((k) => k.id === selected.krId)
+            return obj && kr ? (
+              <div className="min-w-0 space-y-4">
+                <DialogHeader>
+                  <DialogTitle className="break-words">{kr.descricao}</DialogTitle>
+                </DialogHeader>
+                <p className="text-xs text-muted-foreground">Objetivo: {obj.nome}</p>
+                <div className="-mx-6 divide-y divide-border/60 border-y">
+                  <KeyResultRow
+                    kr={kr}
+                    linkedIniciativas={linksByKr(kr.id)}
+                    iniciativaRegistry={iniciativaRegistry}
+                    onCheckIn={(valor, comentario) => onUpdateKr(obj.id, kr.id, valor, comentario)}
+                    onToggleBinario={(concluido, comentario) => onToggleBinario(obj.id, kr.id, concluido, comentario)}
+                    onLinkKpi={(kpiId) => onLinkKpi(obj.id, kr.id, kpiId)}
+                    onUnlinkKpi={() => onUnlinkKpi(obj.id, kr.id)}
+                    onAddSub={(descricao, meta, unidade) => onAddSub(obj.id, kr.id, descricao, meta, unidade)}
+                    onUpdateSub={(subId, atual) => onUpdateSub(obj.id, kr.id, subId, atual)}
+                    onRemoveSub={(subId) => onRemoveSub(obj.id, kr.id, subId)}
+                    onLinkIniciativa={(iniciativaId) => onLinkIniciativa(kr.id, iniciativaId)}
+                    onUnlinkIniciativa={(iniciativaId) => onUnlinkIniciativa(kr.id, iniciativaId)}
+                    onAddAcao={(texto) => onAddAcao(obj.id, kr.id, texto)}
+                    onToggleAcao={(acaoId, concluida) => onToggleAcao(obj.id, kr.id, acaoId, concluida)}
+                    onRemoveAcao={(acaoId) => onRemoveAcao(obj.id, kr.id, acaoId)}
+                  />
+                </div>
+              </div>
+            ) : null
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function OrgDetailContent() {
+  return (
+    <div className="min-w-0 space-y-4">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2"><Building2 className="size-4 text-primary" />Humanizadas</DialogTitle>
+      </DialogHeader>
+      <p className="text-sm text-muted-foreground">Visão geral da organização no ciclo selecionado.</p>
+    </div>
+  )
+}
+
+function LaneDetailContent({
+  lane, onSelectObjetivo,
+}: {
+  lane: { key: string; label: string; objetivos: Objetivo[] }
+  onSelectObjetivo: (objId: string) => void
+}) {
+  const laneProgress = weightedProgress(lane.objetivos)
+  return (
+    <div className="min-w-0 space-y-4">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2"><Users className="size-4" />{lane.label}</DialogTitle>
+      </DialogHeader>
+      <div className="flex items-center gap-2">
+        <Progress value={laneProgress} className="h-2 flex-1 gap-0" />
+        <span className="text-xs font-semibold tabular-nums text-muted-foreground">{laneProgress}%</span>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Objetivos ({lane.objetivos.length})</p>
+        {lane.objetivos.map((o) => {
+          const p = objProgress(o)
+          return (
+            <button
+              key={o.id}
+              onClick={() => onSelectObjetivo(o.id)}
+              className="block w-full rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/50"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-foreground">{o.nome}</span>
+                <StatusBadge status={objStatus(p)} />
+              </div>
+              <div className="mt-1.5 flex items-center gap-2">
+                <Progress value={p} className="h-1.5 flex-1 gap-0" />
+                <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{p}%</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ObjetivoDetailContent({
+  obj,
+  iniciativaRegistry,
+  linksByKr,
+  onEditRequest,
+  onDeleteRequest,
+  onUpdateKr,
+  onToggleBinario,
+  onLinkKpi,
+  onUnlinkKpi,
+  onAddSub,
+  onUpdateSub,
+  onRemoveSub,
+  onLinkIniciativa,
+  onUnlinkIniciativa,
+  onAddAcao,
+  onToggleAcao,
+  onRemoveAcao,
+}: {
+  obj: Objetivo
+  iniciativaRegistry: RegistryItem[]
+  linksByKr: (krId: string) => RegistryItem[]
+  onEditRequest: () => void
+  onDeleteRequest: () => void
+  onUpdateKr: (objId: string, krId: string, atual: number, comentario: string) => void
+  onToggleBinario: (objId: string, krId: string, concluido: boolean, comentario: string) => void
+  onLinkKpi: (objId: string, krId: string, kpiId: string) => void
+  onUnlinkKpi: (objId: string, krId: string) => void
+  onAddSub: (objId: string, krId: string, descricao: string, meta: number, unidade: string) => void
+  onUpdateSub: (objId: string, krId: string, subId: string, atual: number) => void
+  onRemoveSub: (objId: string, krId: string, subId: string) => void
+  onLinkIniciativa: (krId: string, iniciativaId: string) => void
+  onUnlinkIniciativa: (krId: string, iniciativaId: string) => void
+  onAddAcao: (objId: string, krId: string, texto: string) => void
+  onToggleAcao: (objId: string, krId: string, acaoId: string, concluida: boolean) => void
+  onRemoveAcao: (objId: string, krId: string, acaoId: string) => void
+}) {
+  const progress = objProgress(obj)
+  const status = objStatus(progress)
+  const area = obj.time ? AREA_BY_TEAM[obj.time] : null
+  return (
+    <div className="min-w-0 space-y-4">
+      <DialogHeader className="min-w-0">
+        <div className="flex min-w-0 items-start justify-between gap-2 pr-6">
+          <DialogTitle className="flex min-w-0 flex-1 items-start gap-2 break-words"><Target className="mt-0.5 size-4 shrink-0 text-primary" /><span className="min-w-0 break-words">{obj.nome}</span></DialogTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted">
+              <MoreHorizontal className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEditRequest}><Edit2 className="size-3.5 mr-2" />Editar</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDeleteRequest} className="text-red-600"><Trash2 className="size-3.5 mr-2" />Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </DialogHeader>
+      <p className="text-sm text-muted-foreground">{obj.descricao}</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatusBadge status={status} />
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">Peso ×{obj.peso}</span>
+        <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", perspectivaStyle(obj.perspectiva).bg, perspectivaStyle(obj.perspectiva).color)}>
+          {obj.perspectiva}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {obj.nivel === "empresa" ? "Objetivo da empresa" : `${obj.time} · ${area}`}
+      </p>
+      <div className="flex items-center gap-2">
+        <Progress value={progress} className="h-2 flex-1 gap-0" />
+        <span className="text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <AvatarInitials iniciais={obj.responsavel.iniciais} />
+        <span className="text-sm text-muted-foreground">{obj.responsavel.nome}</span>
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Results ({obj.keyResults.length})</p>
+        <div className="-mx-6 divide-y divide-border/60 border-y">
+          {obj.keyResults.map((kr) => (
+            <KeyResultRow
+              key={kr.id}
+              kr={kr}
+              linkedIniciativas={linksByKr(kr.id)}
+              iniciativaRegistry={iniciativaRegistry}
+              onCheckIn={(valor, comentario) => onUpdateKr(obj.id, kr.id, valor, comentario)}
+              onToggleBinario={(concluido, comentario) => onToggleBinario(obj.id, kr.id, concluido, comentario)}
+              onLinkKpi={(kpiId) => onLinkKpi(obj.id, kr.id, kpiId)}
+              onUnlinkKpi={() => onUnlinkKpi(obj.id, kr.id)}
+              onAddSub={(descricao, meta, unidade) => onAddSub(obj.id, kr.id, descricao, meta, unidade)}
+              onUpdateSub={(subId, atual) => onUpdateSub(obj.id, kr.id, subId, atual)}
+              onRemoveSub={(subId) => onRemoveSub(obj.id, kr.id, subId)}
+              onLinkIniciativa={(iniciativaId) => onLinkIniciativa(kr.id, iniciativaId)}
+              onUnlinkIniciativa={(iniciativaId) => onUnlinkIniciativa(kr.id, iniciativaId)}
+              onAddAcao={(texto) => onAddAcao(obj.id, kr.id, texto)}
+              onToggleAcao={(acaoId, concluida) => onToggleAcao(obj.id, kr.id, acaoId, concluida)}
+              onRemoveAcao={(acaoId) => onRemoveAcao(obj.id, kr.id, acaoId)}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -1954,7 +2236,25 @@ export default function OkrsPage() {
         )}
 
         {view === "arvore" ? (
-          <OrgTreeView objetivos={objetivosDoCiclo} />
+          <OrgTreeView
+            objetivos={objetivosDoCiclo}
+            iniciativaRegistry={iniciativaRegistry}
+            linksByKr={(krId) => getIniciativasForKr(shared, krId)}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            onUpdateKr={handleCheckIn}
+            onToggleBinario={handleToggleBinario}
+            onLinkKpi={handleLinkKpi}
+            onUnlinkKpi={handleUnlinkKpi}
+            onAddSub={handleAddSub}
+            onUpdateSub={handleUpdateSub}
+            onRemoveSub={handleRemoveSub}
+            onLinkIniciativa={linkKrIniciativa}
+            onUnlinkIniciativa={unlinkKrIniciativa}
+            onAddAcao={handleAddAcao}
+            onToggleAcao={handleToggleAcao}
+            onRemoveAcao={handleRemoveAcao}
+          />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Target className="size-8 opacity-40" />
