@@ -320,6 +320,19 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y.slice(2)}`
 }
 
+const CICLO_TIPO_MESES: Record<CicloTipo, number> = { trimestre: 3, semestre: 6, ano: 12 }
+
+/** Data fim padrão = data início + duração do tipo - 1 dia (ex.: Trimestre a partir de 01/07 → 30/09). */
+function computeDataFim(dataInicio: string, tipo: CicloTipo): string {
+  const [y, m, d] = dataInicio.split("-").map(Number)
+  const date = new Date(y, m - 1 + CICLO_TIPO_MESES[tipo], d)
+  date.setDate(date.getDate() - 1)
+  const yy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yy}-${mm}-${dd}`
+}
+
 function resolveKr(kr: KeyResult): { atual: number; meta: number; unidade: string } {
   if (kr.kpiId) {
     const kpi = KPI_CATALOG.find((k) => k.id === kr.kpiId)
@@ -577,6 +590,9 @@ function KeyResultRow({
   onAddAcao,
   onToggleAcao,
   onRemoveAcao,
+  onEditKr,
+  siblingKrs,
+  onConvertToSub,
 }: {
   kr: KeyResult
   linkedIniciativas: RegistryItem[]
@@ -593,8 +609,11 @@ function KeyResultRow({
   onAddAcao: (texto: string) => void
   onToggleAcao: (acaoId: string, concluida: boolean) => void
   onRemoveAcao: (acaoId: string) => void
+  onEditKr: (data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
+  siblingKrs: { id: string; descricao: string }[]
+  onConvertToSub: (targetKrId: string) => void
 }) {
-  const [panel, setPanel] = useState<null | "checkin" | "kpi" | "subform" | "binario">(null)
+  const [panel, setPanel] = useState<null | "checkin" | "kpi" | "subform" | "binario" | "edit" | "tosub">(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [subListOpen, setSubListOpen] = useState(true)
   const [iniOpen, setIniOpen] = useState(false)
@@ -605,6 +624,11 @@ function KeyResultRow({
   const [subDesc, setSubDesc] = useState("")
   const [subMeta, setSubMeta] = useState("")
   const [subUnidade, setSubUnidade] = useState("")
+  const [editDesc, setEditDesc] = useState("")
+  const [editResp, setEditResp] = useState("")
+  const [editMeta, setEditMeta] = useState("")
+  const [editUnidade, setEditUnidade] = useState("")
+  const [targetKrId, setTargetKrId] = useState("")
 
   const resolved = resolveKr(kr)
   const progress = krProgress(kr)
@@ -643,6 +667,33 @@ function KeyResultRow({
     setSubDesc(""); setSubMeta(""); setSubUnidade("")
     setPanel(null)
     setSubListOpen(true)
+  }
+
+  function openEditKr() {
+    setEditDesc(kr.descricao)
+    setEditResp(kr.responsavel.nome)
+    setEditMeta(String(kr.meta))
+    setEditUnidade(kr.unidade)
+    setPanel("edit")
+  }
+
+  function saveConvertToSub() {
+    if (!targetKrId) return
+    onConvertToSub(targetKrId)
+    setTargetKrId("")
+    setPanel(null)
+  }
+
+  function saveEditKr() {
+    if (!editDesc.trim()) return
+    const meta = parseFloat(editMeta.replace(",", "."))
+    onEditKr({
+      descricao: editDesc.trim(),
+      responsavel: editResp,
+      meta: Number.isFinite(meta) ? meta : kr.meta,
+      unidade: editUnidade.trim() || kr.unidade,
+    })
+    setPanel(null)
   }
 
   return (
@@ -712,6 +763,10 @@ function KeyResultRow({
             <MoreHorizontal className="size-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={openEditKr}>
+              <Edit2 className="size-3.5 mr-2" />Editar KR
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {kr.tipo === "manual" && (
               <DropdownMenuItem onClick={openCheckin}>
                 <History className="size-3.5 mr-2" />Registrar check-in
@@ -727,6 +782,11 @@ function KeyResultRow({
                 <Plus className="size-3.5 mr-2" />Adicionar sub-resultado
               </DropdownMenuItem>
             )}
+            {siblingKrs.length > 0 && (
+              <DropdownMenuItem onClick={() => { setTargetKrId(""); setPanel("tosub") }}>
+                <ChevronRight className="size-3.5 mr-2" />Transformar em sub-resultado de...
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             {isKpi ? (
               <DropdownMenuItem onClick={onUnlinkKpi}>Desvincular KPI</DropdownMenuItem>
@@ -736,6 +796,56 @@ function KeyResultRow({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {panel === "tosub" && (
+        <div className="ml-4 mt-2 space-y-2 rounded-md border bg-muted/30 p-3">
+          <p className="text-xs font-medium text-foreground">Transformar em sub-resultado</p>
+          <Select
+            items={siblingKrs.map((s) => ({ label: s.descricao, value: s.id }))}
+            value={targetKrId}
+            onValueChange={setTargetKrId}
+          >
+            <SelectTrigger className="h-8 w-full text-xs"><SelectValue placeholder="Selecione o KR de destino" /></SelectTrigger>
+            <SelectContent>
+              {siblingKrs.map((s) => <SelectItem key={s.id} value={s.id}>{s.descricao}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Este KR passará a ser um sub-resultado do KR selecionado.
+            {(kr.subResultados.length > 0 || kr.historico.length > 0) && " Sub-resultados e histórico deste KR serão perdidos."}
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7 text-xs" disabled={!targetKrId} onClick={saveConvertToSub}>Transformar</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(null)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
+      {panel === "edit" && (
+        <div className="ml-4 mt-2 space-y-2 rounded-md border bg-muted/30 p-3">
+          <p className="text-xs font-medium text-foreground">Editar resultado-chave</p>
+          <Input autoFocus value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Descrição do resultado-chave" className="h-8 text-xs" />
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground shrink-0">Responsável</Label>
+            <Select value={editResp} onValueChange={setEditResp}>
+              <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {USERS.map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {kr.tipo === "manual" && (
+            <div className="flex gap-2">
+              <Input value={editMeta} onChange={(e) => setEditMeta(e.target.value)} placeholder="Meta" className="h-8 w-24 text-xs" />
+              <Input value={editUnidade} onChange={(e) => setEditUnidade(e.target.value)} placeholder="Unidade" className="h-8 w-24 text-xs" />
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7 text-xs" onClick={saveEditKr}>Salvar</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(null)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
 
       {panel === "checkin" && (
         <div className="ml-4 mt-2 space-y-2 rounded-md border bg-muted/30 p-3">
@@ -855,10 +965,11 @@ function IniciativasVinculadasSection({
   onUnlink: (iniciativaId: string) => void
 }) {
   const [search, setSearch] = useState("")
+  const [focused, setFocused] = useState(false)
   const linkedIds = new Set(linked.map((i) => i.id))
   const matches = registry
     .filter((i) => !linkedIds.has(i.id) && i.nome.toLowerCase().includes(search.toLowerCase()))
-    .slice(0, 6)
+    .slice(0, 8)
 
   return (
     <div className="ml-4 mt-2 rounded-md border bg-muted/30 p-3">
@@ -879,10 +990,12 @@ function IniciativasVinculadasSection({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
           placeholder="Vincular iniciativa existente..."
           className="h-7 pl-7 text-xs"
         />
-        {search && matches.length > 0 && (
+        {focused && matches.length > 0 && (
           <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-40 overflow-y-auto rounded-md border bg-popover shadow-md">
             {matches.map((i) => (
               <button
@@ -909,6 +1022,8 @@ function ObjectiveCard({
   ciclos,
   iniciativaRegistry,
   linksByKr,
+  selected,
+  onToggleSelect,
   onEdit,
   onDelete,
   onUpdateKr,
@@ -923,12 +1038,16 @@ function ObjectiveCard({
   onAddAcao,
   onToggleAcao,
   onRemoveAcao,
+  onEditKr,
+  onConvertToSub,
 }: {
   objetivo: Objetivo
   ciclo: Ciclo | undefined
   ciclos: Ciclo[]
   iniciativaRegistry: RegistryItem[]
   linksByKr: (krId: string) => RegistryItem[]
+  selected: boolean
+  onToggleSelect: () => void
   onEdit: () => void
   onDelete: () => void
   onUpdateKr: (krId: string, atual: number, comentario: string) => void
@@ -943,6 +1062,8 @@ function ObjectiveCard({
   onAddAcao: (krId: string, texto: string) => void
   onToggleAcao: (krId: string, acaoId: string, concluida: boolean) => void
   onRemoveAcao: (krId: string, acaoId: string) => void
+  onEditKr: (krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
+  onConvertToSub: (krId: string, targetKrId: string) => void
 }) {
   const [open, setOpen] = useState(true)
   const progress = objProgress(objetivo)
@@ -951,9 +1072,10 @@ function ObjectiveCard({
   const area = objetivo.time ? AREA_BY_TEAM[objetivo.time] : null
 
   return (
-    <Card className={cn("p-0 overflow-hidden", atrasado && "border-l-[3px] border-l-red-500")}>
+    <Card className={cn("p-0 overflow-hidden", atrasado && "border-l-[3px] border-l-red-500", selected && "ring-2 ring-primary/60")}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-3 px-4 py-3.5">
+          <Checkbox checked={selected} onCheckedChange={onToggleSelect} className="shrink-0" />
           <CollapsibleTrigger
             render={
               <button className="shrink-0 text-muted-foreground hover:text-foreground">
@@ -1027,6 +1149,9 @@ function ObjectiveCard({
                 onAddAcao={(texto) => onAddAcao(kr.id, texto)}
                 onToggleAcao={(acaoId, concluida) => onToggleAcao(kr.id, acaoId, concluida)}
                 onRemoveAcao={(acaoId) => onRemoveAcao(kr.id, acaoId)}
+                onEditKr={(data) => onEditKr(kr.id, data)}
+                siblingKrs={objetivo.keyResults.filter((k) => k.id !== kr.id).map((k) => ({ id: k.id, descricao: k.descricao }))}
+                onConvertToSub={(targetKrId) => onConvertToSub(kr.id, targetKrId)}
               />
             ))}
           </div>
@@ -1082,6 +1207,8 @@ function OrgTreeView({
   onAddAcao,
   onToggleAcao,
   onRemoveAcao,
+  onEditKr,
+  onConvertToSub,
 }: {
   objetivos: Objetivo[]
   iniciativaRegistry: RegistryItem[]
@@ -1100,6 +1227,8 @@ function OrgTreeView({
   onAddAcao: (objId: string, krId: string, texto: string) => void
   onToggleAcao: (objId: string, krId: string, acaoId: string, concluida: boolean) => void
   onRemoveAcao: (objId: string, krId: string, acaoId: string) => void
+  onEditKr: (objId: string, krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
+  onConvertToSub: (objId: string, krId: string, targetKrId: string) => void
 }) {
   const [selected, setSelected] = useState<OrgTreeSelection | null>(null)
   const overall = weightedProgress(objetivos)
@@ -1245,6 +1374,8 @@ function OrgTreeView({
                 onAddAcao={onAddAcao}
                 onToggleAcao={onToggleAcao}
                 onRemoveAcao={onRemoveAcao}
+                onEditKr={onEditKr}
+                onConvertToSub={onConvertToSub}
               />
             ) : null
           })()}
@@ -1274,6 +1405,9 @@ function OrgTreeView({
                     onAddAcao={(texto) => onAddAcao(obj.id, kr.id, texto)}
                     onToggleAcao={(acaoId, concluida) => onToggleAcao(obj.id, kr.id, acaoId, concluida)}
                     onRemoveAcao={(acaoId) => onRemoveAcao(obj.id, kr.id, acaoId)}
+                    onEditKr={(data) => onEditKr(obj.id, kr.id, data)}
+                    siblingKrs={obj.keyResults.filter((k) => k.id !== kr.id).map((k) => ({ id: k.id, descricao: k.descricao }))}
+                    onConvertToSub={(targetKrId) => onConvertToSub(obj.id, kr.id, targetKrId)}
                   />
                 </div>
               </div>
@@ -1359,6 +1493,8 @@ function ObjetivoDetailContent({
   onAddAcao,
   onToggleAcao,
   onRemoveAcao,
+  onEditKr,
+  onConvertToSub,
 }: {
   obj: Objetivo
   iniciativaRegistry: RegistryItem[]
@@ -1377,6 +1513,8 @@ function ObjetivoDetailContent({
   onAddAcao: (objId: string, krId: string, texto: string) => void
   onToggleAcao: (objId: string, krId: string, acaoId: string, concluida: boolean) => void
   onRemoveAcao: (objId: string, krId: string, acaoId: string) => void
+  onEditKr: (objId: string, krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
+  onConvertToSub: (objId: string, krId: string, targetKrId: string) => void
 }) {
   const progress = objProgress(obj)
   const status = objStatus(progress)
@@ -1438,6 +1576,9 @@ function ObjetivoDetailContent({
               onAddAcao={(texto) => onAddAcao(obj.id, kr.id, texto)}
               onToggleAcao={(acaoId, concluida) => onToggleAcao(obj.id, kr.id, acaoId, concluida)}
               onRemoveAcao={(acaoId) => onRemoveAcao(obj.id, kr.id, acaoId)}
+              onEditKr={(data) => onEditKr(obj.id, kr.id, data)}
+              siblingKrs={obj.keyResults.filter((k) => k.id !== kr.id).map((k) => ({ id: k.id, descricao: k.descricao }))}
+              onConvertToSub={(targetKrId) => onConvertToSub(obj.id, kr.id, targetKrId)}
             />
           ))}
         </div>
@@ -1451,6 +1592,10 @@ function ObjetivoDetailContent({
 function FiltersSheet({
   statusFiltro,
   onChangeStatus,
+  timeFiltro,
+  onChangeTime,
+  responsavelFiltro,
+  onChangeResponsavel,
   searchQuery,
   onChangeSearch,
   total,
@@ -1459,6 +1604,10 @@ function FiltersSheet({
 }: {
   statusFiltro: "todos" | Status
   onChangeStatus: (s: "todos" | Status) => void
+  timeFiltro: string
+  onChangeTime: (t: string) => void
+  responsavelFiltro: string
+  onChangeResponsavel: (r: string) => void
   searchQuery: string
   onChangeSearch: (v: string) => void
   total: number
@@ -1528,6 +1677,58 @@ function FiltersSheet({
               ))}
             </div>
           </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Time</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => onChangeTime("todos")}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                  timeFiltro === "todos" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                )}
+              >
+                Todos
+              </button>
+              {TEAMS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onChangeTime(t)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    timeFiltro === t ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Responsável</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => onChangeResponsavel("todos")}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                  responsavelFiltro === "todos" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                )}
+              >
+                Todos
+              </button>
+              {USERS.map((u) => (
+                <button
+                  key={u.nome}
+                  onClick={() => onChangeResponsavel(u.nome)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    responsavelFiltro === u.nome ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                  )}
+                >
+                  {u.nome}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="px-6 py-4 border-t shrink-0 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
@@ -1544,22 +1745,30 @@ function FiltersSheet({
 
 // ─── Gestão de ciclos ────────────────────────────────────────────────────────
 
-const EMPTY_CICLO_FORM = { nome: "", tipo: "trimestre" as CicloTipo, dataInicio: "", dataFim: "" }
+const EMPTY_CICLO_FORM = { nome: "", tipo: "trimestre" as CicloTipo, dataInicio: "", dataFimPersonalizada: false, dataFimCustom: "" }
 
 function NovoCicloDialog({
   open, onClose, onCreate,
 }: {
   open: boolean
   onClose: () => void
-  onCreate: (data: typeof EMPTY_CICLO_FORM) => void
+  onCreate: (data: { nome: string; tipo: CicloTipo; dataInicio: string; dataFim: string }) => void
 }) {
   const [form, setForm] = useState(EMPTY_CICLO_FORM)
-  const isValid = form.nome.trim().length > 0 && !!form.dataInicio && !!form.dataFim && form.dataFim >= form.dataInicio
+  const autoDataFim = form.dataInicio ? computeDataFim(form.dataInicio, form.tipo) : ""
+  const dataFim = form.dataFimPersonalizada ? form.dataFimCustom : autoDataFim
+  const isValid =
+    form.nome.trim().length > 0 && !!form.dataInicio && !!dataFim &&
+    (!form.dataFimPersonalizada || (dataFim >= form.dataInicio && dataFim <= autoDataFim))
 
   function submit() {
     if (!isValid) return
-    onCreate(form)
+    onCreate({ nome: form.nome, tipo: form.tipo, dataInicio: form.dataInicio, dataFim })
     setForm(EMPTY_CICLO_FORM)
+  }
+
+  function toggleDataFimPersonalizada(checked: boolean) {
+    setForm((f) => ({ ...f, dataFimPersonalizada: checked, dataFimCustom: checked ? (autoDataFim || f.dataFimCustom) : f.dataFimCustom }))
   }
 
   return (
@@ -1570,31 +1779,43 @@ function NovoCicloDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1 col-span-2">
-              <Label className="text-xs">Nome</Label>
-              <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Q1 2027" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Tipo</Label>
-              <Select items={CICLO_TIPO_ITEMS} value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as CicloTipo }))}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="trimestre">Trimestre</SelectItem>
-                  <SelectItem value="semestre">Semestre</SelectItem>
-                  <SelectItem value="ano">Ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div />
-            <div className="space-y-1">
-              <Label className="text-xs">Data início</Label>
-              <Input type="date" value={form.dataInicio} onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Data fim</Label>
-              <Input type="date" value={form.dataFim} onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))} />
-            </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nome</Label>
+            <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Q1 2027" />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Tipo</Label>
+            <Select items={CICLO_TIPO_ITEMS} value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v as CicloTipo }))}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="trimestre">Trimestre</SelectItem>
+                <SelectItem value="semestre">Semestre</SelectItem>
+                <SelectItem value="ano">Ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Data início</Label>
+            <Input type="date" value={form.dataInicio} onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))} />
+          </div>
+
+          <div className="space-y-1">
+            <Label className={cn("text-xs", !form.dataFimPersonalizada && "text-muted-foreground")}>Data fim</Label>
+            <Input
+              type="date"
+              value={dataFim}
+              disabled={!form.dataFimPersonalizada}
+              min={form.dataInicio || undefined}
+              max={autoDataFim || undefined}
+              onChange={(e) => setForm((f) => ({ ...f, dataFimCustom: e.target.value }))}
+              className={cn(!form.dataFimPersonalizada && "text-muted-foreground bg-muted/40")}
+            />
+            <label className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={form.dataFimPersonalizada} onCheckedChange={(v) => toggleDataFimPersonalizada(v === true)} />
+              Data fim personalizada
+            </label>
           </div>
         </div>
 
@@ -1916,6 +2137,77 @@ function ObjectiveModal({
   )
 }
 
+// ─── Duplicar objetivos para outro ciclo ────────────────────────────────────
+
+function DuplicateDialog({
+  open, count, ciclos, currentCicloId, onClose, onConfirm,
+}: {
+  open: boolean
+  count: number
+  ciclos: Ciclo[]
+  currentCicloId: string
+  onClose: () => void
+  onConfirm: (destCicloId: string, includeKrs: boolean) => void
+}) {
+  const destinos = [...ciclos].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio))
+  const [destCicloId, setDestCicloId] = useState("")
+  const [includeKrs, setIncludeKrs] = useState(true)
+
+  const [lastOpen, setLastOpen] = useState(false)
+  if (open !== lastOpen) {
+    setLastOpen(open)
+    if (open) {
+      setDestCicloId(destinos.find((c) => c.id !== currentCicloId)?.id ?? "")
+      setIncludeKrs(true)
+    }
+  }
+
+  const cicloItems = destinos.map((c) => ({
+    label: `${c.nome}${c.status === "rascunho" ? " · rascunho" : c.status === "encerrado" ? " · encerrado" : ""}`,
+    value: c.id,
+  }))
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Duplicar {count} objetivo{count > 1 ? "s" : ""}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Ciclo de destino</Label>
+            <Select items={cicloItems} value={destCicloId} onValueChange={setDestCicloId}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Selecione um ciclo" /></SelectTrigger>
+              <SelectContent>
+                {destinos.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome} {c.status === "rascunho" ? "· rascunho" : c.status === "encerrado" ? "· encerrado" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <Checkbox checked={includeKrs} onCheckedChange={(v) => setIncludeKrs(v === true)} />
+            Duplicar com os Key Results
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {includeKrs
+              ? "Os Key Results serão copiados sem histórico e sem check-ins."
+              : "O objetivo será duplicado sem nenhum Key Result."}
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!destCicloId} onClick={() => onConfirm(destCicloId, includeKrs)}>
+            Duplicar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function OkrsPage() {
@@ -1927,10 +2219,14 @@ export default function OkrsPage() {
   const [view, setView] = useState<"lista" | "arvore">("lista")
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFiltro, setStatusFiltro] = useState<"todos" | Status>("todos")
+  const [timeFiltro, setTimeFiltro] = useState<string>("todos")
+  const [responsavelFiltro, setResponsavelFiltro] = useState<string>("todos")
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [modalObjId, setModalObjId] = useState<string | null>(null)
   const [novoCicloOpen, setNovoCicloOpen] = useState(false)
+  const [selectedObjIds, setSelectedObjIds] = useState<Set<string>>(new Set())
+  const [duplicateOpen, setDuplicateOpen] = useState(false)
 
   const shared = useOkrShared()
 
@@ -1952,6 +2248,8 @@ export default function OkrsPage() {
   const filtered = objetivosDoCiclo.filter((obj) => {
     if (searchQuery && !obj.nome.toLowerCase().includes(searchQuery.toLowerCase())) return false
     if (statusFiltro !== "todos" && objStatus(objProgress(obj)) !== statusFiltro) return false
+    if (timeFiltro !== "todos" && obj.time !== timeFiltro) return false
+    if (responsavelFiltro !== "todos" && obj.responsavel.nome !== responsavelFiltro) return false
     return true
   })
 
@@ -1980,6 +2278,44 @@ export default function OkrsPage() {
 
   function handleDelete(id: string) {
     setObjetivos((list) => list.filter((o) => o.id !== id))
+    setSelectedObjIds((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  function toggleSelectObj(id: string) {
+    setSelectedObjIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleDuplicate(destCicloId: string, includeKrs: boolean) {
+    setObjetivos((list) => {
+      const toDuplicate = list.filter((o) => selectedObjIds.has(o.id))
+      const copies = toDuplicate.map((o) => ({
+        ...o,
+        id: nextObjId(list),
+        cicloId: destCicloId,
+        keyResults: includeKrs
+          ? o.keyResults.map((kr) => ({
+              ...kr,
+              id: nextId("kr"),
+              historico: [],
+              subResultados: kr.subResultados.map((s) => ({ ...s, id: nextId("sub") })),
+              acoes: kr.acoes.map((a) => ({ ...a, id: nextId("acao") })),
+            }))
+          : [],
+      }))
+      return [...list, ...copies]
+    })
+    setSelectedObjIds(new Set())
+    setDuplicateOpen(false)
   }
 
   function updateKrIn(objId: string, krId: string, updater: (kr: KeyResult) => KeyResult) {
@@ -2060,6 +2396,33 @@ export default function OkrsPage() {
     }))
   }
 
+  function handleEditKr(objId: string, krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) {
+    const responsavel = USERS.find((u) => u.nome === data.responsavel)
+    updateKrIn(objId, krId, (kr) => ({
+      ...kr,
+      descricao: data.descricao,
+      responsavel: responsavel ?? kr.responsavel,
+      meta: kr.tipo === "manual" ? data.meta : kr.meta,
+      unidade: kr.tipo === "manual" ? data.unidade : kr.unidade,
+    }))
+  }
+
+  function handleConvertToSub(objId: string, krId: string, targetKrId: string) {
+    setObjetivos((list) => list.map((o) => {
+      if (o.id !== objId) return o
+      const kr = o.keyResults.find((k) => k.id === krId)
+      if (!kr || krId === targetKrId) return o
+      const resolved = resolveKr(kr)
+      const novoSub: SubKR = { id: nextId("sub"), descricao: kr.descricao, atual: resolved.atual, meta: resolved.meta, unidade: resolved.unidade }
+      return {
+        ...o,
+        keyResults: o.keyResults
+          .filter((k) => k.id !== krId)
+          .map((k) => (k.id === targetKrId ? { ...k, subResultados: [...k.subResultados, novoSub] } : k)),
+      }
+    }))
+  }
+
   function handleSaveObjetivo(data: ReturnType<typeof emptyObjForm>) {
     const responsavel = USERS.find((u) => u.nome === data.responsavel) ?? USERS[0]
     const previous = modalObjId ? objetivos.find((o) => o.id === modalObjId) : undefined
@@ -2118,7 +2481,7 @@ export default function OkrsPage() {
     setModalOpen(false)
   }
 
-  function handleCreateCiclo(data: typeof EMPTY_CICLO_FORM) {
+  function handleCreateCiclo(data: { nome: string; tipo: CicloTipo; dataInicio: string; dataFim: string }) {
     setCiclos((list) => [...list, { id: nextId("CIC"), nome: data.nome, tipo: data.tipo, dataInicio: data.dataInicio, dataFim: data.dataFim, status: "rascunho" }])
   }
 
@@ -2182,11 +2545,20 @@ export default function OkrsPage() {
             <FiltersSheet
               statusFiltro={statusFiltro}
               onChangeStatus={setStatusFiltro}
+              timeFiltro={timeFiltro}
+              onChangeTime={setTimeFiltro}
+              responsavelFiltro={responsavelFiltro}
+              onChangeResponsavel={setResponsavelFiltro}
               searchQuery={searchQuery}
               onChangeSearch={setSearchQuery}
               total={filtered.length}
-              activeCount={(statusFiltro !== "todos" ? 1 : 0) + (searchQuery.trim() ? 1 : 0)}
-              onClear={() => { setSearchQuery(""); setStatusFiltro("todos") }}
+              activeCount={
+                (statusFiltro !== "todos" ? 1 : 0) +
+                (timeFiltro !== "todos" ? 1 : 0) +
+                (responsavelFiltro !== "todos" ? 1 : 0) +
+                (searchQuery.trim() ? 1 : 0)
+              }
+              onClear={() => { setSearchQuery(""); setStatusFiltro("todos"); setTimeFiltro("todos"); setResponsavelFiltro("todos") }}
             />
           )}
         </div>
@@ -2235,6 +2607,20 @@ export default function OkrsPage() {
           </div>
         )}
 
+        {view === "lista" && selectedObjIds.size > 0 && (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+            <span className="text-xs font-medium text-foreground">
+              {selectedObjIds.size} selecionado{selectedObjIds.size > 1 ? "s" : ""}
+            </span>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setDuplicateOpen(true)}>
+              <Plus className="size-3.5" />Duplicar para outro ciclo
+            </Button>
+            <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setSelectedObjIds(new Set())}>
+              Limpar seleção
+            </button>
+          </div>
+        )}
+
         {view === "arvore" ? (
           <OrgTreeView
             objetivos={objetivosDoCiclo}
@@ -2254,12 +2640,14 @@ export default function OkrsPage() {
             onAddAcao={handleAddAcao}
             onToggleAcao={handleToggleAcao}
             onRemoveAcao={handleRemoveAcao}
+            onEditKr={handleEditKr}
+            onConvertToSub={handleConvertToSub}
           />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Target className="size-8 opacity-40" />
             <p className="text-sm">Nenhum objetivo encontrado para os filtros aplicados.</p>
-            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFiltro("todos") }}>
+            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFiltro("todos"); setTimeFiltro("todos"); setResponsavelFiltro("todos") }}>
               Limpar filtros
             </Button>
           </div>
@@ -2273,6 +2661,8 @@ export default function OkrsPage() {
                 ciclos={ciclos}
                 iniciativaRegistry={iniciativaRegistry}
                 linksByKr={(krId) => getIniciativasForKr(shared, krId)}
+                selected={selectedObjIds.has(obj.id)}
+                onToggleSelect={() => toggleSelectObj(obj.id)}
                 onEdit={() => openEdit(obj.id)}
                 onDelete={() => handleDelete(obj.id)}
                 onUpdateKr={(krId, atual, comentario) => handleCheckIn(obj.id, krId, atual, comentario)}
@@ -2287,6 +2677,8 @@ export default function OkrsPage() {
                 onAddAcao={(krId, texto) => handleAddAcao(obj.id, krId, texto)}
                 onToggleAcao={(krId, acaoId, concluida) => handleToggleAcao(obj.id, krId, acaoId, concluida)}
                 onRemoveAcao={(krId, acaoId) => handleRemoveAcao(obj.id, krId, acaoId)}
+                onEditKr={(krId, data) => handleEditKr(obj.id, krId, data)}
+                onConvertToSub={(krId, targetKrId) => handleConvertToSub(obj.id, krId, targetKrId)}
               />
             ))}
           </div>
@@ -2307,6 +2699,15 @@ export default function OkrsPage() {
         open={novoCicloOpen}
         onClose={() => setNovoCicloOpen(false)}
         onCreate={handleCreateCiclo}
+      />
+
+      <DuplicateDialog
+        open={duplicateOpen}
+        count={selectedObjIds.size}
+        ciclos={ciclos}
+        currentCicloId={activeCicloId}
+        onClose={() => setDuplicateOpen(false)}
+        onConfirm={handleDuplicate}
       />
     </div>
   )
