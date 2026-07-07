@@ -6,16 +6,19 @@ import {
   ArrowLeft,
   Building2,
   Camera,
+  CornerDownRight,
   Globe,
-  Moon,
-  Sun,
   Lock,
   MoreHorizontal,
+  Palette,
+  Pencil,
   Plus,
   Search,
   Shield,
+  Trash2,
   UserMinus,
   UserPlus,
+  Users,
   X,
 } from "lucide-react"
 
@@ -36,6 +39,8 @@ import { Checkbox } from "~/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog"
@@ -73,12 +78,19 @@ import { cn } from "~/lib/utils"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "conta" | "personalizacao" | "geral" | "membros" | "perfis" | "acesso" | "seguranca"
-type ThemeMode = "tradicional" | "minimalista" | "colorido"
+type Section = "conta" | "personalizacao" | "geral" | "perfis" | "seguranca"
+type ThemeMode = "padrao" | "claro" | "escuro" | "personalizado"
 type AccessRole = "admin" | "membro" | "visualizador" | "convidado"
 type PrivacyLevel = "aberto" | "fechado" | "privado"
 type Permission = "editor" | "leitor" | "ocultar"
 type MemberStatus = "ativo" | "pendente" | "desativado"
+
+interface Workspace {
+  id: string
+  name: string
+  parentId: string | null
+  description: string
+}
 
 interface Member {
   id: string
@@ -106,11 +118,60 @@ interface UserProfile {
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
-const workspaces = [
-  { id: "1", name: "Geral" },
-  { id: "2", name: "Projeto Piloto" },
-  { id: "3", name: "Fornecedores ESG" },
+const initialWorkspaces: Workspace[] = [
+  {
+    id: "1",
+    name: "Geral",
+    parentId: null,
+    description: "Workspace principal para gestão de ESG e indicadores de impacto.",
+  },
+  {
+    id: "2",
+    name: "Indústria",
+    parentId: "1",
+    description: "Workspace do setor de Indústria, abaixo do Geral.",
+  },
+  {
+    id: "3",
+    name: "Qualidade",
+    parentId: "2",
+    description: "Workspace de Qualidade, abaixo de Indústria.",
+  },
+  {
+    id: "4",
+    name: "Projeto Piloto",
+    parentId: "1",
+    description: "Workspace dedicado ao projeto piloto de ESG.",
+  },
+  {
+    id: "5",
+    name: "Fornecedores ESG",
+    parentId: "1",
+    description: "Workspace para avaliação e monitoramento de fornecedores ESG.",
+  },
 ]
+
+function getWorkspaceLevel(ws: Workspace, all: Workspace[]): number {
+  let level = 1
+  let current = ws
+  while (current.parentId) {
+    const parent = all.find((w) => w.id === current.parentId)
+    if (!parent) break
+    level++
+    current = parent
+  }
+  return level
+}
+
+function flattenWorkspaceTree(
+  all: Workspace[],
+  parentId: string | null = null,
+  level = 1
+): (Workspace & { level: number })[] {
+  return all
+    .filter((w) => w.parentId === parentId)
+    .flatMap((w) => [{ ...w, level }, ...flattenWorkspaceTree(all, w.id, level + 1)])
+}
 
 const roles: { value: AccessRole; label: string; description: string }[] = [
   {
@@ -253,11 +314,11 @@ function initials(name: string) {
 
 // workspaceAccess: userId → workspaceId[]
 const initialWorkspaceAccess: Record<string, string[]> = {
-  m1: ["1", "2", "3"],
-  m2: ["1", "2"],
+  m1: ["1", "2", "3", "4", "5"],
+  m2: ["1", "2", "4"],
   m3: ["1"],
   m4: ["1"],
-  m5: ["1", "3"],
+  m5: ["1", "5"],
 }
 
 function StatusBadge({ status }: { status: MemberStatus }) {
@@ -423,38 +484,47 @@ const accentColors: {
 
 function PersonalizacaoSection() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    return (localStorage.getItem("theme-mode") as ThemeMode) ?? "tradicional"
+    return (localStorage.getItem("theme-mode") as ThemeMode) ?? "padrao"
   })
   const [accentKey, setAccentKey] = useState(() => {
     return localStorage.getItem("accent-color") ?? "roxo"
   })
-  const [darkMode, setDarkMode] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  )
+  const [customColorKeys, setCustomColorKeys] = useState<string[]>(() => {
+    const saved = localStorage.getItem("custom-colors")
+    return saved ? JSON.parse(saved) : ["roxo", "teal"]
+  })
 
   const accent = accentColors.find((c) => c.key === accentKey) ?? accentColors[0]
 
   const themeOptions = [
     {
-      key: "tradicional" as ThemeMode,
-      label: "Tradicional",
-      description: "Interface padrão com identidade visual completa.",
+      key: "padrao" as ThemeMode,
+      label: "Padrão",
+      description: "Modelo padrão da plataforma, com identidade visual completa.",
       sidebar: accent.darkSidebar,
       primary: accent.swatch,
       bg: "#ffffff",
     },
     {
-      key: "minimalista" as ThemeMode,
-      label: "Minimalista",
-      description: "Cor apenas em sinais semânticos e gráficos.",
+      key: "claro" as ThemeMode,
+      label: "Claro",
+      description: "Interface em branco e cinza, exceto pelas cores de destaque.",
       sidebar: "#1a1a1a",
       primary: "#737373",
       bg: "#ffffff",
     },
     {
-      key: "colorido" as ThemeMode,
-      label: "Colorido",
-      description: "Cores mais presentes em toda a interface.",
+      key: "escuro" as ThemeMode,
+      label: "Escuro",
+      description: "Fundo escuro em toda a interface — como o time de tech prefere.",
+      sidebar: "#050505",
+      primary: accent.swatch,
+      bg: "#171717",
+    },
+    {
+      key: "personalizado" as ThemeMode,
+      label: "Personalizado",
+      description: "Escolha de 2 a 3 cores principais para toda a plataforma.",
       sidebar: accent.colorfulSidebar,
       primary: accent.swatch,
       bg: "#fdf4ff",
@@ -463,10 +533,13 @@ function PersonalizacaoSection() {
 
   function applyTheme(mode: ThemeMode) {
     setThemeMode(mode)
-    document.documentElement.classList.remove("theme-minimal", "theme-colorful")
-    if (mode === "minimalista") document.documentElement.classList.add("theme-minimal")
-    if (mode === "colorido") document.documentElement.classList.add("theme-colorful")
+    const el = document.documentElement
+    el.classList.remove("theme-minimal", "theme-colorful", "dark")
+    if (mode === "claro") el.classList.add("theme-minimal")
+    if (mode === "personalizado") el.classList.add("theme-colorful")
+    if (mode === "escuro") el.classList.add("dark")
     localStorage.setItem("theme-mode", mode)
+    localStorage.setItem("theme", mode === "escuro" ? "dark" : "light")
     toast.success(`Tema "${themeOptions.find((t) => t.key === mode)?.label}" aplicado.`)
   }
 
@@ -480,15 +553,24 @@ function PersonalizacaoSection() {
     toast.success(`Cor "${color.label}" aplicada.`)
   }
 
-  function toggleDark(checked: boolean) {
-    setDarkMode(checked)
-    if (checked) {
-      document.documentElement.classList.add("dark")
-      localStorage.setItem("theme", "dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-      localStorage.setItem("theme", "light")
-    }
+  function toggleCustomColor(key: string) {
+    setCustomColorKeys((prev) => {
+      let next: string[]
+      if (prev.includes(key)) {
+        next = prev.filter((k) => k !== key)
+      } else if (prev.length >= 3) {
+        toast("Escolha no máximo 3 cores principais.")
+        return prev
+      } else {
+        next = [...prev, key]
+      }
+      localStorage.setItem("custom-colors", JSON.stringify(next))
+      if (next[0]) {
+        const primary = accentColors.find((c) => c.key === next[0])
+        if (primary) applyAccent(primary)
+      }
+      return next
+    })
   }
 
   return (
@@ -534,7 +616,7 @@ function PersonalizacaoSection() {
           </p>
         </div>
         <Separator />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {themeOptions.map((t) => (
             <button
               key={t.key}
@@ -552,8 +634,14 @@ function PersonalizacaoSection() {
                   <div className="w-7 shrink-0" style={{ background: t.sidebar }} />
                   <div className="flex flex-1 flex-col justify-between p-2">
                     <div className="space-y-1">
-                      <div className="h-1.5 w-3/4 rounded-full bg-black/10" />
-                      <div className="h-1.5 w-1/2 rounded-full bg-black/10" />
+                      <div
+                        className="h-1.5 w-3/4 rounded-full"
+                        style={{ background: t.key === "escuro" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)" }}
+                      />
+                      <div
+                        className="h-1.5 w-1/2 rounded-full"
+                        style={{ background: t.key === "escuro" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)" }}
+                      />
                     </div>
                     <div className="h-3.5 w-10 rounded" style={{ background: t.primary }} />
                   </div>
@@ -576,133 +664,155 @@ function PersonalizacaoSection() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Modo noturno */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-base font-semibold">Brilho</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Ajuste o fundo geral da interface.
-          </p>
-        </div>
-        <Separator />
-        <div className="flex items-center justify-between rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            {darkMode ? (
-              <Moon className="size-5 text-muted-foreground" />
-            ) : (
-              <Sun className="size-5 text-muted-foreground" />
-            )}
-            <div>
-              <p className="text-sm font-medium">Modo noturno</p>
-              <p className="text-xs text-muted-foreground">
-                Ativa o fundo escuro em toda a plataforma.
-              </p>
+        {themeMode === "personalizado" && (
+          <div className="space-y-2.5 rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-2">
+              <Palette className="size-4 text-muted-foreground" />
+              <p className="text-sm font-medium">Cores principais</p>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Escolha de 2 a 3 cores para compor a identidade da plataforma. A 1ª cor selecionada
+              vira a cor de destaque principal.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              {accentColors.map((color) => {
+                const order = customColorKeys.indexOf(color.key)
+                const selected = order !== -1
+                return (
+                  <button
+                    key={color.key}
+                    title={color.label}
+                    onClick={() => toggleCustomColor(color.key)}
+                    className={cn(
+                      "relative flex size-9 items-center justify-center rounded-full transition-transform hover:scale-110",
+                      selected && "ring-2 ring-offset-2 ring-offset-background scale-110"
+                    )}
+                    style={{ background: color.swatch, ringColor: color.swatch }}
+                  >
+                    {selected && (
+                      <span className="text-[11px] font-bold text-white drop-shadow">
+                        {order + 1}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {customColorKeys.length === 0
+                ? "Nenhuma cor selecionada."
+                : customColorKeys
+                    .map((k) => accentColors.find((c) => c.key === k)?.label)
+                    .filter(Boolean)
+                    .join(" · ")}
+            </p>
           </div>
-          <Switch checked={darkMode} onCheckedChange={toggleDark} />
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
-// ─── Section: Geral ───────────────────────────────────────────────────────────
+// ─── Section: Geral (Workspaces + Membros e Acessos) ──────────────────────────
 
-const workspaceDescriptions: Record<string, string> = {
-  "1": "Workspace principal para gestão de ESG e indicadores de impacto.",
-  "2": "Workspace dedicado ao projeto piloto de ESG.",
-  "3": "Workspace para avaliação e monitoramento de fornecedores ESG.",
-}
-
-function GeralSection({ initialWorkspaceId = "1" }: { initialWorkspaceId?: string }) {
-  const [selectedId, setSelectedId] = useState(initialWorkspaceId)
-  const workspace = workspaces.find((w) => w.id === selectedId) ?? workspaces[0]
-  const [name, setName] = useState(workspace.name)
-  const [description, setDescription] = useState(workspaceDescriptions[selectedId] ?? "")
-
-  function handleWorkspaceChange(id: string) {
-    setSelectedId(id)
-    const ws = workspaces.find((w) => w.id === id)
-    if (ws) setName(ws.name)
-    setDescription(workspaceDescriptions[id] ?? "")
-  }
-
-  return (
-    <div className="max-w-xl space-y-6">
-      <div>
-        <h2 className="text-base font-semibold">Informações do Workspace</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Nome e descrição visíveis para todos os membros.
-        </p>
-      </div>
-      <Separator />
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <Label>Workspace</Label>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex w-full h-9 items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-              <Building2 className="size-4 text-muted-foreground" />
-              {workspace.name}
-              <span className="ml-auto text-xs text-muted-foreground">Trocar</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-48">
-              {workspaces.map((ws) => (
-                <DropdownMenuItem
-                  key={ws.id}
-                  onClick={() => handleWorkspaceChange(ws.id)}
-                  className={cn("text-sm", ws.id === selectedId && "font-medium")}
-                >
-                  <Building2 className="size-3.5" />
-                  {ws.name}
-                  {ws.id === selectedId && (
-                    <span className="ml-auto text-muted-foreground">✓</span>
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ws-name">Nome do Workspace</Label>
-          <Input id="ws-name" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ws-desc">Descrição</Label>
-          <Textarea
-            id="ws-desc"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-          />
-        </div>
-      </div>
-      <div className="flex justify-end">
-        <Button onClick={() => toast.success("Configurações salvas com sucesso.")}>
-          Salvar alterações
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Section: Membros e Acessos ───────────────────────────────────────────────
-
-function MembrosSection({
+function GeralSection({
+  workspaces,
   members,
   profiles,
+  access,
+  selectedId,
+  onSelectWorkspace,
   onUpdateMember,
+  onToggleAccess,
+  onCreateWorkspace,
+  onUpdateWorkspace,
+  onDeleteWorkspace,
 }: {
+  workspaces: Workspace[]
   members: Member[]
   profiles: UserProfile[]
+  access: Record<string, string[]>
+  selectedId: string
+  onSelectWorkspace: (id: string) => void
   onUpdateMember: (id: string, changes: Partial<Member>) => void
+  onToggleAccess: (userId: string, workspaceId: string, granted: boolean) => void
+  onCreateWorkspace: (data: { name: string; parentId: string | null; description: string }) => void
+  onUpdateWorkspace: (
+    id: string,
+    data: { name: string; parentId: string | null; description: string }
+  ) => void
+  onDeleteWorkspace: (id: string) => void
 }) {
+  const workspace = workspaces.find((w) => w.id === selectedId) ?? workspaces[0]
+  const [name, setName] = useState(workspace.name)
+  const [description, setDescription] = useState(workspace.description)
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingWs, setEditingWs] = useState<Workspace | null>(null)
+  const [deletingWs, setDeletingWs] = useState<Workspace | null>(null)
+
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("todos")
   const [filterRole, setFilterRole] = useState("todos")
   const [filterProfile, setFilterProfile] = useState("todos")
+  const [filterAccess, setFilterAccess] = useState("todos")
   const [inviteEmail, setInviteEmail] = useState("")
+
+  const tree = flattenWorkspaceTree(workspaces)
+
+  useEffect(() => {
+    const ws = workspaces.find((w) => w.id === selectedId)
+    if (ws) {
+      setName(ws.name)
+      setDescription(ws.description)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspaces])
+
+  function saveWorkspaceInfo() {
+    onUpdateWorkspace(workspace.id, { name, parentId: workspace.parentId, description })
+    toast.success("Informações do workspace salvas.")
+  }
+
+  function openCreate() {
+    setEditingWs(null)
+    setFormOpen(true)
+  }
+
+  function openEdit(ws: Workspace) {
+    setEditingWs(ws)
+    setFormOpen(true)
+  }
+
+  function handleSaveWorkspaceForm(data: {
+    name: string
+    parentId: string | null
+    description: string
+  }) {
+    if (editingWs) {
+      onUpdateWorkspace(editingWs.id, data)
+      if (editingWs.id === selectedId) {
+        setName(data.name)
+        setDescription(data.description)
+      }
+      toast.success(`Workspace "${data.name}" atualizado.`)
+    } else {
+      onCreateWorkspace(data)
+      toast.success(`Workspace "${data.name}" criado.`)
+    }
+  }
+
+  function confirmDelete() {
+    if (deletingWs) {
+      onDeleteWorkspace(deletingWs.id)
+      if (deletingWs.id === selectedId) {
+        onSelectWorkspace(workspaces.find((w) => w.id !== deletingWs.id)?.id ?? "1")
+      }
+      toast.success(`Workspace "${deletingWs.name}" excluído.`)
+      setDeletingWs(null)
+    }
+  }
 
   const filtered = members.filter((m) => {
     const matchSearch =
@@ -713,7 +823,10 @@ function MembrosSection({
     const matchProfile =
       filterProfile === "todos" ||
       (filterProfile === "sem-perfil" ? !m.profileId : m.profileId === filterProfile)
-    return matchSearch && matchStatus && matchRole && matchProfile
+    const hasWorkspaceAccess = (access[m.id] ?? []).includes(workspace.id)
+    const matchAccess =
+      filterAccess === "todos" || (filterAccess === "com-acesso" ? hasWorkspaceAccess : !hasWorkspaceAccess)
+    return matchSearch && matchStatus && matchRole && matchProfile && matchAccess
   })
 
   function handleRoleChange(memberId: string, role: AccessRole) {
@@ -748,219 +861,375 @@ function MembrosSection({
       toast.error("Informe um e-mail válido.")
       return
     }
-    toast.success(`Convite enviado para ${inviteEmail}.`)
+    toast.success(`Convite enviado para ${inviteEmail} — acesso a "${workspace.name}" incluído.`)
     setInviteEmail("")
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">Membros e Acessos</h2>
+        <h2 className="text-base font-semibold">Geral</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Gerencie quem tem acesso a este workspace e seus níveis de permissão.
+          Escolha um workspace ao lado para ver e editar suas informações, membros e acessos — tudo
+          no mesmo lugar.
         </p>
       </div>
       <Separator />
 
-      {/* Invite bar */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Convidar por e-mail..."
-          value={inviteEmail}
-          onChange={(e) => setInviteEmail(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleInvite()}
-          className="max-w-xs"
-        />
-        <Button size="sm" onClick={handleInvite}>
-          <UserPlus className="mr-1.5 size-3.5" />
-          Convidar
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <div className="relative">
-          <Search className="absolute top-2.5 left-2.5 size-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou e-mail..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 w-64"
-          />
-        </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            <SelectItem value="ativo">Ativo</SelectItem>
-            <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="desativado">Desativado</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Nível de acesso" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os níveis</SelectItem>
-            {roles.map((r) => (
-              <SelectItem key={r.value} value={r.value}>
-                {r.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterProfile} onValueChange={setFilterProfile}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Perfil" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os perfis</SelectItem>
-            <SelectItem value="sem-perfil">Sem perfil</SelectItem>
-            {profiles.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[220px]">Membro</TableHead>
-              <TableHead>E-mail</TableHead>
-              <TableHead className="w-[190px]">Nível de Acesso</TableHead>
-              <TableHead className="w-[160px]">Perfil</TableHead>
-              <TableHead className="w-[110px]">Status</TableHead>
-              <TableHead className="w-[44px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-sm text-muted-foreground"
+      <div className="flex gap-4">
+        {/* Workspace tree */}
+        <aside className="w-48 shrink-0 space-y-2">
+          <div className="flex items-center justify-between px-0.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Workspaces
+            </p>
+            <button
+              onClick={openCreate}
+              title="Novo Workspace"
+              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+          <div className="divide-y overflow-hidden rounded-md border">
+            {tree.map((ws) => (
+              <div
+                key={ws.id}
+                className={cn(
+                  "group relative flex items-center",
+                  ws.id === selectedId ? "bg-primary/5" : "hover:bg-muted/30"
+                )}
+              >
+                <button
+                  onClick={() => onSelectWorkspace(ws.id)}
+                  title={ws.name}
+                  className="flex w-full min-w-0 items-center gap-1.5 py-2 text-left"
+                  style={{ paddingLeft: `${8 + (ws.level - 1) * 12}px` }}
                 >
-                  Nenhum membro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((member) => (
-                <TableRow
-                  key={member.id}
-                  className={cn(member.status === "desativado" && "opacity-50")}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="size-7">
-                        {member.avatar && (
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                        )}
-                        <AvatarFallback className="text-xs">
-                          {initials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">{member.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {member.email}
-                  </TableCell>
-                  <TableCell>
-                    {/* Module 2: Role select with descriptions */}
-                    <Select
-                      value={member.role}
-                      onValueChange={(v) => handleRoleChange(member.id, v as AccessRole)}
-                    >
-                      <SelectTrigger className="h-7 w-full text-xs">
-                        <span className="flex flex-1 truncate text-left">
-                          {roles.find((r) => r.value === member.role)?.label ?? member.role}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((r) => (
-                          <SelectItem key={r.value} value={r.value} label={r.label} className="pr-8">
-                            <div className="flex flex-col gap-0.5 py-0.5">
-                              <span className="text-xs font-medium">{r.label}</span>
-                              <span className="max-w-[240px] whitespace-normal text-xs leading-tight text-muted-foreground">
-                                {r.description}
-                              </span>
+                  {ws.level > 1 && (
+                    <CornerDownRight className="size-3 shrink-0 text-muted-foreground/50" />
+                  )}
+                  <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-sm",
+                      ws.id === selectedId ? "font-medium text-foreground" : "text-foreground/90"
+                    )}
+                  >
+                    {ws.name}
+                  </span>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="absolute right-1 flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground data-popup-open:opacity-100">
+                    <MoreHorizontal className="size-3.5" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEdit(ws)}>
+                      <Pencil className="size-3.5" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingWs(ws)}>
+                      <Trash2 className="size-3.5" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        {/* Selected workspace: info + members & access, no tab switching required */}
+        <div className="min-w-0 flex-1 space-y-6">
+          <div className="max-w-xl space-y-4">
+            <h3 className="text-sm font-semibold">Informações do Workspace</h3>
+            <div className="space-y-1.5">
+              <Label htmlFor="ws-name">Nome do Workspace</Label>
+              <Input id="ws-name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ws-desc">Descrição</Label>
+              <Textarea
+                id="ws-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveWorkspaceInfo}>
+                Salvar alterações
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold">Membros e Acessos</h3>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Veja e edite quem tem acesso a "{workspace.name}" e seus níveis de permissão.
+              </p>
+            </div>
+
+            {/* Invite bar */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Convidar por e-mail..."
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleInvite()}
+                className="max-w-xs"
+              />
+              <Button size="sm" onClick={handleInvite}>
+                <UserPlus className="mr-1.5 size-3.5" />
+                Convidar
+              </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-2">
+              <div className="relative">
+                <Search className="absolute top-2.5 left-2.5 size-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou e-mail..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-64 pl-8"
+                />
+              </div>
+              <Select value={filterAccess} onValueChange={(v) => setFilterAccess(v ?? "todos")}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Acesso ao workspace" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os membros</SelectItem>
+                  <SelectItem value="com-acesso">Com acesso a "{workspace.name}"</SelectItem>
+                  <SelectItem value="sem-acesso">Sem acesso a "{workspace.name}"</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v ?? "todos")}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="desativado">Desativado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterRole} onValueChange={(v) => setFilterRole(v ?? "todos")}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Nível de acesso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os níveis</SelectItem>
+                  {roles.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterProfile} onValueChange={(v) => setFilterProfile(v ?? "todos")}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os perfis</SelectItem>
+                  <SelectItem value="sem-perfil">Sem perfil</SelectItem>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-md border">
+              <Table style={{ tableLayout: "fixed" }}>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[160px]">Membro</TableHead>
+                    <TableHead className="w-[160px]">E-mail</TableHead>
+                    <TableHead className="w-[64px] text-center">Acesso</TableHead>
+                    <TableHead className="w-[150px]">Nível de Acesso</TableHead>
+                    <TableHead className="w-[120px]">Perfil</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="w-[40px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-10 text-center text-sm text-muted-foreground"
+                      >
+                        Nenhum membro encontrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filtered.map((member) => {
+                      const hasAccess = (access[member.id] ?? []).includes(workspace.id)
+                      return (
+                        <TableRow
+                          key={member.id}
+                          className={cn(member.status === "desativado" && "opacity-50")}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-2.5">
+                              <Avatar className="size-7">
+                                {member.avatar && (
+                                  <AvatarImage src={member.avatar} alt={member.name} />
+                                )}
+                                <AvatarFallback className="text-xs">
+                                  {initials(member.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">{member.name}</span>
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={member.profileId ?? "sem-perfil"}
-                      onValueChange={(v) =>
-                        handleProfileChange(member.id, v === "sem-perfil" ? null : v)
-                      }
-                    >
-                      <SelectTrigger className="h-7 w-full text-xs">
-                        <span className="flex flex-1 truncate text-left">
-                          {member.profileId === null
-                            ? "Sem perfil"
-                            : (profiles.find((p) => p.id === member.profileId)?.name ?? "Sem perfil")}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sem-perfil" className="text-xs">
-                          Sem perfil
-                        </SelectItem>
-                        {profiles.map((p) => (
-                          <SelectItem key={p.id} value={p.id} className="text-xs">
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={member.status} />
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex size-7 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-                        <MoreHorizontal className="size-3.5" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem
-                          onClick={() => handleContextAction(member, "reenviar")}
-                        >
-                          Reenviar Convite
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleContextAction(member, "desativar")}
-                        >
-                          {member.status === "desativado"
-                            ? "Reativar Membro"
-                            : "Desativar Membro"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleContextAction(member, "remover")}
-                        >
-                          Remover do Workspace
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {member.email}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={hasAccess}
+                              onCheckedChange={(v) => onToggleAccess(member.id, workspace.id, v)}
+                              aria-label={`${member.name} acesso a ${workspace.name}`}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={member.role}
+                              onValueChange={(v) => handleRoleChange(member.id, v as AccessRole)}
+                            >
+                              <SelectTrigger className="h-7 w-full text-xs">
+                                <span className="flex flex-1 truncate text-left">
+                                  {roles.find((r) => r.value === member.role)?.label ?? member.role}
+                                </span>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {roles.map((r) => (
+                                  <SelectItem key={r.value} value={r.value} label={r.label} className="pr-8">
+                                    <div className="flex flex-col gap-0.5 py-0.5">
+                                      <span className="text-xs font-medium">{r.label}</span>
+                                      <span className="max-w-[240px] whitespace-normal text-xs leading-tight text-muted-foreground">
+                                        {r.description}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={member.profileId ?? "sem-perfil"}
+                              onValueChange={(v) =>
+                                handleProfileChange(member.id, v === "sem-perfil" ? null : v)
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-full text-xs">
+                                <span className="flex flex-1 truncate text-left">
+                                  {member.profileId === null
+                                    ? "Sem perfil"
+                                    : (profiles.find((p) => p.id === member.profileId)?.name ?? "Sem perfil")}
+                                </span>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sem-perfil" className="text-xs">
+                                  Sem perfil
+                                </SelectItem>
+                                {profiles.map((p) => (
+                                  <SelectItem key={p.id} value={p.id} className="text-xs">
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="px-2">
+                            <StatusBadge status={member.status} />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className="inline-flex size-7 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                                <MoreHorizontal className="size-3.5" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem
+                                  onClick={() => handleContextAction(member, "reenviar")}
+                                >
+                                  Reenviar Convite
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleContextAction(member, "desativar")}
+                                >
+                                  {member.status === "desativado"
+                                    ? "Reativar Membro"
+                                    : "Desativar Membro"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleContextAction(member, "remover")}
+                                >
+                                  Remover do Workspace
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <WorkspaceFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        workspaces={workspaces}
+        editing={editingWs}
+        onSave={handleSaveWorkspaceForm}
+      />
+
+      <AlertDialog open={deletingWs !== null} onOpenChange={(open) => !open && setDeletingWs(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="size-5 text-destructive" />
+              Excluir workspace "{deletingWs?.name}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription render={<div className="space-y-2 text-sm" />}>
+              <p>
+                Workspaces abaixo deste na hierarquia ficarão sem workspace pai. Esta ação não
+                pode ser desfeita.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingWs(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -1344,144 +1613,198 @@ function PerfisSection({
   )
 }
 
-// ─── Section: Acesso por Workspace ───────────────────────────────────────────
+// ─── Section: Workspaces ──────────────────────────────────────────────────────
 
-function AcessoSection({
+function WorkspaceMembersDialog({
+  workspace,
   members,
-  workspaces,
   access,
-  onToggle,
+  open,
+  onOpenChange,
+  onEdit,
 }: {
+  workspace: Workspace | null
   members: Member[]
-  workspaces: { id: string; name: string }[]
   access: Record<string, string[]>
-  onToggle: (userId: string, workspaceId: string, granted: boolean) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEdit: (workspaceId: string) => void
 }) {
-  const [search, setSearch] = useState("")
+  const workspaceMembers = workspace
+    ? members.filter((m) => (access[m.id] ?? []).includes(workspace.id))
+    : []
 
-  const filtered = members.filter(
-    (m) =>
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.email.toLowerCase().includes(search.toLowerCase())
-  )
-
-  function initials(name: string) {
-    return name.split(" ").map((n) => n[0]).slice(0, 2).join("")
+  function handleEdit() {
+    if (!workspace) return
+    onOpenChange(false)
+    onEdit(workspace.id)
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-base font-semibold">Acesso por Workspace</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Defina quais workspaces cada usuário pode acessar. Um usuário pode ter acesso a múltiplos workspaces simultaneamente.
-        </p>
-      </div>
-      <Separator />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Membros em "{workspace?.name}"</DialogTitle>
+          <DialogDescription>
+            {workspaceMembers.length} pessoa(s) com acesso a este workspace.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-80 space-y-1 overflow-y-auto">
+          {workspaceMembers.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Nenhum membro com acesso a este workspace.
+            </p>
+          ) : (
+            workspaceMembers.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-muted/40"
+              >
+                <Avatar className="size-8">
+                  {m.avatar && <AvatarImage src={m.avatar} alt={m.name} />}
+                  <AvatarFallback className="text-xs">{initials(m.name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{m.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {roles.find((r) => r.value === m.role)?.label ?? m.role}
+                </Badge>
+              </div>
+            ))
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEdit}>
+            <Pencil className="size-3.5" />
+            Editar membros e acessos
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-      <div className="relative max-w-xs">
-        <Search className="absolute top-2.5 left-2.5 size-3.5 text-muted-foreground" />
-        <Input
-          placeholder="Buscar usuário..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-8"
-        />
-      </div>
+function WorkspaceFormDialog({
+  open,
+  onOpenChange,
+  workspaces,
+  editing,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  workspaces: Workspace[]
+  editing: Workspace | null
+  onSave: (data: { name: string; parentId: string | null; description: string }) => void
+}) {
+  const [name, setName] = useState("")
+  const [parentId, setParentId] = useState("none")
+  const [description, setDescription] = useState("")
 
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/40">
-              <TableHead className="w-[220px]">Usuário</TableHead>
-              {workspaces.map((ws) => (
-                <TableHead key={ws.id} className="text-center">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs font-medium">{ws.name}</span>
-                  </div>
-                </TableHead>
-              ))}
-              <TableHead className="w-[80px] text-center text-xs text-muted-foreground">
-                Acessos
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={workspaces.length + 2}
-                  className="py-10 text-center text-sm text-muted-foreground"
-                >
-                  Nenhum usuário encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((member) => {
-                const memberAccess = access[member.id] ?? []
-                const count = memberAccess.length
-                return (
-                  <TableRow key={member.id} className={cn(member.status === "desativado" && "opacity-50")}>
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="size-7">
-                          {member.avatar && <AvatarImage src={member.avatar} alt={member.name} />}
-                          <AvatarFallback className="text-xs">{initials(member.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{member.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    {workspaces.map((ws) => {
-                      const hasAccess = memberAccess.includes(ws.id)
-                      return (
-                        <TableCell key={ws.id} className="text-center">
-                          <div className="flex justify-center">
-                            <Switch
-                              checked={hasAccess}
-                              onCheckedChange={(v) => onToggle(member.id, ws.id, v)}
-                              aria-label={`${member.name} acesso a ${ws.name}`}
-                            />
-                          </div>
-                        </TableCell>
-                      )
-                    })}
-                    <TableCell className="text-center">
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "text-xs tabular-nums",
-                          count === 0 && "text-muted-foreground"
-                        )}
-                      >
-                        {count}/{workspaces.length}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+  useEffect(() => {
+    if (open) {
+      setName(editing?.name ?? "")
+      setParentId(editing?.parentId ?? "none")
+      setDescription(editing?.description ?? "")
+    }
+  }, [open, editing])
 
-      <p className="text-xs text-muted-foreground">
-        Alterações são salvas automaticamente. Usuários desativados não podem acessar nenhum workspace independentemente desta configuração.
-      </p>
-    </div>
+  function handleSave() {
+    if (!name.trim()) {
+      toast.error("Informe um nome para o workspace.")
+      return
+    }
+    onSave({
+      name: name.trim(),
+      parentId: parentId === "none" ? null : parentId,
+      description: description.trim(),
+    })
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editing ? "Editar Workspace" : "Novo Workspace"}</DialogTitle>
+          <DialogDescription>
+            Workspaces podem ter outros workspaces abaixo deles, formando uma hierarquia.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="ws-form-name">Nome</Label>
+            <Input
+              id="ws-form-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex.: Qualidade"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Workspace pai</Label>
+            <Select value={parentId} onValueChange={(v) => setParentId(v ?? "none")}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Nenhum (nível 1)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum (nível 1)</SelectItem>
+                {workspaces
+                  .filter((w) => w.id !== editing?.id)
+                  .map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ws-form-desc">Descrição</Label>
+            <Textarea
+              id="ws-form-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            {editing ? "Salvar alterações" : "Criar workspace"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 // ─── Section: Segurança e Privacidade ─────────────────────────────────────────
 
-function SegurancaSection() {
+function SegurancaSection({
+  workspaces,
+  members,
+  access,
+  onNavigateToGeral,
+}: {
+  workspaces: Workspace[]
+  members: Member[]
+  access: Record<string, string[]>
+  onNavigateToGeral: (workspaceId: string) => void
+}) {
   const [selectedId, setSelectedId] = useState("1")
   const workspace = workspaces.find((w) => w.id === selectedId) ?? workspaces[0]
   const [privacy, setPrivacy] = useState<PrivacyLevel>("fechado")
   const [pendingPrivacy, setPendingPrivacy] = useState<PrivacyLevel | null>(null)
   const [inheritance, setInheritance] = useState(true)
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false)
+
+  const workspaceMembers = members.filter((m) => (access[m.id] ?? []).includes(workspace.id))
 
   function handlePrivacySelect(value: PrivacyLevel) {
     if (privacy !== "privado" && value === "privado") {
@@ -1564,6 +1887,36 @@ function SegurancaSection() {
         </DropdownMenu>
       </div>
 
+      {/* Who's inside this workspace */}
+      <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {workspaceMembers.slice(0, 5).map((m) => (
+              <Avatar key={m.id} className="size-7 ring-2 ring-background">
+                {m.avatar && <AvatarImage src={m.avatar} alt={m.name} />}
+                <AvatarFallback className="text-[10px]">{initials(m.name)}</AvatarFallback>
+              </Avatar>
+            ))}
+            {workspaceMembers.length === 0 && (
+              <Users className="size-5 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium">
+              {workspaceMembers.length}{" "}
+              {workspaceMembers.length === 1 ? "membro tem" : "membros têm"} acesso a este
+              workspace
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Veja quem está dentro de "{workspace.name}".
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setMembersDialogOpen(true)}>
+          Ver membros
+        </Button>
+      </div>
+
       {/* Privacy level – radio cards */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Nível de Privacidade do Workspace</Label>
@@ -1627,6 +1980,15 @@ function SegurancaSection() {
         </div>
       </div>
 
+      <WorkspaceMembersDialog
+        workspace={workspace}
+        members={members}
+        access={access}
+        open={membersDialogOpen}
+        onOpenChange={setMembersDialogOpen}
+        onEdit={onNavigateToGeral}
+      />
+
       {/* Destructive confirmation modal */}
       <AlertDialog
         open={pendingPrivacy === "privado"}
@@ -1687,9 +2049,7 @@ const navGroups: Array<{ label: string; items: { key: Section; label: string }[]
     label: "Workspace",
     items: [
       { key: "geral", label: "Geral" },
-      { key: "membros", label: "Membros e Acessos" },
       { key: "perfis", label: "Perfis e Recursos" },
-      { key: "acesso", label: "Acesso por Workspace" },
       { key: "seguranca", label: "Segurança e Privacidade" },
     ],
   },
@@ -1699,7 +2059,9 @@ export default function ConfiguracoesPage() {
   const [section, setSection] = useState<Section>("conta")
   const [members, setMembers] = useState<Member[]>(initialMembers)
   const [profiles, setProfiles] = useState<UserProfile[]>(initialProfiles)
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces)
   const [workspaceAccess, setWorkspaceAccess] = useState<Record<string, string[]>>(initialWorkspaceAccess)
+  const [geralWorkspaceId, setGeralWorkspaceId] = useState(initialWorkspaces[0]?.id ?? "1")
 
   const navigate = useNavigate()
   const { setOpen } = useSidebar()
@@ -1731,9 +2093,36 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  function createWorkspace(data: { name: string; parentId: string | null; description: string }) {
+    setWorkspaces((prev) => [...prev, { id: `w${Date.now()}`, ...data }])
+  }
+
+  function updateWorkspace(
+    id: string,
+    data: { name: string; parentId: string | null; description: string }
+  ) {
+    setWorkspaces((prev) => prev.map((w) => (w.id === id ? { ...w, ...data } : w)))
+  }
+
+  function deleteWorkspace(id: string) {
+    setWorkspaces((prev) => prev.map((w) => (w.parentId === id ? { ...w, parentId: null } : w)).filter((w) => w.id !== id))
+    setWorkspaceAccess((prev) => {
+      const next: Record<string, string[]> = {}
+      for (const [userId, ids] of Object.entries(prev)) {
+        next[userId] = ids.filter((wsId) => wsId !== id)
+      }
+      return next
+    })
+  }
+
   function handleBack() {
     setOpen(true)
     navigate(-1)
+  }
+
+  function goToWorkspaceInGeral(workspaceId: string) {
+    setGeralWorkspaceId(workspaceId)
+    setSection("geral")
   }
 
   return (
@@ -1789,12 +2178,19 @@ export default function ConfiguracoesPage() {
           <main className="flex-1 overflow-y-auto p-6">
             {section === "conta" && <ContaSection />}
             {section === "personalizacao" && <PersonalizacaoSection />}
-            {section === "geral" && <GeralSection />}
-            {section === "membros" && (
-              <MembrosSection
+            {section === "geral" && (
+              <GeralSection
+                workspaces={workspaces}
                 members={members}
                 profiles={profiles}
+                access={workspaceAccess}
+                selectedId={geralWorkspaceId}
+                onSelectWorkspace={setGeralWorkspaceId}
                 onUpdateMember={updateMember}
+                onToggleAccess={toggleWorkspaceAccess}
+                onCreateWorkspace={createWorkspace}
+                onUpdateWorkspace={updateWorkspace}
+                onDeleteWorkspace={deleteWorkspace}
               />
             )}
             {section === "perfis" && (
@@ -1804,15 +2200,14 @@ export default function ConfiguracoesPage() {
                 onUpdateProfiles={setProfiles}
               />
             )}
-            {section === "acesso" && (
-              <AcessoSection
-                members={members}
+            {section === "seguranca" && (
+              <SegurancaSection
                 workspaces={workspaces}
+                members={members}
                 access={workspaceAccess}
-                onToggle={toggleWorkspaceAccess}
+                onNavigateToGeral={goToWorkspaceInGeral}
               />
             )}
-            {section === "seguranca" && <SegurancaSection />}
           </main>
         </div>
       </div>
