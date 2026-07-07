@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
 import {
@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Palette,
   Pencil,
+  Pipette,
   Plus,
   Search,
   Shield,
@@ -312,6 +313,59 @@ function initials(name: string) {
     .join("")
 }
 
+function normalizeHex(raw: string): string | null {
+  let v = raw.trim().replace(/^#/, "")
+  if (/^[0-9a-fA-F]{3}$/.test(v)) {
+    v = v
+      .split("")
+      .map((ch) => ch + ch)
+      .join("")
+  }
+  return /^[0-9a-fA-F]{6}$/.test(v) ? `#${v.toLowerCase()}` : null
+}
+
+// Converts sRGB hex to OKLCH (l, c, h) — see Björn Ottosson's OKLab reference.
+function hexToOklch(hex: string): { h: number; c: number; l: number } {
+  const clean = hex.replace("#", "")
+  const r = parseInt(clean.slice(0, 2), 16) / 255
+  const g = parseInt(clean.slice(2, 4), 16) / 255
+  const b = parseInt(clean.slice(4, 6), 16) / 255
+
+  const toLinear = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))
+  const lr = toLinear(r)
+  const lg = toLinear(g)
+  const lb = toLinear(b)
+
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb
+
+  const l_ = Math.cbrt(l)
+  const m_ = Math.cbrt(m)
+  const s_ = Math.cbrt(s)
+
+  const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_
+  const A = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_
+  const B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_
+
+  const c = Math.sqrt(A * A + B * B)
+  let h = (Math.atan2(B, A) * 180) / Math.PI
+  if (h < 0) h += 360
+
+  return { h, c, l: L }
+}
+
+function useClickOutside(ref: React.RefObject<HTMLElement | null>, onOutside: () => void, active: boolean) {
+  useEffect(() => {
+    if (!active) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onOutside()
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [active, onOutside, ref])
+}
+
 // workspaceAccess: userId → workspaceId[]
 const initialWorkspaceAccess: Record<string, string[]> = {
   m1: ["1", "2", "3", "4", "5"],
@@ -482,6 +536,149 @@ const accentColors: {
   { key: "laranja", label: "Laranja", swatch: "#ea580c", darkSidebar: "#431407", colorfulSidebar: "#c2410c", h: 42,      c: 0.21,  l: 0.60  },
 ]
 
+function getColorByKey(key: string): (typeof accentColors)[number] | null {
+  const preset = accentColors.find((c) => c.key === key)
+  if (preset) return preset
+  const hex = normalizeHex(key)
+  if (!hex) return null
+  const { h, c, l } = hexToOklch(hex)
+  return { key: hex, label: hex.toUpperCase(), swatch: hex, darkSidebar: hex, colorfulSidebar: hex, h, c, l }
+}
+
+function HexColorInputs({
+  hex,
+  onChange,
+}: {
+  hex: string
+  onChange: (hex: string) => void
+}) {
+  return (
+    <>
+      <input
+        type="color"
+        value={normalizeHex(hex) ?? "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        className="size-8 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+        title="Escolher visualmente"
+      />
+      <Input
+        value={hex}
+        onChange={(e) => onChange(e.target.value)}
+        onPaste={(e) => {
+          const pasted = e.clipboardData.getData("text")
+          if (normalizeHex(pasted)) {
+            e.preventDefault()
+            onChange(pasted)
+          }
+        }}
+        placeholder="#RRGGBB"
+        className="h-8 w-24 font-mono text-xs"
+        maxLength={7}
+      />
+    </>
+  )
+}
+
+// Custom color swatch for single-selection pickers (e.g. "Cor principal") — applies live as you type/pick.
+function CustomColorButton({
+  active,
+  currentHex,
+  onApply,
+}: {
+  active: boolean
+  currentHex: string
+  onApply: (hex: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [hexInput, setHexInput] = useState(currentHex)
+  const ref = useRef<HTMLDivElement>(null)
+  useClickOutside(ref, () => setOpen(false), open)
+
+  useEffect(() => {
+    if (open) setHexInput(currentHex)
+  }, [open, currentHex])
+
+  function handleChange(raw: string) {
+    setHexInput(raw)
+    const normalized = normalizeHex(raw)
+    if (normalized) onApply(normalized)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        title="Cor personalizada"
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex size-9 items-center justify-center rounded-full border-2 text-muted-foreground transition-transform hover:scale-110",
+          active
+            ? "scale-110 ring-2 ring-offset-2 ring-offset-background"
+            : "border-dashed border-muted-foreground/40 hover:border-muted-foreground"
+        )}
+        style={active ? { background: currentHex, borderColor: currentHex, ringColor: currentHex } : undefined}
+      >
+        {active ? (
+          <span className="text-[11px] font-bold text-white drop-shadow">✓</span>
+        ) : (
+          <Pipette className="size-4" />
+        )}
+      </button>
+      {open && (
+        <div className="absolute top-11 left-0 z-20 flex items-center gap-2 rounded-lg border bg-popover p-2 shadow-md">
+          <HexColorInputs hex={hexInput} onChange={handleChange} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// "Add" swatch for multi-selection pickers (e.g. "Cores principais") — confirms before adding to the list.
+function AddCustomColorButton({
+  onAdd,
+  disabled,
+}: {
+  onAdd: (hex: string) => void
+  disabled?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [hexInput, setHexInput] = useState("#7c3aed")
+  const ref = useRef<HTMLDivElement>(null)
+  useClickOutside(ref, () => setOpen(false), open)
+
+  function handleAdd() {
+    const normalized = normalizeHex(hexInput)
+    if (!normalized) {
+      toast.error("Informe um código hex válido, como #7C3AED.")
+      return
+    }
+    onAdd(normalized)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        title="Adicionar cor personalizada"
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className="flex size-9 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 text-muted-foreground transition-transform hover:scale-110 hover:border-muted-foreground disabled:pointer-events-none disabled:opacity-40"
+      >
+        <Pipette className="size-4" />
+      </button>
+      {open && (
+        <div className="absolute top-11 left-0 z-20 flex items-center gap-2 rounded-lg border bg-popover p-2 shadow-md">
+          <HexColorInputs hex={hexInput} onChange={setHexInput} />
+          <Button size="sm" className="h-8 px-2.5" onClick={handleAdd}>
+            Usar
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PersonalizacaoSection() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     return (localStorage.getItem("theme-mode") as ThemeMode) ?? "padrao"
@@ -494,7 +691,7 @@ function PersonalizacaoSection() {
     return saved ? JSON.parse(saved) : ["roxo", "teal"]
   })
 
-  const accent = accentColors.find((c) => c.key === accentKey) ?? accentColors[0]
+  const accent = getColorByKey(accentKey) ?? accentColors[0]
 
   const themeOptions = [
     {
@@ -553,6 +750,11 @@ function PersonalizacaoSection() {
     toast.success(`Cor "${color.label}" aplicada.`)
   }
 
+  function applyCustomAccent(hex: string) {
+    const color = getColorByKey(hex)
+    if (color) applyAccent(color)
+  }
+
   function toggleCustomColor(key: string) {
     setCustomColorKeys((prev) => {
       let next: string[]
@@ -566,12 +768,20 @@ function PersonalizacaoSection() {
       }
       localStorage.setItem("custom-colors", JSON.stringify(next))
       if (next[0]) {
-        const primary = accentColors.find((c) => c.key === next[0])
+        const primary = getColorByKey(next[0])
         if (primary) applyAccent(primary)
       }
       return next
     })
   }
+
+  const personalizadoSwatches = [
+    ...accentColors,
+    ...customColorKeys
+      .filter((k) => !accentColors.some((c) => c.key === k))
+      .map((k) => getColorByKey(k))
+      .filter((c): c is (typeof accentColors)[number] => c !== null),
+  ]
 
   return (
     <div className="max-w-xl space-y-8">
@@ -601,6 +811,11 @@ function PersonalizacaoSection() {
               )}
             </button>
           ))}
+          <CustomColorButton
+            active={!accentColors.some((c) => c.key === accentKey)}
+            currentHex={accent.swatch}
+            onApply={applyCustomAccent}
+          />
         </div>
         <p className="text-xs text-muted-foreground -mt-2">
           {accent.label} selecionado
@@ -675,8 +890,8 @@ function PersonalizacaoSection() {
               Escolha de 2 a 3 cores para compor a identidade da plataforma. A 1ª cor selecionada
               vira a cor de destaque principal.
             </p>
-            <div className="flex flex-wrap gap-3 pt-1">
-              {accentColors.map((color) => {
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {personalizadoSwatches.map((color) => {
                 const order = customColorKeys.indexOf(color.key)
                 const selected = order !== -1
                 return (
@@ -698,12 +913,13 @@ function PersonalizacaoSection() {
                   </button>
                 )
               })}
+              <AddCustomColorButton onAdd={toggleCustomColor} disabled={customColorKeys.length >= 3} />
             </div>
             <p className="text-xs text-muted-foreground">
               {customColorKeys.length === 0
                 ? "Nenhuma cor selecionada."
                 : customColorKeys
-                    .map((k) => accentColors.find((c) => c.key === k)?.label)
+                    .map((k) => getColorByKey(k)?.label)
                     .filter(Boolean)
                     .join(" · ")}
             </p>
