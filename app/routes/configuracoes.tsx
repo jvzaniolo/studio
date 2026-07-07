@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   Building2,
   Camera,
+  Check,
+  ChevronDown,
   CornerDownRight,
   Globe,
   Lock,
@@ -439,14 +441,6 @@ function ContaSection() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <div>
-        <h2 className="text-base font-semibold">Perfil</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Informações visíveis para outros membros da plataforma.
-        </p>
-      </div>
-      <Separator />
-
       {/* Avatar */}
       <div className="flex items-center gap-5">
         <div className="relative">
@@ -713,7 +707,7 @@ function PersonalizacaoSection() {
     {
       key: "escuro" as ThemeMode,
       label: "Escuro",
-      description: "Fundo escuro em toda a interface — como o time de tech prefere.",
+      description: "Fundo escuro em toda a interface.",
       sidebar: "#050505",
       primary: accent.swatch,
       bg: "#171717",
@@ -961,12 +955,15 @@ function GeralSection({
   onDeleteWorkspace: (id: string) => void
 }) {
   const workspace = workspaces.find((w) => w.id === selectedId) ?? workspaces[0]
-  const [name, setName] = useState(workspace.name)
-  const [description, setDescription] = useState(workspace.description)
 
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingWs, setEditingWs] = useState<Workspace | null>(null)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [deletingWs, setDeletingWs] = useState<Workspace | null>(null)
+
+  const [editingInline, setEditingInline] = useState<Workspace | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editParentId, setEditParentId] = useState("none")
+  const [editDescription, setEditDescription] = useState("")
 
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("todos")
@@ -977,46 +974,37 @@ function GeralSection({
 
   const tree = flattenWorkspaceTree(workspaces)
 
-  useEffect(() => {
-    const ws = workspaces.find((w) => w.id === selectedId)
-    if (ws) {
-      setName(ws.name)
-      setDescription(ws.description)
+  function openInlineEdit(ws: Workspace) {
+    onSelectWorkspace(ws.id)
+    setEditingInline(ws)
+    setEditName(ws.name)
+    setEditParentId(ws.parentId ?? "none")
+    setEditDescription(ws.description)
+  }
+
+  function cancelInlineEdit() {
+    setEditingInline(null)
+  }
+
+  function saveInlineEdit() {
+    if (!editingInline) return
+    if (!editName.trim()) {
+      toast.error("Informe um nome para o workspace.")
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, workspaces])
-
-  function saveWorkspaceInfo() {
-    onUpdateWorkspace(workspace.id, { name, parentId: workspace.parentId, description })
-    toast.success("Informações do workspace salvas.")
-  }
-
-  function openCreate() {
-    setEditingWs(null)
-    setFormOpen(true)
-  }
-
-  function openEdit(ws: Workspace) {
-    setEditingWs(ws)
-    setFormOpen(true)
-  }
-
-  function handleSaveWorkspaceForm(data: {
-    name: string
-    parentId: string | null
-    description: string
-  }) {
-    if (editingWs) {
-      onUpdateWorkspace(editingWs.id, data)
-      if (editingWs.id === selectedId) {
-        setName(data.name)
-        setDescription(data.description)
-      }
-      toast.success(`Workspace "${data.name}" atualizado.`)
-    } else {
-      onCreateWorkspace(data)
-      toast.success(`Workspace "${data.name}" criado.`)
+    const data = {
+      name: editName.trim(),
+      parentId: editParentId === "none" ? null : editParentId,
+      description: editDescription.trim(),
     }
+    onUpdateWorkspace(editingInline.id, data)
+    toast.success(`Workspace "${data.name}" atualizado.`)
+    setEditingInline(null)
+  }
+
+  function handleCreateWorkspace(data: { name: string; parentId: string | null; description: string }) {
+    onCreateWorkspace(data)
+    toast.success(`Workspace "${data.name}" criado.`)
   }
 
   function confirmDelete() {
@@ -1025,6 +1013,7 @@ function GeralSection({
       if (deletingWs.id === selectedId) {
         onSelectWorkspace(workspaces.find((w) => w.id !== deletingWs.id)?.id ?? "1")
       }
+      if (editingInline?.id === deletingWs.id) setEditingInline(null)
       toast.success(`Workspace "${deletingWs.name}" excluído.`)
       setDeletingWs(null)
     }
@@ -1083,108 +1072,134 @@ function GeralSection({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-base font-semibold">Geral</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Escolha um workspace ao lado para ver e editar suas informações, membros e acessos — tudo
-          no mesmo lugar.
-        </p>
-      </div>
-      <Separator />
-
-      <div className="flex gap-4">
-        {/* Workspace tree */}
-        <aside className="w-48 shrink-0 space-y-2">
-          <div className="flex items-center justify-between px-0.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-              Workspaces
-            </p>
-            <button
-              onClick={openCreate}
-              title="Novo Workspace"
-              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          </div>
-          <div className="divide-y overflow-hidden rounded-md border">
+      {/* Workspace switcher */}
+      <div className="flex items-center gap-2">
+        <DropdownMenu open={switcherOpen} onOpenChange={setSwitcherOpen}>
+          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+            <Building2 className="size-4 text-muted-foreground" />
+            {workspace.name}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-64 p-1">
             {tree.map((ws) => (
               <div
                 key={ws.id}
                 className={cn(
-                  "group relative flex items-center",
-                  ws.id === selectedId ? "bg-primary/5" : "hover:bg-muted/30"
+                  "group flex items-center gap-1 rounded-sm pr-1",
+                  ws.id === selectedId ? "bg-accent" : "hover:bg-accent"
                 )}
               >
                 <button
-                  onClick={() => onSelectWorkspace(ws.id)}
-                  title={ws.name}
-                  className="flex w-full min-w-0 items-center gap-1.5 py-2 text-left"
-                  style={{ paddingLeft: `${8 + (ws.level - 1) * 12}px` }}
+                  onClick={() => {
+                    onSelectWorkspace(ws.id)
+                    setSwitcherOpen(false)
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left text-sm"
+                  style={{ paddingLeft: `${8 + (ws.level - 1) * 14}px` }}
                 >
                   {ws.level > 1 && (
                     <CornerDownRight className="size-3 shrink-0 text-muted-foreground/50" />
                   )}
                   <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span
-                    className={cn(
-                      "min-w-0 flex-1 truncate text-sm",
-                      ws.id === selectedId ? "font-medium text-foreground" : "text-foreground/90"
-                    )}
-                  >
-                    {ws.name}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{ws.name}</span>
+                  {ws.id === selectedId && (
+                    <Check className="size-3.5 shrink-0 text-primary" />
+                  )}
                 </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="absolute right-1 flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground data-popup-open:opacity-100">
-                    <MoreHorizontal className="size-3.5" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(ws)}>
-                      <Pencil className="size-3.5" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onClick={() => setDeletingWs(ws)}>
-                      <Trash2 className="size-3.5" />
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex shrink-0 items-center opacity-0 group-hover:opacity-100">
+                  <button
+                    title="Editar workspace"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openInlineEdit(ws)
+                      setSwitcherOpen(false)
+                    }}
+                    className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  <button
+                    title="Excluir workspace"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeletingWs(ws)
+                      setSwitcherOpen(false)
+                    }}
+                    className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
-          </div>
-        </aside>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
+          <Plus className="size-3.5" />
+          Criar Workspace
+        </Button>
+      </div>
 
-        {/* Selected workspace: info + members & access, no tab switching required */}
-        <div className="min-w-0 flex-1 space-y-6">
-          <div className="max-w-xl space-y-4">
-            <h3 className="text-sm font-semibold">Informações do Workspace</h3>
-            <div className="space-y-1.5">
-              <Label htmlFor="ws-name">Nome do Workspace</Label>
-              <Input id="ws-name" value={name} onChange={(e) => setName(e.target.value)} />
+      {/* Selected workspace: info (only while editing) + members & access */}
+      <div className="min-w-0 flex-1 space-y-6">
+        {editingInline && (
+          <div className="max-w-xl space-y-4 rounded-lg border bg-muted/20 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Editar "{editingInline.name}"</h3>
+              <button
+                onClick={cancelInlineEdit}
+                className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ws-desc">Descrição</Label>
+              <Label htmlFor="edit-ws-name">Nome do Workspace</Label>
+              <Input id="edit-ws-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Workspace pai</Label>
+              <Select value={editParentId} onValueChange={(v) => setEditParentId(v ?? "none")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Nenhum (nível 1)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum (nível 1)</SelectItem>
+                  {workspaces
+                    .filter((w) => w.id !== editingInline.id)
+                    .map((w) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-ws-desc">Descrição</Label>
               <Textarea
-                id="ws-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                id="edit-ws-desc"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
                 rows={2}
               />
             </div>
-            <div className="flex justify-end">
-              <Button size="sm" onClick={saveWorkspaceInfo}>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={cancelInlineEdit}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={saveInlineEdit}>
                 Salvar alterações
               </Button>
             </div>
           </div>
+        )}
 
-          <Separator />
+        <Separator />
 
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold">Membros e Acessos</h3>
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">Membros e Acessos</h3>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 Veja e edite quem tem acesso a "{workspace.name}" e seus níveis de permissão.
               </p>
@@ -1411,14 +1426,13 @@ function GeralSection({
             </div>
           </div>
         </div>
-      </div>
 
       <WorkspaceFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         workspaces={workspaces}
-        editing={editingWs}
-        onSave={handleSaveWorkspaceForm}
+        editing={null}
+        onSave={handleCreateWorkspace}
       />
 
       <AlertDialog open={deletingWs !== null} onOpenChange={(open) => !open && setDeletingWs(null)}>
@@ -2069,14 +2083,6 @@ function SegurancaSection({
 
   return (
     <div className="max-w-xl space-y-6">
-      <div>
-        <h2 className="text-base font-semibold">Segurança e Privacidade</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Controle a visibilidade do workspace e como as permissões se propagam.
-        </p>
-      </div>
-      <Separator />
-
       <div className="space-y-1.5">
         <Label>Workspace</Label>
         <DropdownMenu>
