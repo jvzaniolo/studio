@@ -2,8 +2,9 @@ import { useEffect, useState } from "react"
 import {
   Plus, Search, MoreHorizontal, ChevronRight, Edit2, Trash2, Link2,
   Target, TrendingUp, AlertTriangle, AlertOctagon, CheckCircle2, X, Filter,
-  Building2, Users, GitBranch, Lock, History,
+  Building2, LayoutGrid, GitBranch, Lock, History, GripVertical, ChevronDown,
 } from "lucide-react"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
 import { PageHeader } from "~/components/page-header"
 import { Button } from "~/components/ui/button"
@@ -17,6 +18,9 @@ import {
 import { Card, CardContent } from "~/components/ui/card"
 import { Progress } from "~/components/ui/progress"
 import {
+  ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
+} from "~/components/ui/chart"
+import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "~/components/ui/collapsible"
 import {
@@ -24,7 +28,7 @@ import {
 } from "~/components/ui/dialog"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuTrigger, DropdownMenuSeparator,
+  DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuCheckboxItem,
 } from "~/components/ui/dropdown-menu"
 import { Checkbox } from "~/components/ui/checkbox"
 import {
@@ -39,10 +43,10 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Status = "no_prazo" | "atencao" | "risco" | "concluido"
+/** Semáforo de atingimento — único critério de cor no módulo (nunca tipo, nível ou perspectiva). */
+type Status = "risco" | "atencao" | "no_prazo"
 type CicloTipo = "trimestre" | "semestre" | "ano"
 type CicloStatus = "rascunho" | "ativo" | "encerrado"
-type Nivel = "empresa" | "time"
 type KRTipo = "manual" | "auto" | "binario"
 type Perspectiva = "Financeiro" | "Clientes" | "Processos" | "Pessoas" | "Personalizada"
 
@@ -99,8 +103,10 @@ interface Objetivo {
   nome: string
   descricao: string
   responsavel: { nome: string; iniciais: string }
-  nivel: Nivel
-  time: string | null
+  /** Workspace ao qual o objetivo pertence — obrigatório. Os KRs herdam este Workspace do pai. */
+  workspaceId: string
+  /** Objetivo do qual este é um desdobramento. Usado só na Visão de Árvore. */
+  parentObjetivoId: string | null
   peso: number
   perspectiva: string
   keyResults: KeyResult[]
@@ -118,7 +124,25 @@ const USERS = [
   { nome: "Elena Souza", iniciais: "ES" },
 ]
 
-const TEAMS = ["RH", "Diversidade & Inclusão", "People Analytics", "Desenvolvimento", "Sustentabilidade", "Cultura"]
+interface Workspace {
+  id: string
+  nome: string
+}
+
+/** Workspace da empresa como um todo — usado para objetivos que não pertencem a um time específico. */
+const GERAL_WORKSPACE_ID = "ws-geral"
+
+const WORKSPACES: Workspace[] = [
+  { id: GERAL_WORKSPACE_ID, nome: "Geral" },
+  { id: "ws-rh", nome: "RH" },
+  { id: "ws-di", nome: "Diversidade & Inclusão" },
+  { id: "ws-pa", nome: "People Analytics" },
+  { id: "ws-dev", nome: "Desenvolvimento" },
+  { id: "ws-sust", nome: "Sustentabilidade" },
+  { id: "ws-cultura", nome: "Cultura" },
+]
+
+const DEFAULT_WORKSPACE_ID = WORKSPACES[1].id // primeiro workspace de time (não "Geral") como default de novos objetivos
 
 const PERSPECTIVA_PRESETS: Perspectiva[] = ["Financeiro", "Clientes", "Processos", "Pessoas", "Personalizada"]
 
@@ -137,13 +161,20 @@ function mkAcoes(...textos: string[]): Acao[] {
   return textos.map((texto, i) => ({ id: `a${i + 1}`, texto, concluida: false }))
 }
 
-const AREA_BY_TEAM: Record<string, string> = {
-  "RH": "Pessoas & Cultura",
-  "Diversidade & Inclusão": "Pessoas & Cultura",
-  "People Analytics": "Pessoas & Cultura",
-  "Desenvolvimento": "Pessoas & Cultura",
-  "Cultura": "Pessoas & Cultura",
-  "Sustentabilidade": "ESG & Sustentabilidade",
+/** Membros de cada Workspace — a lista de Responsável no formulário é sempre filtrada por aqui, nunca a lista geral de usuários. */
+const WORKSPACE_MEMBERS: Record<string, string[]> = {
+  [GERAL_WORKSPACE_ID]: USERS.map((u) => u.nome),
+  "ws-rh": ["Ana Lima", "Elena Souza"],
+  "ws-di": ["Carla Mendes", "Bruno Carvalho"],
+  "ws-pa": ["Bruno Carvalho", "Ana Lima"],
+  "ws-dev": ["Diego Rocha", "Carla Mendes"],
+  "ws-sust": ["Carla Mendes", "Diego Rocha"],
+  "ws-cultura": ["Elena Souza", "Ana Lima"],
+}
+
+function workspaceMembers(workspaceId: string): { nome: string; iniciais: string }[] {
+  const nomes = WORKSPACE_MEMBERS[workspaceId] ?? []
+  return USERS.filter((u) => nomes.includes(u.nome))
 }
 
 const INITIAL_CICLOS: Ciclo[] = [
@@ -160,8 +191,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Consolidar a Humanizadas como referência em gestão humanizada até 2027",
     descricao: "Objetivo estratégico que orienta os OKRs de todas as áreas — colocar pessoas no centro da operação sem abrir mão de performance.",
     responsavel: { nome: "Ana Lima", iniciais: "AL" },
-    nivel: "empresa",
-    time: null,
+    workspaceId: GERAL_WORKSPACE_ID,
+    parentObjetivoId: null,
     peso: 5,
     perspectiva: "Pessoas",
     keyResults: [
@@ -175,8 +206,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Aumentar eNPS para 60 até Q4",
     descricao: "Elevar o índice de satisfação e engajamento dos colaboradores através de ações de escuta ativa e reconhecimento.",
     responsavel: { nome: "Ana Lima", iniciais: "AL" },
-    nivel: "time",
-    time: "RH",
+    workspaceId: "ws-rh",
+    parentObjetivoId: "OBJ-000",
     peso: 4,
     perspectiva: "Pessoas",
     keyResults: [
@@ -215,8 +246,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Atingir 40% de liderança feminina",
     descricao: "Aumentar a representatividade feminina em posições de liderança executiva.",
     responsavel: { nome: "Carla Mendes", iniciais: "CM" },
-    nivel: "time",
-    time: "Diversidade & Inclusão",
+    workspaceId: "ws-di",
+    parentObjetivoId: "OBJ-000",
     peso: 3,
     perspectiva: "Pessoas",
     keyResults: [
@@ -226,13 +257,28 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     ],
   },
   {
+    id: "OBJ-002-1",
+    cicloId: "CIC-2026-Q3",
+    nome: "Lançar 2ª coorte do programa acelerador de liderança feminina",
+    descricao: "Desdobramento do objetivo de liderança feminina — foco operacional na 2ª coorte do programa acelerador.",
+    responsavel: { nome: "Carla Mendes", iniciais: "CM" },
+    workspaceId: "ws-di",
+    parentObjetivoId: "OBJ-002",
+    peso: 2,
+    perspectiva: "Pessoas",
+    keyResults: [
+      { id: "OBJ-002-1-kr1", descricao: "Selecionar participantes da 2ª coorte", tipo: "manual", responsavel: { nome: "Carla Mendes", iniciais: "CM" }, atual: 8, meta: 15, unidade: "pessoas", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Divulgar processo seletivo internamente", "Fechar lista final com D&I") },
+      { id: "OBJ-002-1-kr2", descricao: "Definir mentoras para o programa", tipo: "manual", responsavel: { nome: "Bruno Carvalho", iniciais: "BC" }, atual: 3, meta: 6, unidade: "mentoras", concluido: false, kpiId: null, subResultados: [], historico: [], acoes: mkAcoes("Convidar mentoras da liderança sênior", "Alinhar agenda de mentoria") },
+    ],
+  },
+  {
     id: "OBJ-003",
     cicloId: "CIC-2026-Q2",
     nome: "Reduzir turnover voluntário em 15%",
     descricao: "Diminuir a rotatividade voluntária através de um novo ciclo de performance contínuo.",
     responsavel: { nome: "Bruno Carvalho", iniciais: "BC" },
-    nivel: "time",
-    time: "People Analytics",
+    workspaceId: "ws-pa",
+    parentObjetivoId: null,
     peso: 3,
     perspectiva: "Processos",
     keyResults: [
@@ -247,8 +293,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Certificação ESG Tier 1",
     descricao: "Obter a certificação ESG Tier 1 junto ao Instituto Ethos, com diagnóstico, plano de adequação e auditoria externa.",
     responsavel: { nome: "Carla Mendes", iniciais: "CM" },
-    nivel: "time",
-    time: "Sustentabilidade",
+    workspaceId: "ws-sust",
+    parentObjetivoId: null,
     peso: 4,
     perspectiva: "ESG & Compliance",
     keyResults: [
@@ -263,8 +309,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Implementar academia interna de competências",
     descricao: "Criar trilhas de aprendizagem digital para desenvolver competências analíticas e digital mindset em toda a força de trabalho.",
     responsavel: { nome: "Diego Rocha", iniciais: "DR" },
-    nivel: "time",
-    time: "Desenvolvimento",
+    workspaceId: "ws-dev",
+    parentObjetivoId: "OBJ-000",
     peso: 2,
     perspectiva: "Pessoas",
     keyResults: [
@@ -279,8 +325,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Elevar cobertura de segurança psicológica",
     descricao: "Ampliar a cultura de segurança psicológica através de treinamentos e canais de escuta para lideranças.",
     responsavel: { nome: "Elena Souza", iniciais: "ES" },
-    nivel: "time",
-    time: "Cultura",
+    workspaceId: "ws-cultura",
+    parentObjetivoId: null,
     peso: 2,
     perspectiva: "Pessoas",
     keyResults: [
@@ -294,8 +340,8 @@ const INITIAL_OBJETIVOS: Objetivo[] = [
     nome: "Elevar o eNPS das lideranças via escuta contínua",
     descricao: "Rascunho do próximo ciclo — usar dados da Pesquisa de Clima para monitorar continuamente o sentimento das lideranças antes de publicar o ciclo.",
     responsavel: { nome: "Ana Lima", iniciais: "AL" },
-    nivel: "time",
-    time: "RH",
+    workspaceId: "ws-rh",
+    parentObjetivoId: null,
     peso: 3,
     perspectiva: "Pessoas",
     keyResults: [
@@ -363,11 +409,21 @@ function objProgress(obj: Objetivo): number {
   return clampPct(total / obj.keyResults.length)
 }
 
+/**
+ * Thresholds do semáforo de atingimento — fonte única de verdade para a cor de
+ * status em todo o módulo (badge, borda do card e barra de progresso). Ajustar
+ * só aqui — nunca hardcoded em outro ponto do código.
+ */
+const ATINGIMENTO_THRESHOLDS = {
+  verde: 90, // >= 90% → no prazo / atingido
+  amarelo: 70, // 70–89% → atenção
+  // < 70% → em risco
+} as const
+
 /** Status é sempre calculado a partir dos KRs — nunca inserido manualmente. */
 function objStatus(progress: number): Status {
-  if (progress >= 100) return "concluido"
-  if (progress >= 70) return "no_prazo"
-  if (progress >= 40) return "atencao"
+  if (progress >= ATINGIMENTO_THRESHOLDS.verde) return "no_prazo"
+  if (progress >= ATINGIMENTO_THRESHOLDS.amarelo) return "atencao"
   return "risco"
 }
 
@@ -382,6 +438,58 @@ function isPrazoVencido(obj: Objetivo, progress: number, ciclos: Ciclo[]): boole
   return progress < 100 && !!ciclo && ciclo.dataFim < TODAY
 }
 
+// ─── Gráfico de evolução ─────────────────────────────────────────────────────
+// Reconstrói o progresso de um KR numa data com base no histórico de check-ins
+// (dado real). No início do ciclo assume 0% (todo OKR nasce zerado); em "hoje"
+// usa o valor atual em tempo real — as duas únicas âncoras que não dependem de
+// o KR ter sido efetivamente "checado" alguma vez.
+function krValueAtDate(kr: KeyResult, dateISO: string, cicloInicio: string, hojeISO: string): number {
+  // "Hoje" (valor real e atual) tem prioridade se coincidir com o início do ciclo.
+  if (dateISO === hojeISO) return krProgress(kr)
+  if (dateISO === cicloInicio) return 0
+  const past = [...kr.historico].filter((h) => h.data <= dateISO).sort((a, b) => a.data.localeCompare(b.data))
+  if (past.length === 0) return 0
+  const last = past[past.length - 1]
+  if (kr.tipo === "binario") return last.valorNovo >= 1 ? 100 : 0
+  if (kr.meta <= 0) return 0
+  return clampPct((last.valorNovo / kr.meta) * 100)
+}
+
+interface EvolutionPoint {
+  date: number
+  value: number
+}
+
+/** Série de progresso agregado (ponderado por peso) de um conjunto de objetivos ao longo do ciclo. */
+function buildEvolutionSeries(objetivos: Objetivo[], cicloInicio: string): EvolutionPoint[] {
+  const dates = new Set<string>([cicloInicio, TODAY])
+  objetivos.forEach((o) => o.keyResults.forEach((kr) => kr.historico.forEach((h) => dates.add(h.data))))
+  const totalPeso = objetivos.reduce((s, o) => s + o.peso, 0)
+
+  return Array.from(dates)
+    .sort()
+    .map((d) => {
+      const value = totalPeso === 0 ? 0 : clampPct(
+        objetivos.reduce((s, o) => {
+          const objVal = o.keyResults.length === 0
+            ? 0
+            : o.keyResults.reduce((ss, kr) => ss + krValueAtDate(kr, d, cicloInicio, TODAY), 0) / o.keyResults.length
+          return s + objVal * o.peso
+        }, 0) / totalPeso
+      )
+      return { date: new Date(d).getTime(), value: Math.round(value) }
+    })
+}
+
+/** Série de progresso de um único Key Result ao longo do ciclo. */
+function buildKrEvolutionSeries(kr: KeyResult, cicloInicio: string): EvolutionPoint[] {
+  const dates = new Set<string>([cicloInicio, TODAY])
+  kr.historico.forEach((h) => dates.add(h.data))
+  return Array.from(dates)
+    .sort()
+    .map((d) => ({ date: new Date(d).getTime(), value: Math.round(krValueAtDate(kr, d, cicloInicio, TODAY)) }))
+}
+
 function nextObjId(objetivos: Objetivo[]): string {
   return "OBJ-" + String(objetivos.length).padStart(3, "0") + "-" + Math.random().toString(36).slice(2, 5)
 }
@@ -390,11 +498,76 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 }
 
+function objetivoWorkspace(obj: Objetivo): string {
+  return WORKSPACES.find((w) => w.id === obj.workspaceId)?.nome ?? "—"
+}
+
+interface ObjetivoNode {
+  obj: Objetivo
+  children: ObjetivoNode[]
+}
+
+/** Todos os descendentes de um objetivo (usado para impedir ciclos ao escolher o objetivo-pai). */
+function getDescendantIds(objId: string, all: Objetivo[]): Set<string> {
+  const result = new Set<string>()
+  const stack = [objId]
+  while (stack.length > 0) {
+    const current = stack.pop() as string
+    for (const o of all) {
+      if (o.parentObjetivoId === current && !result.has(o.id)) {
+        result.add(o.id)
+        stack.push(o.id)
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * Monta a floresta de desdobramento (Objetivo-pai → Objetivo-filho) usada pela Visão de Árvore.
+ * Cresce em qualquer profundidade/largura; objetivos sem pai (ou cujo pai não está na lista,
+ * ex.: pai de outro ciclo) entram como raízes — nunca quebra por referências inválidas ou ciclos.
+ */
+function buildObjetivoForest(objetivos: Objetivo[]): ObjetivoNode[] {
+  const ids = new Set(objetivos.map((o) => o.id))
+  const childrenByParent = new Map<string, Objetivo[]>()
+  const roots: Objetivo[] = []
+
+  for (const o of objetivos) {
+    const parentId = o.parentObjetivoId
+    if (parentId && parentId !== o.id && ids.has(parentId)) {
+      childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), o])
+    } else {
+      roots.push(o)
+    }
+  }
+
+  function build(o: Objetivo, ancestors: Set<string>): ObjetivoNode {
+    const kids = (childrenByParent.get(o.id) ?? []).filter((c) => !ancestors.has(c.id))
+    return { obj: o, children: kids.map((c) => build(c, new Set(ancestors).add(c.id))) }
+  }
+
+  return roots.map((o) => build(o, new Set([o.id])))
+}
+
 const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string; icon: React.FC<{ className?: string }> }> = {
-  no_prazo: { label: "No prazo", color: "text-blue-700", bg: "bg-blue-100", icon: TrendingUp },
-  atencao: { label: "Atenção", color: "text-amber-700", bg: "bg-amber-100", icon: AlertTriangle },
   risco: { label: "Em risco", color: "text-red-700", bg: "bg-red-100", icon: AlertOctagon },
-  concluido: { label: "Concluído", color: "text-green-700", bg: "bg-green-100", icon: CheckCircle2 },
+  atencao: { label: "Atenção", color: "text-amber-700", bg: "bg-amber-100", icon: AlertTriangle },
+  no_prazo: { label: "No prazo", color: "text-green-700", bg: "bg-green-100", icon: CheckCircle2 },
+}
+
+/** Cor de destaque (borda superior) usada pelos cards de objetivo na Visão de Cards. */
+const STATUS_ACCENT: Record<Status, string> = {
+  risco: "border-t-red-400",
+  atencao: "border-t-amber-400",
+  no_prazo: "border-t-green-400",
+}
+
+/** Cor do preenchimento da barra de progresso do objetivo — mesmo semáforo do StatusBadge (deriva de objStatus, nunca dessincroniza do número). */
+const STATUS_BAR_FILL: Record<Status, string> = {
+  risco: "[&_[data-slot=progress-indicator]]:bg-red-500",
+  atencao: "[&_[data-slot=progress-indicator]]:bg-amber-500",
+  no_prazo: "[&_[data-slot=progress-indicator]]:bg-green-500",
 }
 
 const CICLO_STATUS_CONFIG: Record<CicloStatus, { label: string; color: string; bg: string }> = {
@@ -410,22 +583,9 @@ const CICLO_TIPO_ITEMS = [
   { label: "Semestre", value: "semestre" },
   { label: "Ano", value: "ano" },
 ]
-const NIVEL_ITEMS = [
-  { label: "Time", value: "time" },
-  { label: "Empresa", value: "empresa" },
-]
+const WORKSPACE_ITEMS = WORKSPACES.map((w) => ({ label: w.nome, value: w.id }))
 const PESO_ITEMS = [1, 2, 3, 4, 5].map((p) => ({ label: `×${p}`, value: String(p) }))
 const PERSPECTIVA_ITEMS = PERSPECTIVA_PRESETS.map((p) => ({ label: p, value: p }))
-const KR_TIPO_ITEMS: { label: string; value: KRTipo }[] = [
-  { label: "Manual", value: "manual" },
-  { label: "Auto (via KPI)", value: "auto" },
-  { label: "Binário (Sim/Não)", value: "binario" },
-]
-const KR_TIPO_LABEL: Record<KRTipo, string> = {
-  manual: "Manual",
-  auto: "Auto",
-  binario: "Binário",
-}
 const KPI_SELECT_ITEMS_DETAILED = KPI_CATALOG.map((k) => ({
   label: `${k.nome} — ${k.valor_atual}/${k.meta} ${k.unidade}`,
   value: k.id,
@@ -437,13 +597,18 @@ const KPI_SELECT_ITEMS_WITH_NONE = [
 
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: Status }) {
+/**
+ * `progress` é opcional só para trocar o rótulo por "Concluído" em 100% —
+ * a cor continua vindo exclusivamente de `status` (verde), nunca de um estado extra.
+ */
+function StatusBadge({ status, progress }: { status: Status; progress?: number }) {
   const cfg = STATUS_CONFIG[status]
   const Icon = cfg.icon
+  const label = progress !== undefined && progress >= 100 ? "Concluído" : cfg.label
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", cfg.bg, cfg.color)}>
       <Icon className="size-3" />
-      {cfg.label}
+      {label}
     </span>
   )
 }
@@ -459,6 +624,60 @@ function CicloBadge({ ciclo }: { ciclo: Ciclo | undefined }) {
   )
 }
 
+/** Seletor global de Workspace — "Ver todos" ou multi-seleção. Afeta Lista, Cards e Árvore (via `objetivosVisiveis`). */
+function WorkspaceFilterMenu({
+  value, onChange,
+}: {
+  value: "todos" | Set<string>
+  onChange: (v: "todos" | Set<string>) => void
+}) {
+  const isAll = value === "todos"
+
+  function toggle(id: string) {
+    const current = isAll ? new Set<string>() : new Set(value)
+    if (current.has(id)) current.delete(id)
+    else current.add(id)
+    onChange(current.size === 0 ? "todos" : current)
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium hover:bg-muted">
+        <Building2 className="size-3.5" />
+        {isAll ? "Todos os workspaces" : `${value.size} workspace${value.size > 1 ? "s" : ""}`}
+        <ChevronDown className="size-3.5 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-60">
+        <DropdownMenuItem onClick={() => onChange("todos")}>
+          Ver todos os workspaces
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Selecionar apenas alguns</p>
+        {WORKSPACES.map((w) => (
+          <DropdownMenuCheckboxItem
+            key={w.id}
+            checked={!isAll && value.has(w.id)}
+            onCheckedChange={() => toggle(w.id)}
+          >
+            {w.nome}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+/** Tag do Workspace do objetivo — cor neutra, deliberadamente fora da paleta de status/perspectiva para não se confundir com o semáforo de atingimento. */
+function WorkspaceBadge({ workspaceId }: { workspaceId: string }) {
+  const nome = WORKSPACES.find((w) => w.id === workspaceId)?.nome ?? "—"
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+      <Building2 className="size-3" />
+      {nome}
+    </span>
+  )
+}
+
 function AvatarInitials({ iniciais, size = 24 }: { iniciais: string; size?: number }) {
   return (
     <span
@@ -466,6 +685,79 @@ function AvatarInitials({ iniciais, size = 24 }: { iniciais: string; size?: numb
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {iniciais}
+    </span>
+  )
+}
+
+/**
+ * Texto clicável que vira input/textarea no próprio lugar (sem modal) — click-to-edit.
+ * Não existia nenhum padrão assim no app; este componente é a fonte única para título/descrição do objetivo.
+ */
+function InlineEditableText({
+  value,
+  onSave,
+  as = "input",
+  placeholder,
+  className,
+  rows = 2,
+}: {
+  value: string
+  onSave: (v: string) => void
+  as?: "input" | "textarea"
+  placeholder?: string
+  className?: string
+  rows?: number
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  function commit() {
+    setEditing(false)
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== value) onSave(trimmed)
+    else setDraft(value)
+  }
+
+  function cancel() {
+    setDraft(value)
+    setEditing(false)
+  }
+
+  if (editing) {
+    const Comp = as === "textarea" ? Textarea : Input
+    return (
+      <Comp
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          if (e.key === "Escape") cancel()
+          else if (as === "input" && e.key === "Enter") commit()
+          else if (as === "textarea" && e.key === "Enter" && (e.metaKey || e.ctrlKey)) commit()
+        }}
+        rows={as === "textarea" ? rows : undefined}
+        placeholder={placeholder}
+        className={className}
+      />
+    )
+  }
+
+  return (
+    <span
+      onClick={(e) => { e.stopPropagation(); setDraft(value); setEditing(true) }}
+      onMouseDown={(e) => e.stopPropagation()}
+      title="Clique para editar"
+      className={cn(
+        "cursor-text rounded px-0.5 -mx-0.5 hover:bg-muted/60",
+        !value && "italic text-muted-foreground",
+        className
+      )}
+    >
+      {value || placeholder || "—"}
     </span>
   )
 }
@@ -576,6 +868,7 @@ function ActionsChecklist({
 
 function KeyResultRow({
   kr,
+  workspaceId,
   linkedIniciativas,
   iniciativaRegistry,
   onCheckIn,
@@ -595,6 +888,7 @@ function KeyResultRow({
   onConvertToSub,
 }: {
   kr: KeyResult
+  workspaceId: string
   linkedIniciativas: RegistryItem[]
   iniciativaRegistry: RegistryItem[]
   onCheckIn: (novoValor: number, comentario: string) => void
@@ -830,7 +1124,7 @@ function KeyResultRow({
             <Select value={editResp} onValueChange={setEditResp}>
               <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {USERS.map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
+                {workspaceMembers(workspaceId).map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -1026,6 +1320,7 @@ function ObjectiveCard({
   onToggleSelect,
   onEdit,
   onDelete,
+  onQuickEdit,
   onUpdateKr,
   onToggleBinario,
   onLinkKpi,
@@ -1040,6 +1335,11 @@ function ObjectiveCard({
   onRemoveAcao,
   onEditKr,
   onConvertToSub,
+  isDragOver,
+  onDragStartSelf,
+  onDragOverSelf,
+  onDragLeaveSelf,
+  onDropSelf,
 }: {
   objetivo: Objetivo
   ciclo: Ciclo | undefined
@@ -1050,6 +1350,12 @@ function ObjectiveCard({
   onToggleSelect: () => void
   onEdit: () => void
   onDelete: () => void
+  onQuickEdit: (changes: Partial<Objetivo>) => void
+  isDragOver: boolean
+  onDragStartSelf: () => void
+  onDragOverSelf: () => void
+  onDragLeaveSelf: () => void
+  onDropSelf: () => void
   onUpdateKr: (krId: string, atual: number, comentario: string) => void
   onToggleBinario: (krId: string, concluido: boolean, comentario: string) => void
   onLinkKpi: (krId: string, kpiId: string) => void
@@ -1069,12 +1375,24 @@ function ObjectiveCard({
   const progress = objProgress(objetivo)
   const status = objStatus(progress)
   const atrasado = isPrazoVencido(objetivo, progress, ciclos)
-  const area = objetivo.time ? AREA_BY_TEAM[objetivo.time] : null
 
   return (
-    <Card className={cn("p-0 overflow-hidden", atrasado && "border-l-[3px] border-l-red-500", selected && "ring-2 ring-primary/60")}>
+    <Card
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStartSelf() }}
+      onDragOver={(e) => { e.preventDefault(); onDragOverSelf() }}
+      onDragLeave={onDragLeaveSelf}
+      onDrop={(e) => { e.preventDefault(); onDropSelf() }}
+      className={cn(
+        "p-0 overflow-hidden transition-shadow",
+        atrasado && "border-l-[3px] border-l-red-500",
+        selected && "ring-2 ring-primary/60",
+        isDragOver && "ring-2 ring-violet-400"
+      )}
+    >
       <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-center gap-3 px-4 py-3.5">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+          <GripVertical className="size-3.5 shrink-0 cursor-grab text-muted-foreground/50 hover:text-muted-foreground" />
           <Checkbox checked={selected} onCheckedChange={onToggleSelect} className="shrink-0" />
           <CollapsibleTrigger
             render={
@@ -1083,17 +1401,22 @@ function ObjectiveCard({
               </button>
             }
           />
-          {objetivo.nivel === "empresa" ? <Building2 className="size-4 shrink-0 text-primary" /> : <Target className="size-4 shrink-0 text-primary" />}
+          {objetivo.workspaceId === GERAL_WORKSPACE_ID ? <Building2 className="size-4 shrink-0 text-primary" /> : <Target className="size-4 shrink-0 text-primary" />}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold text-foreground">{objetivo.nome}</p>
-              <StatusBadge status={status} />
+              <InlineEditableText
+                value={objetivo.nome}
+                onSave={(v) => onQuickEdit({ nome: v })}
+                className="text-sm font-semibold text-foreground"
+              />
+              <StatusBadge status={status} progress={progress} />
               {atrasado && (
                 <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700">
                   Atrasado
                 </span>
               )}
               <CicloBadge ciclo={ciclo} />
+              <WorkspaceBadge workspaceId={objetivo.workspaceId} />
               <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
                 Peso ×{objetivo.peso}
               </span>
@@ -1101,9 +1424,12 @@ function ObjectiveCard({
                 {objetivo.perspectiva}
               </span>
             </div>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {objetivo.nivel === "empresa" ? "Objetivo da empresa" : `${objetivo.time} · ${area}`} — {objetivo.descricao}
-            </p>
+            <InlineEditableText
+              value={objetivo.descricao}
+              onSave={(v) => onQuickEdit({ descricao: v })}
+              placeholder="Adicionar descrição..."
+              className="mt-0.5 block truncate text-xs text-muted-foreground"
+            />
           </div>
 
           <div className="hidden items-center gap-1.5 shrink-0 sm:flex">
@@ -1112,7 +1438,7 @@ function ObjectiveCard({
           </div>
 
           <div className="flex w-32 shrink-0 items-center gap-2">
-            <Progress value={progress} className="gap-0" />
+            <Progress value={progress} className={cn("gap-0", STATUS_BAR_FILL[status])} />
             <span className="w-9 shrink-0 text-right text-xs font-semibold tabular-nums">{progress}%</span>
           </div>
 
@@ -1135,6 +1461,7 @@ function ObjectiveCard({
               <KeyResultRow
                 key={kr.id}
                 kr={kr}
+                workspaceId={objetivo.workspaceId}
                 linkedIniciativas={linksByKr(kr.id)}
                 iniciativaRegistry={iniciativaRegistry}
                 onCheckIn={(valor, comentario) => onUpdateKr(kr.id, valor, comentario)}
@@ -1161,60 +1488,9 @@ function ObjectiveCard({
   )
 }
 
-// ─── Objective tree diagram (Objetivo → Key Results → Ações) ────────────────
-
-const KR_TREE_COLORS = [
-  { border: "border-blue-300", bg: "bg-blue-50", dot: "bg-blue-500" },
-  { border: "border-green-300", bg: "bg-green-50", dot: "bg-green-500" },
-  { border: "border-orange-300", bg: "bg-orange-50", dot: "bg-orange-500" },
-  { border: "border-purple-300", bg: "bg-purple-50", dot: "bg-purple-500" },
-]
-
-function TreeConnector({ n }: { n: number }) {
-  return (
-    <>
-      <div className="h-6 w-px bg-border" />
-      {n > 1 && (
-        <div className="relative w-full">
-          <div className="absolute top-0 h-px bg-border" style={{ left: `${50 / n}%`, right: `${50 / n}%` }} />
-        </div>
-      )}
-    </>
-  )
-}
-
-type OrgTreeSelection =
-  | { kind: "org" }
-  | { kind: "lane"; laneKey: string }
-  | { kind: "objetivo"; objId: string }
-  | { kind: "kr"; objId: string; krId: string }
-
-function OrgTreeView({
-  objetivos,
-  iniciativaRegistry,
-  linksByKr,
-  onEdit,
-  onDelete,
-  onUpdateKr,
-  onToggleBinario,
-  onLinkKpi,
-  onUnlinkKpi,
-  onAddSub,
-  onUpdateSub,
-  onRemoveSub,
-  onLinkIniciativa,
-  onUnlinkIniciativa,
-  onAddAcao,
-  onToggleAcao,
-  onRemoveAcao,
-  onEditKr,
-  onConvertToSub,
-}: {
-  objetivos: Objetivo[]
-  iniciativaRegistry: RegistryItem[]
-  linksByKr: (krId: string) => RegistryItem[]
-  onEdit: (objId: string) => void
-  onDelete: (objId: string) => void
+// ─── Handlers de KR compartilhados pelas visões de Cards e Árvore ───────────
+// (mesmo conjunto de callbacks que a Lista já usa — repassados para o dialog de detalhe)
+interface ObjetivoKrHandlers {
   onUpdateKr: (objId: string, krId: string, atual: number, comentario: string) => void
   onToggleBinario: (objId: string, krId: string, concluido: boolean, comentario: string) => void
   onLinkKpi: (objId: string, krId: string, kpiId: string) => void
@@ -1229,17 +1505,326 @@ function OrgTreeView({
   onRemoveAcao: (objId: string, krId: string, acaoId: string) => void
   onEditKr: (objId: string, krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
   onConvertToSub: (objId: string, krId: string, targetKrId: string) => void
-}) {
-  const [selected, setSelected] = useState<OrgTreeSelection | null>(null)
-  const overall = weightedProgress(objetivos)
-  const empresaObjs = objetivos.filter((o) => o.nivel === "empresa")
-  const timeObjs = objetivos.filter((o) => o.nivel === "time")
-  const times = Array.from(new Set(timeObjs.map((o) => o.time as string)))
+}
 
-  const lanes = [
-    ...(empresaObjs.length > 0 ? [{ key: "empresa", label: "Objetivos da empresa", objetivos: empresaObjs }] : []),
-    ...times.map((time) => ({ key: time, label: time, objetivos: timeObjs.filter((o) => o.time === time) })),
-  ]
+/**
+ * Dialog de detalhe de um Objetivo (mostra os KRs) — reaproveitado pela Visão de Cards
+ * e pela Visão de Árvore. KRs só aparecem aqui, nunca diretamente no card/nó (regra v1).
+ */
+function ObjetivoDetailDialog({
+  objId,
+  objetivos,
+  ciclos,
+  iniciativaRegistry,
+  linksByKr,
+  onEdit,
+  onDelete,
+  onQuickEdit,
+  onClose,
+  ...krHandlers
+}: ObjetivoKrHandlers & {
+  objId: string | null
+  objetivos: Objetivo[]
+  ciclos: Ciclo[]
+  iniciativaRegistry: RegistryItem[]
+  linksByKr: (krId: string) => RegistryItem[]
+  onEdit: (objId: string) => void
+  onDelete: (objId: string) => void
+  onQuickEdit: (objId: string, changes: Partial<Objetivo>) => void
+  onClose: () => void
+}) {
+  const obj = objId ? objetivos.find((o) => o.id === objId) : undefined
+  return (
+    <Dialog open={objId !== null} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        {obj && (
+          <ObjetivoDetailContent
+            obj={obj}
+            objetivos={objetivos}
+            ciclos={ciclos}
+            iniciativaRegistry={iniciativaRegistry}
+            linksByKr={linksByKr}
+            onEditRequest={() => { onEdit(obj.id); onClose() }}
+            onDeleteRequest={() => { onDelete(obj.id); onClose() }}
+            onQuickEdit={(changes) => onQuickEdit(obj.id, changes)}
+            {...krHandlers}
+          />
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Visão de Cards (resumo visual dos Objetivos) ───────────────────────────
+
+function ObjectiveSummaryCard({
+  objetivo, onOpen, onEdit, onDelete, onQuickEdit, isDragOver, onDragStartSelf, onDragOverSelf, onDragLeaveSelf, onDropSelf,
+}: {
+  objetivo: Objetivo
+  onOpen: () => void
+  onEdit: () => void
+  onQuickEdit: (changes: Partial<Objetivo>) => void
+  onDelete: () => void
+  isDragOver: boolean
+  onDragStartSelf: () => void
+  onDragOverSelf: () => void
+  onDragLeaveSelf: () => void
+  onDropSelf: () => void
+}) {
+  const progress = objProgress(objetivo)
+  const status = objStatus(progress)
+
+  return (
+    <Card
+      onClick={onOpen}
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStartSelf() }}
+      onDragOver={(e) => { e.preventDefault(); onDragOverSelf() }}
+      onDragLeave={onDragLeaveSelf}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDropSelf() }}
+      className={cn(
+        "cursor-pointer overflow-hidden border-t-4 p-0 transition-shadow hover:shadow-lg",
+        STATUS_ACCENT[status],
+        isDragOver && "ring-2 ring-violet-400"
+      )}
+    >
+      <CardContent className="flex flex-col gap-2.5 p-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-start gap-1.5">
+            <GripVertical className="mt-0.5 size-3.5 shrink-0 cursor-grab text-muted-foreground/40 hover:text-muted-foreground" />
+            {objetivo.workspaceId === GERAL_WORKSPACE_ID ? (
+              <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            ) : (
+              <Target className="mt-0.5 size-4 shrink-0 text-primary" />
+            )}
+            <InlineEditableText
+              value={objetivo.nome}
+              onSave={(v) => onQuickEdit({ nome: v })}
+              className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold text-foreground"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted"
+            >
+              <MoreHorizontal className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}><Edit2 className="size-3.5 mr-2" />Editar</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDelete} className="text-red-600"><Trash2 className="size-3.5 mr-2" />Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <StatusBadge status={status} progress={progress} />
+
+        <div className="flex items-center gap-2">
+          <Progress value={progress} className={cn("h-1.5 flex-1 gap-0", STATUS_BAR_FILL[status])} />
+          <span className="w-9 shrink-0 text-right text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 border-t pt-2">
+          <WorkspaceBadge workspaceId={objetivo.workspaceId} />
+          <span className="flex shrink-0 items-center gap-1.5">
+            <AvatarInitials iniciais={objetivo.responsavel.iniciais} size={20} />
+            <span className="text-xs text-muted-foreground">{objetivo.responsavel.nome}</span>
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CardsView({
+  objetivos, ciclos, iniciativaRegistry, linksByKr, onEdit, onDelete, onQuickEdit, onReorder, ...krHandlers
+}: ObjetivoKrHandlers & {
+  objetivos: Objetivo[]
+  ciclos: Ciclo[]
+  iniciativaRegistry: RegistryItem[]
+  linksByKr: (krId: string) => RegistryItem[]
+  onEdit: (objId: string) => void
+  onDelete: (objId: string) => void
+  onQuickEdit: (objId: string, changes: Partial<Objetivo>) => void
+  onReorder: (draggedId: string, targetId: string) => void
+}) {
+  const [detailObjId, setDetailObjId] = useState<string | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  if (objetivos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+        <Target className="size-8 opacity-40" />
+        <p className="text-sm">Nenhum objetivo encontrado para os filtros aplicados.</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {objetivos.map((obj) => (
+          <ObjectiveSummaryCard
+            key={obj.id}
+            objetivo={obj}
+            onOpen={() => setDetailObjId(obj.id)}
+            onEdit={() => onEdit(obj.id)}
+            onDelete={() => onDelete(obj.id)}
+            onQuickEdit={(changes) => onQuickEdit(obj.id, changes)}
+            isDragOver={dragOverId === obj.id}
+            onDragStartSelf={() => setDragId(obj.id)}
+            onDragOverSelf={() => setDragOverId(obj.id)}
+            onDragLeaveSelf={() => setDragOverId((v) => (v === obj.id ? null : v))}
+            onDropSelf={() => {
+              if (dragId) onReorder(dragId, obj.id)
+              setDragId(null)
+              setDragOverId(null)
+            }}
+          />
+        ))}
+      </div>
+
+      <ObjetivoDetailDialog
+        objId={detailObjId}
+        objetivos={objetivos}
+        ciclos={ciclos}
+        iniciativaRegistry={iniciativaRegistry}
+        linksByKr={linksByKr}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onQuickEdit={onQuickEdit}
+        onClose={() => setDetailObjId(null)}
+        {...krHandlers}
+      />
+    </>
+  )
+}
+
+// ─── Visão de Árvore (desdobramento Objetivo-pai → Objetivo-filho) ─────────
+
+function TreeConnector({ n }: { n: number }) {
+  return (
+    <>
+      <div className="h-5 w-px bg-border" />
+      {n > 1 && (
+        <div className="relative w-full">
+          <div className="absolute top-0 h-px bg-border" style={{ left: `${50 / n}%`, right: `${50 / n}%` }} />
+        </div>
+      )}
+    </>
+  )
+}
+
+/** Nó recursivo: renderiza o próprio objetivo e, embaixo, seus filhos lado a lado. Cresce em qualquer largura/profundidade. */
+function ObjetivoTreeNode({
+  node, onSelect, query, dragId, dragOverId, onDragStartNode, onDragOverNode, onDragLeaveNode, onDropNode, onQuickEdit,
+}: {
+  node: ObjetivoNode
+  onSelect: (objId: string) => void
+  query: string
+  dragId: string | null
+  dragOverId: string | null
+  onDragStartNode: (objId: string) => void
+  onDragOverNode: (objId: string) => void
+  onDragLeaveNode: (objId: string) => void
+  onDropNode: (objId: string) => void
+  onQuickEdit: (objId: string, changes: Partial<Objetivo>) => void
+}) {
+  const { obj, children } = node
+  const progress = objProgress(obj)
+  const status = objStatus(progress)
+  const workspace = objetivoWorkspace(obj)
+  const matches = !query.trim() || obj.nome.toLowerCase().includes(query.trim().toLowerCase())
+
+  return (
+    <div className="flex flex-col items-center">
+      <div
+        role="button"
+        tabIndex={0}
+        draggable
+        onClick={() => onSelect(obj.id)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect(obj.id) }}
+        onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.effectAllowed = "move"; onDragStartNode(obj.id) }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOverNode(obj.id) }}
+        onDragLeave={() => onDragLeaveNode(obj.id)}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDropNode(obj.id) }}
+        className={cn(
+          "flex w-52 shrink-0 cursor-grab flex-col gap-1 rounded-xl border-2 border-primary/30 bg-background px-2.5 py-2 text-left transition-all hover:shadow-md",
+          !matches && "opacity-30",
+          dragId === obj.id && "opacity-50",
+          dragOverId === obj.id && "ring-2 ring-violet-400"
+        )}
+      >
+        <div className="flex items-start gap-1.5">
+          {obj.workspaceId === GERAL_WORKSPACE_ID ? (
+            <Building2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          ) : (
+            <Target className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          )}
+          <InlineEditableText
+            value={obj.nome}
+            onSave={(v) => onQuickEdit(obj.id, { nome: v })}
+            className="line-clamp-2 min-w-0 flex-1 text-xs font-medium text-foreground"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Progress value={progress} className={cn("h-1.5 flex-1 gap-0", STATUS_BAR_FILL[status])} />
+          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+        </div>
+        <div className="flex items-center justify-between gap-1.5">
+          <StatusBadge status={status} progress={progress} />
+          <span className="truncate text-[10px] text-muted-foreground">{workspace}</span>
+        </div>
+      </div>
+
+      {children.length > 0 && (
+        <>
+          <TreeConnector n={children.length} />
+          <div className="flex items-start gap-5">
+            {children.map((child) => (
+              <ObjetivoTreeNode
+                key={child.obj.id}
+                node={child}
+                onSelect={onSelect}
+                query={query}
+                dragId={dragId}
+                dragOverId={dragOverId}
+                onDragStartNode={onDragStartNode}
+                onDragOverNode={onDragOverNode}
+                onDragLeaveNode={onDragLeaveNode}
+                onDropNode={onDropNode}
+                onQuickEdit={onQuickEdit}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ArvoreView({
+  objetivos, ciclos, iniciativaRegistry, linksByKr, onEdit, onDelete, onQuickEdit, onReparent, ...krHandlers
+}: ObjetivoKrHandlers & {
+  objetivos: Objetivo[]
+  ciclos: Ciclo[]
+  iniciativaRegistry: RegistryItem[]
+  linksByKr: (krId: string) => RegistryItem[]
+  onEdit: (objId: string) => void
+  onDelete: (objId: string) => void
+  onQuickEdit: (objId: string, changes: Partial<Objetivo>) => void
+  onReparent: (draggedId: string, newParentId: string | null) => void
+}) {
+  const [selectedObjId, setSelectedObjId] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [dragOverRoot, setDragOverRoot] = useState(false)
 
   if (objetivos.length === 0) {
     return (
@@ -1250,237 +1835,97 @@ function OrgTreeView({
     )
   }
 
+  const forest = buildObjetivoForest(objetivos)
+
+  function resetDrag() {
+    setDragId(null)
+    setDragOverId(null)
+    setDragOverRoot(false)
+  }
+
   return (
-    <div className="overflow-x-auto p-6">
-      <div className="mx-auto flex flex-col items-center" style={{ minWidth: `${Math.max(lanes.length, 1) * 280}px` }}>
-        {/* Linha 1 — Organização */}
-        <button
-          onClick={() => setSelected({ kind: "org" })}
-          className="flex w-64 flex-col gap-1.5 rounded-xl border-2 border-primary/50 bg-primary/10 px-4 py-3 text-left transition-shadow hover:shadow-md"
-        >
-          <div className="flex items-start gap-1.5">
-            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1 break-words text-sm font-bold text-foreground">Humanizadas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Progress value={overall} className="h-1.5 flex-1 gap-0" />
-            <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{overall}%</span>
-          </div>
-        </button>
+    <div className="rounded-lg border">
+      {/* Toolbar do canvas — ponto de extensão para filtros e tags futuros */}
+      <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+        <div className="relative w-56">
+          <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar objetivo na árvore..."
+            className="h-7 pl-7 text-xs"
+          />
+        </div>
+        <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" disabled title="Em breve">
+          <Filter className="size-3.5" />Filtros
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" disabled title="Em breve">
+          Tags
+        </Button>
+        {dragId && (
+          <span className="text-xs text-muted-foreground">
+            Arraste sobre um objetivo para desdobrar dele, ou solte na área vazia para tornar raiz.
+          </span>
+        )}
+      </div>
 
-        <TreeConnector n={lanes.length} />
-
-        {/* Linha 2 — Times */}
-        <div className="flex w-full justify-center gap-8">
-          {lanes.map((lane) => {
-            const laneProgress = weightedProgress(lane.objetivos)
-            return (
-              <div key={lane.key} className="flex flex-col items-center">
-                <div className="h-6 w-px bg-border" />
-                <button
-                  onClick={() => setSelected({ kind: "lane", laneKey: lane.key })}
-                  className="flex w-60 flex-col gap-1.5 rounded-xl border-2 border-border bg-muted/40 px-3 py-2.5 text-left transition-shadow hover:shadow-md"
-                >
-                  <div className="flex items-start gap-1.5">
-                    <Users className="mt-0.5 size-3.5 shrink-0 text-foreground" />
-                    <span className="min-w-0 flex-1 break-words text-xs font-semibold text-foreground">{lane.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Progress value={laneProgress} className="h-1.5 flex-1 gap-0" />
-                    <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{laneProgress}%</span>
-                  </div>
-                </button>
-
-                <TreeConnector n={lane.objetivos.length} />
-
-                {/* Linha 3 — Objetivos (OKRs) */}
-                <div className="flex gap-4">
-                  {lane.objetivos.map((obj) => {
-                    const objProg = objProgress(obj)
-                    const objSt = objStatus(objProg)
-                    return (
-                      <div key={obj.id} className="flex w-56 flex-col items-center">
-                        <div className="h-6 w-px bg-border" />
-                        <button
-                          onClick={() => setSelected({ kind: "objetivo", objId: obj.id })}
-                          className="flex w-full flex-col gap-1.5 rounded-xl border-2 border-primary/30 bg-background px-3 py-2.5 text-left transition-shadow hover:shadow-md"
-                        >
-                          <div className="flex items-start gap-1.5">
-                            <Target className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                            <span className="min-w-0 flex-1 break-words text-xs font-medium text-foreground">{obj.nome}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={objProg} className="h-1.5 flex-1 gap-0" />
-                            <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{objProg}%</span>
-                          </div>
-                          <StatusBadge status={objSt} />
-                        </button>
-
-                        <div className="h-6 w-px bg-border" />
-
-                        {/* Linha 4 — Key Results */}
-                        <div className="flex w-full flex-col gap-1.5">
-                          {obj.keyResults.map((kr, i) => {
-                            const palette = KR_TREE_COLORS[i % KR_TREE_COLORS.length]
-                            const progress = krProgress(kr)
-                            return (
-                              <button
-                                key={kr.id}
-                                onClick={() => setSelected({ kind: "kr", objId: obj.id, krId: kr.id })}
-                                className={cn("flex items-start gap-1.5 rounded-lg border px-2 py-1.5 text-left transition-shadow hover:shadow-md", palette.border, palette.bg)}
-                              >
-                                <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", palette.dot)} />
-                                <span className="min-w-0 flex-1 break-words text-[10px] font-medium text-foreground">{kr.descricao}</span>
-                                <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">{progress}%</span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+      <div
+        className={cn("overflow-x-auto p-6 transition-colors", dragOverRoot && "bg-violet-50")}
+        onDragOver={(e) => { if (!dragId) return; e.preventDefault(); setDragOverRoot(true) }}
+        onDragLeave={() => setDragOverRoot(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          if (dragId) onReparent(dragId, null)
+          resetDrag()
+        }}
+      >
+        <div className="flex w-fit items-start gap-6 mx-auto">
+          {forest.map((root) => (
+            <ObjetivoTreeNode
+              key={root.obj.id}
+              node={root}
+              onSelect={setSelectedObjId}
+              query={query}
+              dragId={dragId}
+              dragOverId={dragOverId}
+              onDragStartNode={setDragId}
+              onDragOverNode={setDragOverId}
+              onDragLeaveNode={(objId) => setDragOverId((v) => (v === objId ? null : v))}
+              onDropNode={(objId) => {
+                if (dragId) onReparent(dragId, objId)
+                resetDrag()
+              }}
+              onQuickEdit={onQuickEdit}
+            />
+          ))}
         </div>
       </div>
 
-      <Dialog open={selected !== null} onOpenChange={(v) => !v && setSelected(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          {selected?.kind === "org" && <OrgDetailContent />}
-          {selected?.kind === "lane" && (() => {
-            const lane = lanes.find((l) => l.key === selected.laneKey)
-            return lane ? <LaneDetailContent lane={lane} onSelectObjetivo={(objId) => setSelected({ kind: "objetivo", objId })} /> : null
-          })()}
-          {selected?.kind === "objetivo" && (() => {
-            const obj = objetivos.find((o) => o.id === selected.objId)
-            return obj ? (
-              <ObjetivoDetailContent
-                obj={obj}
-                iniciativaRegistry={iniciativaRegistry}
-                linksByKr={linksByKr}
-                onEditRequest={() => { onEdit(obj.id); setSelected(null) }}
-                onDeleteRequest={() => { onDelete(obj.id); setSelected(null) }}
-                onUpdateKr={onUpdateKr}
-                onToggleBinario={onToggleBinario}
-                onLinkKpi={onLinkKpi}
-                onUnlinkKpi={onUnlinkKpi}
-                onAddSub={onAddSub}
-                onUpdateSub={onUpdateSub}
-                onRemoveSub={onRemoveSub}
-                onLinkIniciativa={onLinkIniciativa}
-                onUnlinkIniciativa={onUnlinkIniciativa}
-                onAddAcao={onAddAcao}
-                onToggleAcao={onToggleAcao}
-                onRemoveAcao={onRemoveAcao}
-                onEditKr={onEditKr}
-                onConvertToSub={onConvertToSub}
-              />
-            ) : null
-          })()}
-          {selected?.kind === "kr" && (() => {
-            const obj = objetivos.find((o) => o.id === selected.objId)
-            const kr = obj?.keyResults.find((k) => k.id === selected.krId)
-            return obj && kr ? (
-              <div className="min-w-0 space-y-4">
-                <DialogHeader>
-                  <DialogTitle className="break-words">{kr.descricao}</DialogTitle>
-                </DialogHeader>
-                <p className="text-xs text-muted-foreground">Objetivo: {obj.nome}</p>
-                <div className="-mx-6 divide-y divide-border/60 border-y">
-                  <KeyResultRow
-                    kr={kr}
-                    linkedIniciativas={linksByKr(kr.id)}
-                    iniciativaRegistry={iniciativaRegistry}
-                    onCheckIn={(valor, comentario) => onUpdateKr(obj.id, kr.id, valor, comentario)}
-                    onToggleBinario={(concluido, comentario) => onToggleBinario(obj.id, kr.id, concluido, comentario)}
-                    onLinkKpi={(kpiId) => onLinkKpi(obj.id, kr.id, kpiId)}
-                    onUnlinkKpi={() => onUnlinkKpi(obj.id, kr.id)}
-                    onAddSub={(descricao, meta, unidade) => onAddSub(obj.id, kr.id, descricao, meta, unidade)}
-                    onUpdateSub={(subId, atual) => onUpdateSub(obj.id, kr.id, subId, atual)}
-                    onRemoveSub={(subId) => onRemoveSub(obj.id, kr.id, subId)}
-                    onLinkIniciativa={(iniciativaId) => onLinkIniciativa(kr.id, iniciativaId)}
-                    onUnlinkIniciativa={(iniciativaId) => onUnlinkIniciativa(kr.id, iniciativaId)}
-                    onAddAcao={(texto) => onAddAcao(obj.id, kr.id, texto)}
-                    onToggleAcao={(acaoId, concluida) => onToggleAcao(obj.id, kr.id, acaoId, concluida)}
-                    onRemoveAcao={(acaoId) => onRemoveAcao(obj.id, kr.id, acaoId)}
-                    onEditKr={(data) => onEditKr(obj.id, kr.id, data)}
-                    siblingKrs={obj.keyResults.filter((k) => k.id !== kr.id).map((k) => ({ id: k.id, descricao: k.descricao }))}
-                    onConvertToSub={(targetKrId) => onConvertToSub(obj.id, kr.id, targetKrId)}
-                  />
-                </div>
-              </div>
-            ) : null
-          })()}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-function OrgDetailContent() {
-  return (
-    <div className="min-w-0 space-y-4">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2"><Building2 className="size-4 text-primary" />Humanizadas</DialogTitle>
-      </DialogHeader>
-      <p className="text-sm text-muted-foreground">Visão geral da organização no ciclo selecionado.</p>
-    </div>
-  )
-}
-
-function LaneDetailContent({
-  lane, onSelectObjetivo,
-}: {
-  lane: { key: string; label: string; objetivos: Objetivo[] }
-  onSelectObjetivo: (objId: string) => void
-}) {
-  const laneProgress = weightedProgress(lane.objetivos)
-  return (
-    <div className="min-w-0 space-y-4">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2"><Users className="size-4" />{lane.label}</DialogTitle>
-      </DialogHeader>
-      <div className="flex items-center gap-2">
-        <Progress value={laneProgress} className="h-2 flex-1 gap-0" />
-        <span className="text-xs font-semibold tabular-nums text-muted-foreground">{laneProgress}%</span>
-      </div>
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Objetivos ({lane.objetivos.length})</p>
-        {lane.objetivos.map((o) => {
-          const p = objProgress(o)
-          return (
-            <button
-              key={o.id}
-              onClick={() => onSelectObjetivo(o.id)}
-              className="block w-full rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/50"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-foreground">{o.nome}</span>
-                <StatusBadge status={objStatus(p)} />
-              </div>
-              <div className="mt-1.5 flex items-center gap-2">
-                <Progress value={p} className="h-1.5 flex-1 gap-0" />
-                <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">{p}%</span>
-              </div>
-            </button>
-          )
-        })}
-      </div>
+      <ObjetivoDetailDialog
+        objId={selectedObjId}
+        objetivos={objetivos}
+        ciclos={ciclos}
+        iniciativaRegistry={iniciativaRegistry}
+        linksByKr={linksByKr}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onQuickEdit={onQuickEdit}
+        onClose={() => setSelectedObjId(null)}
+        {...krHandlers}
+      />
     </div>
   )
 }
 
 function ObjetivoDetailContent({
   obj,
+  objetivos,
+  ciclos,
   iniciativaRegistry,
   linksByKr,
   onEditRequest,
   onDeleteRequest,
+  onQuickEdit,
   onUpdateKr,
   onToggleBinario,
   onLinkKpi,
@@ -1497,10 +1942,13 @@ function ObjetivoDetailContent({
   onConvertToSub,
 }: {
   obj: Objetivo
+  objetivos: Objetivo[]
+  ciclos: Ciclo[]
   iniciativaRegistry: RegistryItem[]
   linksByKr: (krId: string) => RegistryItem[]
   onEditRequest: () => void
   onDeleteRequest: () => void
+  onQuickEdit: (changes: Partial<Objetivo>) => void
   onUpdateKr: (objId: string, krId: string, atual: number, comentario: string) => void
   onToggleBinario: (objId: string, krId: string, concluido: boolean, comentario: string) => void
   onLinkKpi: (objId: string, krId: string, kpiId: string) => void
@@ -1518,50 +1966,120 @@ function ObjetivoDetailContent({
 }) {
   const progress = objProgress(obj)
   const status = objStatus(progress)
-  const area = obj.time ? AREA_BY_TEAM[obj.time] : null
+
+  // Objetivo-pai só pode vir do mesmo ciclo, nunca de si mesmo ou de um de seus descendentes (evita ciclos na árvore).
+  const descendantIds = getDescendantIds(obj.id, objetivos)
+  const parentOptions = objetivos.filter((o) => o.cicloId === obj.cicloId && o.id !== obj.id && !descendantIds.has(o.id))
+  const parentItems = [
+    { label: "Nenhum (é uma raiz na árvore)", value: "none" },
+    ...parentOptions.map((o) => ({ label: o.nome, value: o.id })),
+  ]
+  const cicloItems = ciclos.map((c) => ({
+    label: `${c.nome}${c.status === "rascunho" ? " · rascunho" : c.status === "encerrado" ? " · encerrado" : ""}`,
+    value: c.id,
+  }))
+
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="min-w-0 space-y-5">
       <DialogHeader className="min-w-0">
         <div className="flex min-w-0 items-start justify-between gap-2 pr-6">
-          <DialogTitle className="flex min-w-0 flex-1 items-start gap-2 break-words"><Target className="mt-0.5 size-4 shrink-0 text-primary" /><span className="min-w-0 break-words">{obj.nome}</span></DialogTitle>
+          <DialogTitle className="flex min-w-0 flex-1 items-start gap-2 break-words text-base">
+            <Target className="mt-0.5 size-4 shrink-0 text-primary" />
+            <InlineEditableText value={obj.nome} onSave={(v) => onQuickEdit({ nome: v })} className="min-w-0 flex-1 break-words" />
+          </DialogTitle>
           <DropdownMenu>
             <DropdownMenuTrigger className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted">
               <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEditRequest}><Edit2 className="size-3.5 mr-2" />Editar</DropdownMenuItem>
+              <DropdownMenuItem onClick={onEditRequest}><Edit2 className="size-3.5 mr-2" />Editar KRs em planilha</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDeleteRequest} className="text-red-600"><Trash2 className="size-3.5 mr-2" />Excluir</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <StatusBadge status={status} progress={progress} />
+          <Select items={PESO_ITEMS} value={String(obj.peso)} onValueChange={(v) => onQuickEdit({ peso: parseInt(v, 10) || 1 })}>
+            <SelectTrigger className="h-6 w-auto gap-1 rounded-full border-none bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground shadow-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5].map((p) => <SelectItem key={p} value={String(p)}>Peso ×{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select items={PERSPECTIVA_ITEMS} value={obj.perspectiva} onValueChange={(v) => onQuickEdit({ perspectiva: v })}>
+            <SelectTrigger
+              className={cn(
+                "h-6 w-auto gap-1 rounded-full border-none px-2 py-0.5 text-xs font-medium shadow-none",
+                perspectivaStyle(obj.perspectiva).bg, perspectivaStyle(obj.perspectiva).color
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERSPECTIVA_PRESETS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </DialogHeader>
-      <p className="text-sm text-muted-foreground">{obj.descricao}</p>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <StatusBadge status={status} />
-        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">Peso ×{obj.peso}</span>
-        <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", perspectivaStyle(obj.perspectiva).bg, perspectivaStyle(obj.perspectiva).color)}>
-          {obj.perspectiva}
-        </span>
+
+      <InlineEditableText
+        value={obj.descricao}
+        onSave={(v) => onQuickEdit({ descricao: v })}
+        as="textarea"
+        placeholder="Adicionar descrição..."
+        className="block text-sm text-muted-foreground"
+      />
+
+      <div className="grid grid-cols-3 gap-4 rounded-lg border bg-muted/20 p-3.5">
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Workspace</p>
+          <WorkspaceBadge workspaceId={obj.workspaceId} />
+        </div>
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Responsável</p>
+          <div className="flex items-center gap-1.5">
+            <AvatarInitials iniciais={obj.responsavel.iniciais} />
+            <span className="truncate text-sm text-foreground">{obj.responsavel.nome}</span>
+          </div>
+        </div>
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Progresso</p>
+          <div className="flex items-center gap-2">
+            <Progress value={progress} className={cn("h-2 flex-1 gap-0", STATUS_BAR_FILL[status])} />
+            <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+          </div>
+        </div>
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ciclo</p>
+          <Select items={cicloItems} value={obj.cicloId} onValueChange={(v) => onQuickEdit({ cicloId: v, parentObjetivoId: null })}>
+            <SelectTrigger className="h-7 w-full text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ciclos.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="col-span-2 min-w-0 space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Objetivo pai (desdobramento na Árvore)</p>
+          <Select items={parentItems} value={obj.parentObjetivoId ?? "none"} onValueChange={(v) => onQuickEdit({ parentObjetivoId: v === "none" ? null : v })}>
+            <SelectTrigger className="h-7 w-full text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhum (é uma raiz na árvore)</SelectItem>
+              {parentOptions.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {obj.nivel === "empresa" ? "Objetivo da empresa" : `${obj.time} · ${area}`}
-      </p>
-      <div className="flex items-center gap-2">
-        <Progress value={progress} className="h-2 flex-1 gap-0" />
-        <span className="text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <AvatarInitials iniciais={obj.responsavel.iniciais} />
-        <span className="text-sm text-muted-foreground">{obj.responsavel.nome}</span>
-      </div>
+
       <div>
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Results ({obj.keyResults.length})</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Results ({obj.keyResults.length})</p>
         <div className="-mx-6 divide-y divide-border/60 border-y">
           {obj.keyResults.map((kr) => (
             <KeyResultRow
               key={kr.id}
               kr={kr}
+              workspaceId={obj.workspaceId}
               linkedIniciativas={linksByKr(kr.id)}
               iniciativaRegistry={iniciativaRegistry}
               onCheckIn={(valor, comentario) => onUpdateKr(obj.id, kr.id, valor, comentario)}
@@ -1587,13 +2105,117 @@ function ObjetivoDetailContent({
   )
 }
 
+// ─── Gráfico de evolução (geral do ciclo ou específico de um Objetivo/KR) ───
+
+const EVOLUTION_CHART_CONFIG = {
+  value: { label: "Progresso", color: "var(--chart-1)" },
+} satisfies ChartConfig
+
+function EvolutionChart({
+  objetivosDoCiclo, ciclo,
+}: {
+  objetivosDoCiclo: Objetivo[]
+  ciclo: Ciclo | undefined
+}) {
+  const [scopeObjId, setScopeObjId] = useState<string>("geral")
+  const [scopeKrId, setScopeKrId] = useState<string>("todos")
+
+  const scopeObj = scopeObjId !== "geral" ? objetivosDoCiclo.find((o) => o.id === scopeObjId) : undefined
+  const scopeKr = scopeObj?.keyResults.find((k) => k.id === scopeKrId)
+  const cicloInicio = ciclo?.dataInicio ?? TODAY
+
+  const series = scopeKr
+    ? buildKrEvolutionSeries(scopeKr, cicloInicio)
+    : buildEvolutionSeries(scopeObj ? [scopeObj] : objetivosDoCiclo, cicloInicio)
+
+  const scopeObjItems = [
+    { label: "Geral (todo o ciclo)", value: "geral" },
+    ...objetivosDoCiclo.map((o) => ({ label: o.nome, value: o.id })),
+  ]
+  const scopeKrItems = [
+    { label: "Todos os KRs (média)", value: "todos" },
+    ...(scopeObj?.keyResults.map((k) => ({ label: k.descricao, value: k.id })) ?? []),
+  ]
+
+  return (
+    <div className="mb-3 rounded-lg border p-3.5">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-foreground">Evolução do progresso</p>
+        <div className="flex items-center gap-2">
+          <Select
+            items={scopeObjItems}
+            value={scopeObjId}
+            onValueChange={(v) => { setScopeObjId(v); setScopeKrId("todos") }}
+          >
+            <SelectTrigger className="h-7 w-56 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {scopeObjItems.map((it) => <SelectItem key={it.value} value={it.value}>{it.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {scopeObj && (
+            <Select items={scopeKrItems} value={scopeKrId} onValueChange={setScopeKrId}>
+              <SelectTrigger className="h-7 w-56 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {scopeKrItems.map((it) => <SelectItem key={it.value} value={it.value}>{it.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </div>
+
+      <ChartContainer config={EVOLUTION_CHART_CONFIG} className="aspect-auto h-52 w-full">
+        <LineChart data={series} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="date"
+            type="number"
+            scale="time"
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={(t) => new Date(t).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+            tickLine={false}
+            axisLine={false}
+            fontSize={11}
+          />
+          <YAxis
+            domain={[0, 100]}
+            ticks={[0, 25, 50, 75, 100]}
+            tickFormatter={(v) => `${v}%`}
+            tickLine={false}
+            axisLine={false}
+            width={36}
+            fontSize={11}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                labelFormatter={(_, payload) => {
+                  const ts = payload?.[0]?.payload?.date
+                  if (!ts) return ""
+                  return new Date(ts).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+                }}
+                valueFormatter={(value) => `${value}%`}
+              />
+            }
+          />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="var(--color-value)"
+            strokeWidth={2.5}
+            dot={{ r: 3, fill: "var(--color-value)" }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ChartContainer>
+    </div>
+  )
+}
+
 // ─── Filtros ─────────────────────────────────────────────────────────────────
 
 function FiltersSheet({
   statusFiltro,
   onChangeStatus,
-  timeFiltro,
-  onChangeTime,
   responsavelFiltro,
   onChangeResponsavel,
   searchQuery,
@@ -1604,8 +2226,6 @@ function FiltersSheet({
 }: {
   statusFiltro: "todos" | Status
   onChangeStatus: (s: "todos" | Status) => void
-  timeFiltro: string
-  onChangeTime: (t: string) => void
   responsavelFiltro: string
   onChangeResponsavel: (r: string) => void
   searchQuery: string
@@ -1619,7 +2239,6 @@ function FiltersSheet({
     { value: "no_prazo", label: "No prazo" },
     { value: "atencao", label: "Atenção" },
     { value: "risco", label: "Em risco" },
-    { value: "concluido", label: "Concluído" },
   ]
 
   return (
@@ -1673,32 +2292,6 @@ function FiltersSheet({
                   )}
                 >
                   {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Time</p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => onChangeTime("todos")}
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
-                  timeFiltro === "todos" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
-                )}
-              >
-                Todos
-              </button>
-              {TEAMS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => onChangeTime(t)}
-                  className={cn(
-                    "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
-                    timeFiltro === t ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
-                  )}
-                >
-                  {t}
                 </button>
               ))}
             </div>
@@ -1830,307 +2423,226 @@ function NovoCicloDialog({
   )
 }
 
-// ─── Create/edit objective modal ─────────────────────────────────────────────
+// ─── Planilha de Objetivos/KRs (cria e edita — substitui os modais empilhados) ─
 
-interface KrFormRow {
-  id?: string
-  descricao: string
-  tipo: KRTipo
-  responsavel: string
-  atual: string
-  meta: string
-  unidade: string
-  concluido: boolean
-  kpiId: string
-}
+/**
+ * Uma linha de Objetivo + suas sublinhas de KR, todas editadas direto no estado
+ * real (sem "salvar"/"cancelar" — cada célula grava imediatamente, como numa planilha).
+ */
+function PlanilhaObjetivoRows({
+  obj,
+  isFocused,
+  onFocus,
+  onQuickEdit,
+  onDelete,
+  onRemoveKr,
+  onEditKr,
+}: {
+  obj: Objetivo
+  isFocused: boolean
+  onFocus: () => void
+  onQuickEdit: (changes: Partial<Objetivo>) => void
+  onDelete: () => void
+  onRemoveKr: (krId: string) => void
+  onEditKr: (krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
+}) {
+  const progress = objProgress(obj)
+  const status = objStatus(progress)
 
-const EMPTY_KR_FORM: KrFormRow = { descricao: "", tipo: "manual", responsavel: USERS[0].nome, meta: "", atual: "", unidade: "", concluido: false, kpiId: "" }
-
-function emptyObjForm(defaultCicloId: string) {
-  return {
-    nome: "",
-    descricao: "",
-    responsavel: USERS[0].nome,
-    nivel: "time" as Nivel,
-    time: TEAMS[0],
-    cicloId: defaultCicloId,
-    peso: "3",
-    perspectiva: PERSPECTIVA_PRESETS[0] as string,
-    perspectivaCustom: "",
-    keyResults: [{ ...EMPTY_KR_FORM }],
+  function handleWorkspaceChange(workspaceId: string) {
+    const membros = workspaceMembers(workspaceId)
+    const changes: Partial<Objetivo> = { workspaceId }
+    if (!membros.some((m) => m.nome === obj.responsavel.nome) && membros[0]) changes.responsavel = membros[0]
+    onQuickEdit(changes)
   }
+
+  return (
+    <>
+      <tr onClick={onFocus} className={cn("cursor-pointer border-b align-top transition-colors", isFocused && "bg-violet-50")}>
+        <td className="py-2 pr-3">
+          <InlineEditableText
+            value={obj.nome}
+            onSave={(v) => onQuickEdit({ nome: v })}
+            placeholder="Nome do objetivo..."
+            className="font-medium text-foreground"
+          />
+        </td>
+        <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+          <Select items={WORKSPACE_ITEMS} value={obj.workspaceId} onValueChange={handleWorkspaceChange}>
+            <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {WORKSPACES.map((w) => <SelectItem key={w.id} value={w.id}>{w.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+          <Select
+            value={obj.responsavel.nome}
+            onValueChange={(v) => {
+              const u = workspaceMembers(obj.workspaceId).find((x) => x.nome === v)
+              if (u) onQuickEdit({ responsavel: u })
+            }}
+          >
+            <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {workspaceMembers(obj.workspaceId).map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="py-2 px-3 text-xs text-muted-foreground">—</td>
+        <td className="py-2 px-3">
+          <div className="flex items-center gap-1.5">
+            <StatusBadge status={status} progress={progress} />
+            <span className="text-xs tabular-nums text-muted-foreground">{progress}%</span>
+          </div>
+        </td>
+        <td className="py-2 pl-3 text-right">
+          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); onDelete() }}>
+            <Trash2 className="size-3.5 text-muted-foreground" />
+          </Button>
+        </td>
+      </tr>
+      {obj.keyResults.map((kr) => (
+        <tr key={kr.id} onClick={onFocus} className={cn("cursor-pointer border-b bg-muted/20 align-top", isFocused && "bg-violet-50/60")}>
+          <td className="py-1.5 pr-3 pl-6 text-xs text-muted-foreground">↳</td>
+          <td className="py-1.5 px-3">
+            <WorkspaceBadge workspaceId={obj.workspaceId} />
+          </td>
+          <td className="py-1.5 px-3" onClick={(e) => e.stopPropagation()}>
+            <Select
+              value={kr.responsavel.nome}
+              onValueChange={(v) => onEditKr(kr.id, { descricao: kr.descricao, responsavel: v, meta: kr.meta, unidade: kr.unidade })}
+            >
+              <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {workspaceMembers(obj.workspaceId).map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </td>
+          <td className="py-1.5 px-3">
+            <InlineEditableText
+              value={kr.descricao}
+              onSave={(v) => onEditKr(kr.id, { descricao: v, responsavel: kr.responsavel.nome, meta: kr.meta, unidade: kr.unidade })}
+              placeholder="Descreva o indicador..."
+              className="text-xs"
+            />
+          </td>
+          <td className="py-1.5 px-3">
+            <InlineEditableText
+              value={String(kr.meta)}
+              onSave={(v) => {
+                const parsed = parseFloat(v.replace(",", "."))
+                onEditKr(kr.id, { descricao: kr.descricao, responsavel: kr.responsavel.nome, meta: Number.isFinite(parsed) ? parsed : kr.meta, unidade: kr.unidade })
+              }}
+              placeholder="Meta"
+              className="text-xs tabular-nums"
+            />
+          </td>
+          <td className="py-1.5 pl-3 text-right" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => onRemoveKr(kr.id)}>
+              <X className="size-3.5 text-muted-foreground" />
+            </Button>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
 }
 
-function ObjectiveModal({
+function ObjetivosPlanilhaDialog({
   open,
-  mode,
-  initial,
-  ciclos,
-  defaultCicloId,
+  objetivos,
+  focusObjId,
+  onQuickEdit,
+  onDelete,
+  onAddObjetivo,
+  onAddKr,
+  onRemoveKr,
+  onEditKr,
   onClose,
-  onSave,
 }: {
   open: boolean
-  mode: "create" | "edit"
-  initial?: Objetivo
-  ciclos: Ciclo[]
-  defaultCicloId: string
+  objetivos: Objetivo[]
+  focusObjId: string | null
+  onQuickEdit: (objId: string, changes: Partial<Objetivo>) => void
+  onDelete: (objId: string) => void
+  onAddObjetivo: () => string
+  onAddKr: (objId: string) => string
+  onRemoveKr: (objId: string, krId: string) => void
+  onEditKr: (objId: string, krId: string, data: { descricao: string; responsavel: string; meta: number; unidade: string }) => void
   onClose: () => void
-  onSave: (data: ReturnType<typeof emptyObjForm>) => void
 }) {
-  const [form, setForm] = useState(() => emptyObjForm(defaultCicloId))
+  const [focusedObjId, setFocusedObjId] = useState<string | null>(focusObjId)
 
   const [lastOpen, setLastOpen] = useState(false)
   if (open !== lastOpen) {
     setLastOpen(open)
-    if (open) {
-      if (mode === "edit" && initial) {
-        const isPreset = PERSPECTIVA_PRESETS.slice(0, -1).includes(initial.perspectiva as Perspectiva)
-        setForm({
-          nome: initial.nome,
-          descricao: initial.descricao,
-          responsavel: initial.responsavel.nome,
-          nivel: initial.nivel,
-          time: initial.time ?? TEAMS[0],
-          cicloId: initial.cicloId,
-          peso: String(initial.peso),
-          perspectiva: isPreset ? initial.perspectiva : "Personalizada",
-          perspectivaCustom: isPreset ? "" : initial.perspectiva,
-          keyResults: initial.keyResults.map((kr) => ({
-            id: kr.id,
-            descricao: kr.descricao,
-            tipo: kr.tipo,
-            responsavel: kr.responsavel.nome,
-            meta: String(kr.meta),
-            atual: String(kr.atual),
-            unidade: kr.unidade,
-            concluido: kr.concluido,
-            kpiId: kr.kpiId ?? "",
-          })),
-        })
-      } else {
-        setForm(emptyObjForm(defaultCicloId))
-      }
-    }
+    if (open) setFocusedObjId(focusObjId)
   }
 
-  function set<K extends keyof ReturnType<typeof emptyObjForm>>(field: K, value: ReturnType<typeof emptyObjForm>[K]) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const isValid =
-    form.nome.trim().length > 0 &&
-    !!form.cicloId &&
-    form.keyResults.some((kr) => kr.descricao.trim().length > 0 && (kr.tipo === "binario" || kr.kpiId || kr.meta.trim().length > 0))
-
-  function addKr() {
-    set("keyResults", [...form.keyResults, { ...EMPTY_KR_FORM, responsavel: form.responsavel }])
-  }
-
-  function updateKr<K extends keyof KrFormRow>(idx: number, field: K, value: KrFormRow[K]) {
-    set("keyResults", form.keyResults.map((kr, i) => (i === idx ? { ...kr, [field]: value } : kr)))
-  }
-
-  function removeKr(idx: number) {
-    set("keyResults", form.keyResults.filter((_, i) => i !== idx))
-  }
-
-  const cicloItems = ciclos.map((c) => ({
-    label: `${c.nome}${c.status === "rascunho" ? " · rascunho" : c.status === "encerrado" ? " · encerrado" : ""}`,
-    value: c.id,
-  }))
+  const focusedObj = objetivos.find((o) => o.id === focusedObjId)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>{mode === "create" ? "Novo objetivo" : "Editar objetivo"}</DialogTitle>
+      <DialogContent className="sm:max-w-6xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="border-b px-6 pt-6 pb-4">
+          <DialogTitle>Objetivos e Key Results</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Edite direto na tabela, como numa planilha — cada célula grava sozinha, sem precisar salvar.
+          </p>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <div className="space-y-1">
-            <Label>Objetivo <span className="text-red-500">*</span></Label>
-            <Input
-              value={form.nome}
-              onChange={(e) => set("nome", e.target.value)}
-              placeholder="Ex.: Aumentar eNPS para 60 até Q4"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <Label>Ciclo <span className="text-red-500">*</span></Label>
-              <Select items={cicloItems} value={form.cicloId} onValueChange={(v) => set("cicloId", v)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ciclos.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome} {c.status === "rascunho" ? "· rascunho" : c.status === "encerrado" ? "· encerrado" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Nível</Label>
-              <Select items={NIVEL_ITEMS} value={form.nivel} onValueChange={(v) => set("nivel", v as Nivel)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="time">Time</SelectItem>
-                  <SelectItem value="empresa">Empresa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Peso</Label>
-              <Select items={PESO_ITEMS} value={form.peso} onValueChange={(v) => set("peso", v)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((p) => <SelectItem key={p} value={String(p)}>×{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className={cn("grid gap-4", form.nivel === "time" ? "grid-cols-3" : "grid-cols-2")}>
-            <div className="space-y-1">
-              <Label>Responsável</Label>
-              <Select value={form.responsavel} onValueChange={(v) => set("responsavel", v)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {USERS.map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            {form.nivel === "time" && (
-              <div className="space-y-1">
-                <Label>Time</Label>
-                <Select value={form.time} onValueChange={(v) => set("time", v)}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TEAMS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-1">
-              <Label>Perspectiva</Label>
-              <Select items={PERSPECTIVA_ITEMS} value={form.perspectiva} onValueChange={(v) => set("perspectiva", v)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PERSPECTIVA_PRESETS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {form.perspectiva === "Personalizada" && (
-            <div className="space-y-1">
-              <Label>Nome da perspectiva personalizada</Label>
-              <Input
-                value={form.perspectivaCustom}
-                onChange={(e) => set("perspectivaCustom", e.target.value)}
-                placeholder="Ex.: ESG & Compliance"
-              />
-            </div>
+        <div className="flex-1 overflow-auto px-6 py-4">
+          {objetivos.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">Nenhum objetivo neste ciclo ainda.</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-10 bg-background">
+                <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th className="py-2 pr-3 min-w-56">Objetivo</th>
+                  <th className="py-2 px-3 w-44">Workspace</th>
+                  <th className="py-2 px-3 w-44">Responsável</th>
+                  <th className="py-2 px-3 min-w-48">Indicador</th>
+                  <th className="py-2 px-3 w-24">Meta</th>
+                  <th className="py-2 pl-3 w-10" />
+                </tr>
+              </thead>
+              <tbody>
+                {objetivos.map((obj) => (
+                  <PlanilhaObjetivoRows
+                    key={obj.id}
+                    obj={obj}
+                    isFocused={focusedObjId === obj.id}
+                    onFocus={() => setFocusedObjId(obj.id)}
+                    onQuickEdit={(changes) => onQuickEdit(obj.id, changes)}
+                    onDelete={() => onDelete(obj.id)}
+                    onRemoveKr={(krId) => onRemoveKr(obj.id, krId)}
+                    onEditKr={(krId, data) => onEditKr(obj.id, krId, data)}
+                  />
+                ))}
+              </tbody>
+            </table>
           )}
+        </div>
 
-          <div className="space-y-1">
-            <Label>Descrição</Label>
-            <Textarea
-              value={form.descricao}
-              onChange={(e) => set("descricao", e.target.value)}
-              rows={2}
-              placeholder="Contexto e motivação do objetivo..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Key Results <span className="text-red-500">*</span></Label>
-            <div className="flex flex-col gap-2">
-              {form.keyResults.map((kr, idx) => {
-                return (
-                  <div key={idx} className="space-y-2 rounded-md border p-3">
-                    <div className="flex items-start gap-2">
-                      <Input
-                        value={kr.descricao}
-                        onChange={(e) => updateKr(idx, "descricao", e.target.value)}
-                        placeholder="Descreva o resultado-chave"
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="ghost" size="icon" className="shrink-0"
-                        onClick={() => removeKr(idx)}
-                        disabled={form.keyResults.length === 1}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Select
-                        items={KR_TIPO_ITEMS}
-                        value={kr.tipo}
-                        onValueChange={(v) => updateKr(idx, "tipo", v as KRTipo)}
-                      >
-                        <SelectTrigger className="h-8 w-44 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {KR_TIPO_ITEMS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-
-                      {kr.tipo === "auto" && (
-                        <Select items={KPI_SELECT_ITEMS_DETAILED} value={kr.kpiId} onValueChange={(v) => updateKr(idx, "kpiId", v)}>
-                          <SelectTrigger className="h-8 w-56 text-xs"><SelectValue placeholder="Selecione um KPI" /></SelectTrigger>
-                          <SelectContent>
-                            {KPI_CATALOG.map((k) => <SelectItem key={k.id} value={k.id}>{k.nome}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      )}
-
-                      {kr.tipo === "manual" && (
-                        <>
-                          <Input value={kr.atual} onChange={(e) => updateKr(idx, "atual", e.target.value)} placeholder="Atual" className="h-8 w-20 text-xs" />
-                          <Input value={kr.meta} onChange={(e) => updateKr(idx, "meta", e.target.value)} placeholder="Meta" className="h-8 w-20 text-xs" />
-                          <Input value={kr.unidade} onChange={(e) => updateKr(idx, "unidade", e.target.value)} placeholder="Unid." className="h-8 w-20 text-xs" />
-                        </>
-                      )}
-
-                      {kr.tipo === "binario" && (
-                        <label className="flex items-center gap-2 text-xs text-foreground">
-                          <input
-                            type="checkbox"
-                            checked={kr.concluido}
-                            onChange={(e) => updateKr(idx, "concluido", e.target.checked)}
-                            className="size-3.5"
-                          />
-                          Já concluído
-                        </label>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground shrink-0">Responsável</Label>
-                      <Select value={kr.responsavel} onValueChange={(v) => updateKr(idx, "responsavel", v)}>
-                        <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {USERS.map((u) => <SelectItem key={u.nome} value={u.nome}>{u.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={addKr}>
-              <Plus className="size-3.5" />Adicionar Key Result
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 border-t px-6 py-3">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setFocusedObjId(onAddObjetivo())}>
+            <Plus className="size-3.5" />Objetivo
+          </Button>
+          <Button
+            size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+            disabled={!focusedObjId}
+            onClick={() => focusedObjId && onAddKr(focusedObjId)}
+          >
+            <Plus className="size-3.5" />KR
+          </Button>
+          <span className="ml-auto truncate text-xs text-muted-foreground">
+            {focusedObj ? <>KR novo entra em <b className="text-foreground">{focusedObj.nome || "objetivo sem nome"}</b></> : "Clique numa linha para focar o objetivo."}
+          </span>
         </div>
 
         <DialogFooter className="px-6 pb-6">
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button disabled={!isValid} onClick={() => onSave(form)}>
-            {mode === "create" ? "Criar objetivo" : "Salvar alterações"}
-          </Button>
+          <Button onClick={onClose}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -2216,19 +2728,104 @@ export default function OkrsPage() {
   const [activeCicloId, setActiveCicloId] = useState<string>(
     INITIAL_CICLOS.find((c) => c.status === "ativo")?.id ?? INITIAL_CICLOS[0].id
   )
-  const [view, setView] = useState<"lista" | "arvore">("lista")
+  const [view, setView] = useState<"lista" | "cards" | "arvore">("lista")
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFiltro, setStatusFiltro] = useState<"todos" | Status>("todos")
-  const [timeFiltro, setTimeFiltro] = useState<string>("todos")
   const [responsavelFiltro, setResponsavelFiltro] = useState<string>("todos")
+  /** Filtro global de Workspace — "todos" ou o subconjunto selecionado. Afeta Lista, Cards e Árvore. */
+  const [workspaceFiltro, setWorkspaceFiltro] = useState<"todos" | Set<string>>("todos")
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [modalObjId, setModalObjId] = useState<string | null>(null)
   const [novoCicloOpen, setNovoCicloOpen] = useState(false)
   const [selectedObjIds, setSelectedObjIds] = useState<Set<string>>(new Set())
   const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [dragObjId, setDragObjId] = useState<string | null>(null)
+  const [dragOverObjId, setDragOverObjId] = useState<string | null>(null)
+  const [showEvolution, setShowEvolution] = useState(false)
 
   const shared = useOkrShared()
+
+  /** Reordena — soltar um objetivo arrastado imediatamente antes do objetivo-alvo (Lista/Cards). */
+  function handleReorderObjetivo(draggedId: string, targetId: string) {
+    if (draggedId === targetId) return
+    setObjetivos((list) => {
+      const draggedIdx = list.findIndex((o) => o.id === draggedId)
+      if (draggedIdx === -1) return list
+      const next = [...list]
+      const [item] = next.splice(draggedIdx, 1)
+      const targetIdx = next.findIndex((o) => o.id === targetId)
+      next.splice(targetIdx === -1 ? draggedIdx : targetIdx, 0, item)
+      return next
+    })
+  }
+
+  /** Reatribui a relação pai/filho na Árvore. newParentId null = torna raiz. Bloqueia ciclos. */
+  function handleReparentObjetivo(draggedId: string, newParentId: string | null) {
+    if (draggedId === newParentId) return
+    setObjetivos((list) => {
+      if (newParentId) {
+        const descendants = getDescendantIds(draggedId, list)
+        if (descendants.has(newParentId)) return list
+      }
+      return list.map((o) => (o.id === draggedId ? { ...o, parentObjetivoId: newParentId } : o))
+    })
+  }
+
+  /** Edição rápida de qualquer campo simples do objetivo — usada pelo click-to-edit e pela planilha. */
+  function handleQuickEditObjetivo(objId: string, changes: Partial<Objetivo>) {
+    setObjetivos((list) => list.map((o) => (o.id === objId ? { ...o, ...changes } : o)))
+  }
+
+  /** Cria um objetivo em branco no ciclo ativo (usado pelo botão "+ Objetivo" da planilha) e retorna seu id. */
+  function handleAddObjetivoRow(): string {
+    const workspaceId = DEFAULT_WORKSPACE_ID
+    const responsavel = workspaceMembers(workspaceId)[0] ?? USERS[0]
+    const novo: Objetivo = {
+      id: nextObjId(objetivos),
+      cicloId: activeCicloId,
+      nome: "",
+      descricao: "",
+      responsavel,
+      workspaceId,
+      parentObjetivoId: null,
+      peso: 3,
+      perspectiva: PERSPECTIVA_PRESETS[0],
+      keyResults: [],
+    }
+    setObjetivos((list) => [...list, novo])
+    return novo.id
+  }
+
+  /** Adiciona um KR em branco ao objetivo (botão "+ KR" da planilha, aplicado ao objetivo focado). */
+  function handleAddKrRow(objId: string): string {
+    const krId = nextId("kr")
+    setObjetivos((list) => list.map((o) => {
+      if (o.id !== objId) return o
+      const responsavel = workspaceMembers(o.workspaceId)[0] ?? USERS[0]
+      const novoKr: KeyResult = {
+        id: krId,
+        descricao: "",
+        tipo: "manual",
+        responsavel,
+        atual: 0,
+        meta: 0,
+        unidade: "un",
+        concluido: false,
+        kpiId: null,
+        subResultados: [],
+        historico: [],
+        acoes: [],
+      }
+      return { ...o, keyResults: [...o.keyResults, novoKr] }
+    }))
+    return krId
+  }
+
+  function handleRemoveKrRow(objId: string, krId: string) {
+    setObjetivos((list) => list.map((o) => (
+      o.id !== objId ? o : { ...o, keyResults: o.keyResults.filter((k) => k.id !== krId) }
+    )))
+  }
 
   // Publica o registro de key results (nome do objetivo + descrição do KR + progresso)
   // para a página de Iniciativas ler — o vínculo cross-module vive no nível de KR.
@@ -2245,17 +2842,21 @@ export default function OkrsPage() {
   const ciclo = ciclos.find((c) => c.id === activeCicloId)
   const objetivosDoCiclo = objetivos.filter((o) => o.cicloId === activeCicloId)
 
-  const filtered = objetivosDoCiclo.filter((obj) => {
+  /** Já com o filtro global de Workspace aplicado — base para as três visões (Lista, Cards, Árvore) e para os KPIs/gráfico. */
+  const objetivosVisiveis = objetivosDoCiclo.filter((o) => (
+    workspaceFiltro === "todos" || workspaceFiltro.has(o.workspaceId)
+  ))
+
+  const filtered = objetivosVisiveis.filter((obj) => {
     if (searchQuery && !obj.nome.toLowerCase().includes(searchQuery.toLowerCase())) return false
     if (statusFiltro !== "todos" && objStatus(objProgress(obj)) !== statusFiltro) return false
-    if (timeFiltro !== "todos" && obj.time !== timeFiltro) return false
     if (responsavelFiltro !== "todos" && obj.responsavel.nome !== responsavelFiltro) return false
     return true
   })
 
-  const progressoCiclo = weightedProgress(objetivosDoCiclo)
-  const concluidos = objetivosDoCiclo.filter((o) => objProgress(o) >= 100).length
-  const atrasados = objetivosDoCiclo.filter((o) => isPrazoVencido(o, objProgress(o), ciclos)).length
+  const progressoCiclo = weightedProgress(objetivosVisiveis)
+  const concluidos = objetivosVisiveis.filter((o) => objProgress(o) >= 100).length
+  const atrasados = objetivosVisiveis.filter((o) => isPrazoVencido(o, objProgress(o), ciclos)).length
 
   const iniciativaRegistry = Object.values(shared.iniciativas)
 
@@ -2265,13 +2866,11 @@ export default function OkrsPage() {
   }))
 
   function openCreate() {
-    setModalMode("create")
     setModalObjId(null)
     setModalOpen(true)
   }
 
   function openEdit(id: string) {
-    setModalMode("edit")
     setModalObjId(id)
     setModalOpen(true)
   }
@@ -2423,64 +3022,6 @@ export default function OkrsPage() {
     }))
   }
 
-  function handleSaveObjetivo(data: ReturnType<typeof emptyObjForm>) {
-    const responsavel = USERS.find((u) => u.nome === data.responsavel) ?? USERS[0]
-    const previous = modalObjId ? objetivos.find((o) => o.id === modalObjId) : undefined
-    const perspectiva = data.perspectiva === "Personalizada" ? (data.perspectivaCustom.trim() || "Personalizada") : data.perspectiva
-    const keyResults: KeyResult[] = data.keyResults
-      .filter((kr) => kr.descricao.trim().length > 0 && (kr.tipo === "binario" || kr.kpiId || kr.meta.trim().length > 0))
-      .map((kr) => {
-        const existing = kr.id ? previous?.keyResults.find((p) => p.id === kr.id) : undefined
-        const krResponsavel = USERS.find((u) => u.nome === kr.responsavel) ?? responsavel
-        return {
-          id: kr.id ?? nextId("kr"),
-          descricao: kr.descricao,
-          tipo: kr.tipo,
-          responsavel: krResponsavel,
-          meta: parseFloat(kr.meta.replace(",", ".")) || 0,
-          atual: parseFloat(kr.atual.replace(",", ".")) || 0,
-          unidade: kr.unidade || "un",
-          concluido: kr.concluido,
-          kpiId: kr.tipo === "auto" ? (kr.kpiId || null) : null,
-          subResultados: existing?.subResultados ?? [],
-          historico: existing?.historico ?? [],
-          acoes: existing?.acoes ?? [],
-        }
-      })
-
-    if (modalMode === "create") {
-      const novo: Objetivo = {
-        id: nextObjId(objetivos),
-        cicloId: data.cicloId,
-        nome: data.nome,
-        descricao: data.descricao,
-        responsavel,
-        nivel: data.nivel,
-        time: data.nivel === "empresa" ? null : data.time,
-        peso: parseInt(data.peso, 10) || 1,
-        perspectiva,
-        keyResults,
-      }
-      setObjetivos((list) => [...list, novo])
-    } else if (modalObjId) {
-      setObjetivos((list) => list.map((o) => (
-        o.id !== modalObjId ? o : {
-          ...o,
-          cicloId: data.cicloId,
-          nome: data.nome,
-          descricao: data.descricao,
-          responsavel,
-          nivel: data.nivel,
-          time: data.nivel === "empresa" ? null : data.time,
-          peso: parseInt(data.peso, 10) || 1,
-          perspectiva,
-          keyResults,
-        }
-      )))
-    }
-    setModalOpen(false)
-  }
-
   function handleCreateCiclo(data: { nome: string; tipo: CicloTipo; dataInicio: string; dataFim: string }) {
     setCiclos((list) => [...list, { id: nextId("CIC"), nome: data.nome, tipo: data.tipo, dataInicio: data.dataInicio, dataFim: data.dataFim, status: "rascunho" }])
   }
@@ -2508,8 +3049,9 @@ export default function OkrsPage() {
         <div className="flex rounded-md border overflow-hidden">
           {([
             { value: "lista", label: "Lista" },
-            { value: "arvore", label: "Árvore geral", icon: GitBranch },
-          ] as { value: "lista" | "arvore"; label: string; icon?: React.FC<{ className?: string }> }[]).map((v) => (
+            { value: "cards", label: "Cards", icon: LayoutGrid },
+            { value: "arvore", label: "Árvore", icon: GitBranch },
+          ] as { value: "lista" | "cards" | "arvore"; label: string; icon?: React.FC<{ className?: string }> }[]).map((v) => (
             <button
               key={v.value}
               onClick={() => setView(v.value)}
@@ -2524,6 +3066,17 @@ export default function OkrsPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <WorkspaceFilterMenu value={workspaceFiltro} onChange={setWorkspaceFiltro} />
+
+          <Button
+            size="sm"
+            variant={showEvolution ? "default" : "outline"}
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowEvolution((v) => !v)}
+          >
+            <TrendingUp className="size-3.5" />Evolução
+          </Button>
+
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setNovoCicloOpen(true)}>
             <Plus className="size-3.5" />Novo ciclo
           </Button>
@@ -2541,12 +3094,10 @@ export default function OkrsPage() {
             </SelectContent>
           </Select>
 
-          {view === "lista" && (
+          {(view === "lista" || view === "cards") && (
             <FiltersSheet
               statusFiltro={statusFiltro}
               onChangeStatus={setStatusFiltro}
-              timeFiltro={timeFiltro}
-              onChangeTime={setTimeFiltro}
               responsavelFiltro={responsavelFiltro}
               onChangeResponsavel={setResponsavelFiltro}
               searchQuery={searchQuery}
@@ -2554,11 +3105,10 @@ export default function OkrsPage() {
               total={filtered.length}
               activeCount={
                 (statusFiltro !== "todos" ? 1 : 0) +
-                (timeFiltro !== "todos" ? 1 : 0) +
                 (responsavelFiltro !== "todos" ? 1 : 0) +
                 (searchQuery.trim() ? 1 : 0)
               }
-              onClear={() => { setSearchQuery(""); setStatusFiltro("todos"); setTimeFiltro("todos"); setResponsavelFiltro("todos") }}
+              onClear={() => { setSearchQuery(""); setStatusFiltro("todos"); setResponsavelFiltro("todos") }}
             />
           )}
         </div>
@@ -2578,30 +3128,34 @@ export default function OkrsPage() {
           </div>
         )}
 
-        {view === "lista" && (
-          <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4">
-            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+        {showEvolution && (
+          <EvolutionChart objetivosDoCiclo={objetivosVisiveis} ciclo={ciclo} />
+        )}
+
+        {view !== "arvore" && (
+          <div className="grid grid-cols-2 gap-2.5 mb-3 sm:grid-cols-4">
+            <Card className="p-2.5 border-t-2 border-t-primary/25">
               <CardContent className="p-0">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Objetivos no ciclo</div>
-                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{objetivosDoCiclo.length}</div>
+                <div className="font-display text-lg font-black leading-tight tracking-[-0.02em] tabular-nums">{objetivosVisiveis.length}</div>
               </CardContent>
             </Card>
-            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+            <Card className="p-2.5 border-t-2 border-t-primary/25">
               <CardContent className="p-0">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Progresso do ciclo</div>
-                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums">{progressoCiclo}%</div>
+                <div className="font-display text-lg font-black leading-tight tracking-[-0.02em] tabular-nums">{progressoCiclo}%</div>
               </CardContent>
             </Card>
-            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+            <Card className="p-2.5 border-t-2 border-t-primary/25">
               <CardContent className="p-0">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Concluídos</div>
-                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-green-700">{concluidos}</div>
+                <div className="font-display text-lg font-black leading-tight tracking-[-0.02em] tabular-nums text-green-700">{concluidos}</div>
               </CardContent>
             </Card>
-            <Card className="p-[14px_16px] border-t-2 border-t-primary/25">
+            <Card className="p-2.5 border-t-2 border-t-primary/25">
               <CardContent className="p-0">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Atrasados</div>
-                <div className="font-display text-[26px] font-black leading-tight tracking-[-0.02em] tabular-nums text-red-600">{atrasados}</div>
+                <div className="font-display text-lg font-black leading-tight tracking-[-0.02em] tabular-nums text-red-600">{atrasados}</div>
               </CardContent>
             </Card>
           </div>
@@ -2622,12 +3176,40 @@ export default function OkrsPage() {
         )}
 
         {view === "arvore" ? (
-          <OrgTreeView
-            objetivos={objetivosDoCiclo}
+          <ArvoreView
+            objetivos={objetivosVisiveis}
+            ciclos={ciclos}
             iniciativaRegistry={iniciativaRegistry}
             linksByKr={(krId) => getIniciativasForKr(shared, krId)}
+            onReparent={handleReparentObjetivo}
             onEdit={openEdit}
             onDelete={handleDelete}
+            onQuickEdit={handleQuickEditObjetivo}
+            onUpdateKr={handleCheckIn}
+            onToggleBinario={handleToggleBinario}
+            onLinkKpi={handleLinkKpi}
+            onUnlinkKpi={handleUnlinkKpi}
+            onAddSub={handleAddSub}
+            onUpdateSub={handleUpdateSub}
+            onRemoveSub={handleRemoveSub}
+            onLinkIniciativa={linkKrIniciativa}
+            onUnlinkIniciativa={unlinkKrIniciativa}
+            onAddAcao={handleAddAcao}
+            onToggleAcao={handleToggleAcao}
+            onRemoveAcao={handleRemoveAcao}
+            onEditKr={handleEditKr}
+            onConvertToSub={handleConvertToSub}
+          />
+        ) : view === "cards" ? (
+          <CardsView
+            objetivos={filtered}
+            ciclos={ciclos}
+            iniciativaRegistry={iniciativaRegistry}
+            linksByKr={(krId) => getIniciativasForKr(shared, krId)}
+            onReorder={handleReorderObjetivo}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            onQuickEdit={handleQuickEditObjetivo}
             onUpdateKr={handleCheckIn}
             onToggleBinario={handleToggleBinario}
             onLinkKpi={handleLinkKpi}
@@ -2647,7 +3229,7 @@ export default function OkrsPage() {
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Target className="size-8 opacity-40" />
             <p className="text-sm">Nenhum objetivo encontrado para os filtros aplicados.</p>
-            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFiltro("todos"); setTimeFiltro("todos"); setResponsavelFiltro("todos") }}>
+            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFiltro("todos"); setResponsavelFiltro("todos"); setWorkspaceFiltro("todos") }}>
               Limpar filtros
             </Button>
           </div>
@@ -2665,6 +3247,7 @@ export default function OkrsPage() {
                 onToggleSelect={() => toggleSelectObj(obj.id)}
                 onEdit={() => openEdit(obj.id)}
                 onDelete={() => handleDelete(obj.id)}
+                onQuickEdit={(changes) => handleQuickEditObjetivo(obj.id, changes)}
                 onUpdateKr={(krId, atual, comentario) => handleCheckIn(obj.id, krId, atual, comentario)}
                 onToggleBinario={(krId, concluido, comentario) => handleToggleBinario(obj.id, krId, concluido, comentario)}
                 onLinkKpi={(krId, kpiId) => handleLinkKpi(obj.id, krId, kpiId)}
@@ -2679,20 +3262,32 @@ export default function OkrsPage() {
                 onRemoveAcao={(krId, acaoId) => handleRemoveAcao(obj.id, krId, acaoId)}
                 onEditKr={(krId, data) => handleEditKr(obj.id, krId, data)}
                 onConvertToSub={(krId, targetKrId) => handleConvertToSub(obj.id, krId, targetKrId)}
+                isDragOver={dragOverObjId === obj.id}
+                onDragStartSelf={() => setDragObjId(obj.id)}
+                onDragOverSelf={() => setDragOverObjId(obj.id)}
+                onDragLeaveSelf={() => setDragOverObjId((v) => (v === obj.id ? null : v))}
+                onDropSelf={() => {
+                  if (dragObjId) handleReorderObjetivo(dragObjId, obj.id)
+                  setDragObjId(null)
+                  setDragOverObjId(null)
+                }}
               />
             ))}
           </div>
         )}
       </div>
 
-      <ObjectiveModal
+      <ObjetivosPlanilhaDialog
         open={modalOpen}
-        mode={modalMode}
-        initial={modalObjId ? objetivos.find((o) => o.id === modalObjId) : undefined}
-        ciclos={ciclos}
-        defaultCicloId={activeCicloId}
+        objetivos={objetivosDoCiclo}
+        focusObjId={modalObjId}
+        onQuickEdit={handleQuickEditObjetivo}
+        onDelete={handleDelete}
+        onAddObjetivo={handleAddObjetivoRow}
+        onAddKr={handleAddKrRow}
+        onRemoveKr={handleRemoveKrRow}
+        onEditKr={handleEditKr}
         onClose={() => setModalOpen(false)}
-        onSave={handleSaveObjetivo}
       />
 
       <NovoCicloDialog
