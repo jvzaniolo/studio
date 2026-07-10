@@ -1057,6 +1057,7 @@ function GeralSection({
       onUpdateMember(member.id, { status: next })
       toast.success(`Membro ${next === "ativo" ? "reativado" : "desativado"}.`)
     } else {
+      onToggleAccess(member.id, workspace.id, false)
       toast.error(`${member.name} foi removido do workspace.`)
     }
   }
