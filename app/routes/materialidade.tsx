@@ -7,6 +7,7 @@ import { ChevronDown, Check, Filter } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '~/components/ui/sheet';
 import { Button } from '~/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 
 function CycleDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = React.useState(false);
@@ -27,6 +28,11 @@ function CycleDropdown({ value, onChange }: { value: string; onChange: (v: strin
     arquivada: 'text-muted-foreground bg-muted border-border',
     rascunho:  'text-amber-600 bg-amber-50 border-amber-200',
   };
+  const statusDesc: Record<string, string> = {
+    publicada: 'Ciclo em vigor — é a matriz oficial usada em todo o restante da plataforma.',
+    arquivada: 'Ciclo encerrado, mantido para consulta e comparação histórica.',
+    rascunho:  'Ciclo em elaboração, ainda não publicado como matriz oficial.',
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -35,9 +41,14 @@ function CycleDropdown({ value, onChange }: { value: string; onChange: (v: strin
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
       >
         <span>Ciclo {current.curto}</span>
-        <span className={cn('rounded border px-1.5 py-px text-[10px] font-semibold', statusColor[current.status] ?? statusColor.arquivada)}>
-          {statusLabel[current.status] ?? current.status}
-        </span>
+        <Tooltip>
+          <TooltipTrigger render={<span className="cursor-help" />}>
+            <span className={cn('rounded border px-1.5 py-px text-[10px] font-semibold', statusColor[current.status] ?? statusColor.arquivada)}>
+              {statusLabel[current.status] ?? current.status}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{statusDesc[current.status] ?? statusDesc.arquivada}</TooltipContent>
+        </Tooltip>
         <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
       </button>
 

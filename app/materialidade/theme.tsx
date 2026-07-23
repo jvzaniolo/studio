@@ -1,4 +1,9 @@
 import React from 'react';
+import {
+  Users, Soup, HeartPulse, BookOpen, VenusAndMars, Droplet, Sun, TrendingUp,
+  Boxes, Equal, Building2, Infinity as InfinityIcon, Eye, Fish, TreePine, Gavel, Handshake,
+  type LucideIcon,
+} from 'lucide-react';
 import { PageHeader } from '~/components/page-header';
 import { Icon, Pill, Btn } from './icons';
 import { FloatingAIButton } from './components';
@@ -10,7 +15,7 @@ import {
   sentColor, fmtSent,
   kpiOnTrackStats, iniciativaEmDiaStats,
   themeStatus, themeStatusReason,
-  type Theme, type KPI, type Iniciativa, type Sinal,
+  type Theme, type KPI, type Iniciativa,
 } from './data';
 import { Card, CardContent } from '~/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
@@ -121,7 +126,7 @@ export function ThemeDetail({
 
       {/* ── 5-card hero strip ── */}
       <HeroV2
-        theme={theme} inics={inics} kpis={kpis} sinais={sinais}
+        theme={theme} inics={inics} kpis={kpis}
         onScrollKPIs={() => scrollTo('sec-kpis')}
         onScrollIniciativas={() => scrollTo('sec-iniciativas')}
       />
@@ -250,27 +255,15 @@ function HeroV2({
   theme,
   inics,
   kpis,
-  sinais,
   onScrollKPIs,
   onScrollIniciativas,
 }: {
   theme: Theme;
   inics: Iniciativa[];
   kpis: KPI[];
-  sinais: Sinal[];
   onScrollKPIs: () => void;
   onScrollIniciativas: () => void;
 }) {
-  let trendDelta: number | null = null;
-  let trendSpan:  string | null = null;
-  if (sinais.length >= 2) {
-    trendDelta = sinais[sinais.length - 1].sentimento - sinais[0].sentimento;
-    const diff = monthDiff(sinais[0].data, sinais[sinais.length - 1].data);
-    trendSpan  = `${diff} ${diff === 1 ? 'mês' : 'meses'}`;
-  }
-
-  const deltaY = theme.y - theme.baseline.y;
-
   const sentTone =
     theme.sentimento != null && theme.sentimento < -20 ? 'danger'
     : theme.sentimento != null && theme.sentimento < 0  ? 'warning'
@@ -289,30 +282,18 @@ function HeroV2({
           eyebrow="Relevância"
           sublabel="Alta Liderança"
           number={`${theme.x}%`}
-          comparativo={<span className="italic">Consulta direta · eixo X</span>}
         />
 
         <HeroCard
           eyebrow="Relevância"
           sublabel="Stakeholders"
           number={`${theme.y}%`}
-          comparativo={<DeltaInline value={deltaY} label="vs Matriz 2024"/>}
         />
 
         <HeroCard
           eyebrow="Sentimento"
           number={
             <span className={sentNumColor}>{fmtSent(theme.sentimento)}</span>
-          }
-          comparativo={
-            trendDelta != null ? (
-              <span className="inline-flex items-center gap-1">
-                <span className={trendDelta < 0 ? 'text-destructive' : 'text-green-600'}>
-                  {trendDelta < 0 ? '↓' : '↑'} {Math.abs(trendDelta)}pp
-                </span>
-                <span>em {trendSpan}</span>
-              </span>
-            ) : 'Sem evolução medida'
           }
         />
 
@@ -327,7 +308,6 @@ function HeroV2({
               )}
             </span>
           }
-          comparativo={kpis.length === 0 ? 'sem mensuração' : `${kpis.length} indicador${kpis.length === 1 ? '' : 'es'} vinculado${kpis.length === 1 ? '' : 's'}`}
           onClick={onScrollKPIs}
         />
 
@@ -342,7 +322,6 @@ function HeroV2({
               )}
             </span>
           }
-          comparativo={inics.length === 0 ? '0 iniciativas vinculadas' : `${inics.length} iniciativa${inics.length === 1 ? '' : 's'} vinculada${inics.length === 1 ? '' : 's'}`}
           onClick={onScrollIniciativas}
         />
       </div>
@@ -364,13 +343,11 @@ function HeroCard({
   eyebrow,
   sublabel,
   number,
-  comparativo,
   onClick,
 }: {
   eyebrow: string;
   sublabel?: string;
   number: React.ReactNode;
-  comparativo?: React.ReactNode;
   onClick?: () => void;
 }) {
   return (
@@ -388,27 +365,11 @@ function HeroCard({
             {sublabel ?? ''}
           </div>
         </div>
-        <div className="font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums text-foreground mt-1.5 mb-2">
+        <div className="font-display text-[32px] font-black leading-none tracking-[-0.02em] tabular-nums text-foreground mt-1.5">
           {number}
-        </div>
-        <div className="text-[11px] text-muted-foreground leading-tight min-h-[14px]">
-          {comparativo ?? ''}
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function DeltaInline({ value, label }: { value: number | null; label: string }) {
-  if (value == null) return <span className="text-muted-foreground">{label}</span>;
-  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '·';
-  return (
-    <span className="inline-flex items-center gap-[5px]">
-      <span className={cn('font-bold tabular-nums', value > 0 ? 'text-green-600' : value < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-        {arrow} {Math.abs(value)}pp
-      </span>
-      <span className="text-muted-foreground">{label}</span>
-    </span>
   );
 }
 
@@ -475,9 +436,18 @@ const ODS_META: Record<number, { color: string; label: string }> = {
   17: { color: '#19486A', label: 'Parcerias e Meios de Implementação' },
 };
 
+// Pictograma de cada ODS — segue o mesmo mapeamento usado nos símbolos oficiais da ONU.
+const ODS_PICTOGRAM: Record<number, LucideIcon> = {
+  1: Users, 2: Soup, 3: HeartPulse, 4: BookOpen, 5: VenusAndMars,
+  6: Droplet, 7: Sun, 8: TrendingUp, 9: Boxes, 10: Equal,
+  11: Building2, 12: InfinityIcon, 13: Eye, 14: Fish, 15: TreePine,
+  16: Gavel, 17: Handshake,
+};
+
 function OdsIcon({ n }: { n: number }) {
   const meta = ODS_META[n];
   if (!meta) return null;
+  const Pictogram = ODS_PICTOGRAM[n];
   return (
     <div
       title={`ODS ${n} · ${meta.label}`}
@@ -488,6 +458,11 @@ function OdsIcon({ n }: { n: number }) {
         <div className="text-white font-black text-[10px] leading-tight opacity-90">ODS</div>
         <div className="text-white font-black text-[26px] leading-none tracking-tight tabular-nums">{n}</div>
       </div>
+      {Pictogram && (
+        <div className="flex-1 flex items-center justify-center py-1">
+          <Pictogram className="size-8 text-white" strokeWidth={1.75} absoluteStrokeWidth/>
+        </div>
+      )}
       <div
         className="w-full px-2 py-1.5 text-white text-[9px] font-bold leading-tight"
         style={{ background: 'rgba(0,0,0,0.18)' }}
@@ -498,10 +473,3 @@ function OdsIcon({ n }: { n: number }) {
   );
 }
 
-function monthDiff(a: string, b: string): number {
-  const pa = a.length === 7 ? a + '-01' : a;
-  const pb = b.length === 7 ? b + '-01' : b;
-  const da = new Date(pa);
-  const db = new Date(pb);
-  return (db.getUTCFullYear() - da.getUTCFullYear()) * 12 + (db.getUTCMonth() - da.getUTCMonth());
-}

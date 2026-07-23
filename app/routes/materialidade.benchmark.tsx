@@ -1,8 +1,10 @@
 import React from 'react';
+import { ChevronDown, Check } from 'lucide-react';
 import { PageHeader } from '~/components/page-header';
 import { cn } from '~/lib/utils';
 import { Card as ShadCard, CardContent } from '~/components/ui/card';
 import { MaterialidadeBreadcrumb } from '~/materialidade/components';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 
 const TEMAS = [
   'Processos, tecnologia e infraestrutura',
@@ -21,6 +23,51 @@ const TEMAS = [
   'Gestão de resíduos de construção',
   'Desenvolvimento dos colaboradores',
 ];
+
+// Categorias gerais ao estilo SASB — mapeamento ilustrativo para fins de demonstração.
+const TEMA_SASB: Record<string, string> = {
+  'Processos, tecnologia e infraestrutura': 'Business Model & Innovation',
+  'Qualidade e segurança em obras': 'Human Capital',
+  'Gestão de Pessoas': 'Human Capital',
+  'Estrutura organizacional': 'Leadership & Governance',
+  'Segurança da informação': 'Business Model & Innovation',
+  'Integridade corporativa, ética e transparência': 'Leadership & Governance',
+  'Saúde e bem-estar dos colaboradores': 'Human Capital',
+  'Gestão financeira': 'Leadership & Governance',
+  'Relacionamento com clientes e comunicação': 'Social Capital',
+  'Impacto nas comunidades do entorno': 'Social Capital',
+  'Adaptação a mudanças climáticas': 'Environment',
+  'Emissão de gases de efeito estufa': 'Environment',
+  'Diversidade, equidade e inclusão': 'Human Capital',
+  'Gestão de resíduos de construção': 'Environment',
+  'Desenvolvimento dos colaboradores': 'Human Capital',
+};
+
+const SASB_FRAMEWORKS = [
+  'Todos',
+  'Environment',
+  'Social Capital',
+  'Human Capital',
+  'Business Model & Innovation',
+  'Leadership & Governance',
+];
+
+// Rótulo curto em português para exibição — o nome oficial em inglês aparece só no tooltip.
+const SASB_LABEL: Record<string, string> = {
+  'Environment': 'Ambiental',
+  'Social Capital': 'Capital Social',
+  'Human Capital': 'Capital Humano',
+  'Business Model & Innovation': 'Modelo de Negócio',
+  'Leadership & Governance': 'Governança',
+};
+
+const SASB_COLOR: Record<string, string> = {
+  'Environment': 'bg-teal-100 text-teal-700',
+  'Social Capital': 'bg-sky-100 text-sky-700',
+  'Human Capital': 'bg-orange-100 text-orange-700',
+  'Business Model & Innovation': 'bg-indigo-100 text-indigo-700',
+  'Leadership & Governance': 'bg-pink-100 text-pink-700',
+};
 
 interface Player {
   nome: string;
@@ -48,27 +95,99 @@ const PLAYERS: Player[] = [
 ];
 
 const NOSSA_EMPRESA = 'Humanizadas';
-
-const SETORES = ['Todos', ...Array.from(new Set(PLAYERS.map(p => p.setor)))];
-
-const SETOR_COLOR: Record<string, string> = {
-  'Construção Civil': 'bg-violet-100 text-violet-700',
-  'Infraestrutura':  'bg-blue-100 text-blue-700',
-  'Incorporação':    'bg-amber-100 text-amber-700',
-  'Facilities':      'bg-green-100 text-green-700',
-};
+const OUTRAS_EMPRESAS = PLAYERS.filter(p => p.nome !== NOSSA_EMPRESA);
 
 function frequenciaTema(tema: string, players: Player[]): number {
   return players.filter(p => p.temas.includes(tema)).length;
 }
 
+function CompanyPicker({ active, onToggle, onAll, onNone }: {
+  active: string[];
+  onToggle: (nome: string) => void;
+  onAll: () => void;
+  onNone: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const allSelected = active.length === OUTRAS_EMPRESAS.length;
+  const summary = allSelected ? 'Todas as empresas' : active.length === 0 ? 'Só a minha empresa' : `Humanizadas + ${active.length}`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+      >
+        <span>Comparar empresas</span>
+        <span className="rounded border border-primary/20 bg-primary/5 px-1.5 py-px text-[10px] font-semibold text-primary">{summary}</span>
+        <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[320px] rounded-xl border border-border bg-popover p-2 shadow-[0_12px_28px_rgba(0,0,0,0.10)]">
+          <div className="mb-1 flex items-center justify-between border-b border-muted px-1.5 pb-2 pt-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Concorrentes na tabela</span>
+            <div className="flex gap-1">
+              <button onClick={onAll} className="rounded-md border border-border bg-background px-2 py-[3px] text-xs font-semibold text-primary">Todos</button>
+              <button onClick={onNone} className="rounded-md border border-border bg-background px-2 py-[3px] text-xs font-semibold text-muted-foreground">Limpar</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-lg bg-primary/5 px-2.5 py-2 mb-1">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-primary bg-primary">
+              <Check className="size-2.5 text-primary-foreground" strokeWidth={3} />
+            </span>
+            <span className="text-sm font-bold text-primary">Humanizadas</span>
+            <span className="ml-auto rounded px-1.5 py-px text-[10px] font-semibold text-primary/70">sua empresa · fixa</span>
+          </div>
+          <div className="flex flex-col gap-0.5 max-h-[280px] overflow-y-auto">
+            {OUTRAS_EMPRESAS.map(p => {
+              const isActive = active.includes(p.nome);
+              return (
+                <div
+                  key={p.nome}
+                  onClick={() => onToggle(p.nome)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors duration-[120ms]',
+                    isActive ? 'bg-primary/10' : 'bg-muted/40 hover:bg-primary/5',
+                  )}
+                >
+                  <span className={cn(
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px]',
+                    isActive ? 'border-[1.5px] border-primary bg-primary' : 'border-[1.5px] border-stone-300 bg-background',
+                  )}>
+                    {isActive && <Check className="size-2.5 text-white" strokeWidth={3} />}
+                  </span>
+                  <span className={cn('flex-1 text-sm', isActive ? 'font-bold text-foreground' : 'font-medium text-muted-foreground')}>
+                    {p.nome}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BenchmarkPage() {
-  const [setor, setSetor] = React.useState('Todos');
+  const [selecionadas, setSelecionadas] = React.useState<string[]>(OUTRAS_EMPRESAS.map(p => p.nome));
+  const [framework, setFramework] = React.useState('Todos');
   const [destaque, setDestaque] = React.useState<string | null>(null);
 
-  const filtrados = setor === 'Todos' ? PLAYERS : PLAYERS.filter(p => p.setor === setor);
+  const toggleEmpresa = (nome: string) => setSelecionadas(prev => prev.includes(nome) ? prev.filter(n => n !== nome) : [...prev, nome]);
 
-  const temasOrdenados = [...TEMAS].sort(
+  const nossaEmpresa = PLAYERS.find(p => p.nome === NOSSA_EMPRESA)!;
+  const filtrados = [nossaEmpresa, ...OUTRAS_EMPRESAS.filter(p => selecionadas.includes(p.nome))];
+
+  const temasFiltrados = framework === 'Todos' ? TEMAS : TEMAS.filter(t => TEMA_SASB[t] === framework);
+  const temasOrdenados = [...temasFiltrados].sort(
     (a, b) => frequenciaTema(b, filtrados) - frequenciaTema(a, filtrados),
   );
 
@@ -76,24 +195,6 @@ export default function BenchmarkPage() {
     <>
       <PageHeader
         title={<MaterialidadeBreadcrumb current="Benchmark · Temas Materiais" />}
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            {SETORES.map(s => (
-              <button
-                key={s}
-                onClick={() => setSetor(s)}
-                className={cn(
-                  'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-                  setor === s
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-muted-foreground hover:bg-muted',
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        }
       />
 
       <div className="flex flex-col gap-6 px-8 pt-6 pb-8">
@@ -123,17 +224,35 @@ export default function BenchmarkPage() {
 
         {/* Tabela de presença */}
         <ShadCard className="p-0 overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
-              Comparativo de temas
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Temas materiais identificados por cada player — ordenados por frequência no setor selecionado.
-              <span className="ml-2 inline-flex items-center gap-1">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+                Comparativo de temas
+              </div>
+              <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <span className="inline-block h-3 w-3 rounded-sm bg-primary/20 border border-primary/40"/>
                 = presente · passe o cursor para destacar
-              </span>
-            </p>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 flex-wrap">
+                {SASB_FRAMEWORKS.map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFramework(f)}
+                    className={cn(
+                      'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+                      framework === f
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {f === 'Todos' ? f : SASB_LABEL[f] ?? f}
+                  </button>
+                ))}
+              </div>
+              <CompanyPicker active={selecionadas} onToggle={toggleEmpresa} onAll={() => setSelecionadas(OUTRAS_EMPRESAS.map(p => p.nome))} onNone={() => setSelecionadas([])}/>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -142,6 +261,9 @@ export default function BenchmarkPage() {
                 <tr className="bg-muted/40">
                   <th className="sticky left-0 z-10 bg-muted/40 px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap border-b border-border min-w-[180px]">
                     Tema
+                  </th>
+                  <th className="px-3 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap border-b border-border min-w-[150px]">
+                    Framework
                   </th>
                   <th className="px-3 py-3 text-center font-semibold text-muted-foreground whitespace-nowrap border-b border-border min-w-[60px]">
                     Freq.
@@ -158,11 +280,6 @@ export default function BenchmarkPage() {
                       )}
                     >
                       <div>{p.nome}</div>
-                      <div className={cn('text-[10px] font-normal mt-0.5', SETOR_COLOR[p.setor] ? '' : 'text-muted-foreground')}>
-                        <span className={cn('rounded px-1 py-px', SETOR_COLOR[p.setor] ?? 'bg-muted text-muted-foreground')}>
-                          {p.setor}
-                        </span>
-                      </div>
                     </th>
                   ))}
                 </tr>
@@ -180,6 +297,18 @@ export default function BenchmarkPage() {
                         ri % 2 === 0 ? 'bg-background' : 'bg-muted/20',
                       )}>
                         {tema}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="cursor-help" />}>
+                            <span className={cn('rounded px-1.5 py-px text-[10px] font-semibold whitespace-nowrap', SASB_COLOR[TEMA_SASB[tema]] ?? 'bg-muted text-muted-foreground')}>
+                              {SASB_LABEL[TEMA_SASB[tema]] ?? TEMA_SASB[tema]}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Categoria SASB: {TEMA_SASB[tema]}
+                          </TooltipContent>
+                        </Tooltip>
                       </td>
                       <td className="px-3 py-2.5 text-center tabular-nums font-semibold text-muted-foreground">
                         {freq}/{filtrados.length}

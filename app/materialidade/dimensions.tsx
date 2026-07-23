@@ -1,9 +1,10 @@
 import React from 'react';
 import { Icon } from './icons';
 import { Card } from './components';
-import { PUBLICOS, PUBLICO_BY_ID, getDimValue, sentColor, type Theme } from './data';
+import { PUBLICOS, PUBLICO_BY_ID, ALTA_LIDERANCA_N, getDimValue, sentColor, type Theme } from './data';
 import { cn } from '~/lib/utils';
 import { Badge } from '~/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
 import {
@@ -31,7 +32,7 @@ export const DIMENSOES = [
     label: 'Relevância',
     range: [0, 100],
     unit: '',
-    nota: 'Relevância varia de 0 a 100. Para públicos consultados: média ponderada das respostas (relevância para os stakeholders). Para a Alta Liderança: consulta direta com a C-Level (relevância para o negócio, Eixo X da matriz).',
+    nota: 'Relevância varia de 0 a 100. Para públicos consultados: média ponderada das respostas (relevância para os stakeholders). Para a Alta Liderança e Investidores: consulta direta com a C-Level e com o mercado investidor (relevância para o negócio, Eixo X da matriz).',
   },
 ];
 
@@ -127,7 +128,8 @@ export function HeatmapSentimentoBlock({ themes, activePublicos, onPickTheme }: 
   const dimDef = DIM_BY_ID[dim];
 
   const cols = [
-    ...PUBLICOS.filter(p => p.id !== 'alta_lideranca' && p.id !== 'especialistas').map(p => ({ id: p.id, label: p.label, short: p.short, kind: 'publico' as const })),
+    ...PUBLICOS.filter(p => p.id !== 'alta_lideranca' && p.id !== 'especialistas' && p.id !== 'investidores').map(p => ({ id: p.id, label: p.label, short: p.short, kind: 'publico' as const })),
+    { id: 'investidores', label: 'Investidores', short: 'Investid.', kind: 'al' as const },
     { id: 'alta_lideranca', label: 'Alta Liderança', short: 'Alta Lid.', kind: 'al' as const },
   ];
 
@@ -340,7 +342,7 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
 
   const stakeholderRows = [
     { id: 'agregado', label: 'Stakeholders (agregado)', highlight: true, hint: 'média ponderada', hasCargo: false, isMax: false, isMin: false },
-    ...PUBLICOS.map(p => ({
+    ...PUBLICOS.filter(p => p.id !== 'alta_lideranca' && p.id !== 'investidores').map(p => ({
       id: p.id, label: p.label, hint: `peso ${p.peso}×`,
       n_amostra: theme.por_publico.find(pp => pp.publico === p.id)?.n_amostra,
       isMax: p.id === maxPub?.publico && gapRel > 0,
@@ -349,7 +351,10 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
       highlight: false,
     })),
   ];
-  const alRow = { id: 'alta_lideranca', label: 'Alta Liderança', hint: 'consulta direta · Eixo X' };
+  const negocioRows = [
+    { id: 'alta_lideranca', label: 'Alta Liderança', hint: `peso ${PUBLICO_BY_ID['alta_lideranca']?.peso}×`, n_amostra: ALTA_LIDERANCA_N, badge: 'AL' },
+    { id: 'investidores', label: 'Investidores', hint: `peso ${PUBLICO_BY_ID['investidores']?.peso}×`, n_amostra: theme.investidores.n_amostra, badge: 'IV' },
+  ];
 
   return (
     <div className="hu-fade">
@@ -376,10 +381,12 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
 
         <div className="mx-1 mt-[10px] mb-[6px] pt-3 pb-1 border-t border-dashed border-border flex items-center gap-2">
           <span className="text-xs font-bold tracking-[0.10em] uppercase text-muted-foreground">
-            Consulta direta
+            Perspectiva do negócio
           </span>
         </div>
-        <VisaoRow row={alRow} theme={theme} dim={dim} isAL />
+        {negocioRows.map(r => (
+          <VisaoRow key={r.id} row={r} theme={theme} dim={dim} isNegocio />
+        ))}
       </div>
 
       <div className="px-6 py-3 border-t border-border/50 text-xs text-muted-foreground leading-[1.55]">
@@ -390,7 +397,7 @@ export function VisaoStakeholdersBlock({ theme }: VisaoStakeholdersBlockProps) {
         <Icon name="shield" size={14} color="var(--primary)" />
         <span>
           <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
-          <i> "amostra insuficiente"</i> para evitar reidentificação.
+          <i> "amostra insuficiente"</i> para evitar identificação.
         </span>
       </div>
     </div>
@@ -407,15 +414,16 @@ interface VisaoRowProps {
     isMax?: boolean;
     isMin?: boolean;
     n_amostra?: number;
+    badge?: string;
   };
   theme: Theme;
   dim: string;
-  isAL?: boolean;
+  isNegocio?: boolean;
   expanded?: boolean;
   onToggle?: (() => void) | null;
 }
 
-function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) {
+function VisaoRow({ row, theme, dim, isNegocio, expanded, onToggle }: VisaoRowProps) {
   const v = getDimValue(theme, row.id, dim);
   const isSent = dim === 'sentimento';
   const isHighlight = row.highlight;
@@ -481,37 +489,58 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
         'grid gap-[14px] items-center px-3 py-[10px] rounded-lg mb-[2px] transition-colors duration-120',
         'grid-cols-[minmax(180px,240px)_minmax(140px,1fr)_minmax(54px,60px)_minmax(40px,56px)_20px]',
         isHighlight && 'bg-muted/50',
-        isAL && 'bg-primary/5',
-        !isHighlight && !isAL && 'hover:bg-primary/5',
+        isNegocio && 'bg-primary/5',
+        !isHighlight && !isNegocio && 'hover:bg-primary/5',
         onToggle ? 'cursor-pointer' : 'cursor-default',
       )}
     >
       <div className="flex items-center gap-2 min-w-0">
-        {isAL && (
-          <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary text-primary-foreground inline-flex items-center justify-center font-heading font-black text-[10px] tracking-[-0.02em]">
-            AL
-          </span>
+        {row.badge && (
+          <Tooltip>
+            <TooltipTrigger render={<span className="cursor-help" />}>
+              <span className="w-6 h-6 rounded-[6px] shrink-0 bg-primary text-primary-foreground inline-flex items-center justify-center font-heading font-black text-[10px] tracking-[-0.02em]">
+                {row.badge}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {row.badge === 'AL' ? 'AL = Alta Liderança — consulta direta com o C-Level, sem passar pela média ponderada dos stakeholders.' : 'IV = Investidores — perspectiva do negócio, junto com a Alta Liderança.'}
+            </TooltipContent>
+          </Tooltip>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-[6px] flex-wrap">
             <span
               className={cn(
                 'text-sm whitespace-nowrap',
-                isHighlight || isAL ? 'font-bold' : 'font-medium',
-                isAL ? 'text-primary' : 'text-foreground',
+                isHighlight || isNegocio ? 'font-bold' : 'font-medium',
+                isNegocio ? 'text-primary' : 'text-foreground',
               )}
             >
               {row.label}
             </span>
             {row.isMax && (
-              <Badge className="text-[10px] tracking-[0.06em] uppercase bg-primary/10 text-primary border-0 rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
-                Maior relev.
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger render={<span className="cursor-help" />}>
+                  <Badge className="text-[10px] tracking-[0.06em] uppercase bg-primary/10 text-primary border-0 rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+                    Maior
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Público que atribui a maior relevância a este tema, entre os consultados.
+                </TooltipContent>
+              </Tooltip>
             )}
             {row.isMin && (
-              <Badge variant="outline" className="text-[10px] tracking-[0.06em] uppercase rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
-                Menor
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger render={<span className="cursor-help" />}>
+                  <Badge variant="outline" className="text-[10px] tracking-[0.06em] uppercase rounded-full px-[6px] py-[2px] h-auto whitespace-nowrap">
+                    Menor
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Público que atribui a menor relevância a este tema, entre os consultados.
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           {row.hint && (
@@ -538,7 +567,7 @@ function VisaoRow({ row, theme, dim, isAL, expanded, onToggle }: VisaoRowProps) 
           v == null ? 'text-[#AA95BE] italic' : 'text-muted-foreground',
         )}
       >
-        {v == null ? 'sem quali' : (isAL ? 'direta' : (row.n_amostra ? `n=${row.n_amostra}` : ''))}
+        {v == null ? 'sem quali' : (row.n_amostra ? `n=${row.n_amostra}` : '')}
       </div>
 
       <div className="text-center">

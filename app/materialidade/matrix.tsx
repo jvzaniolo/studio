@@ -5,8 +5,8 @@ import { Icon, Pill, Btn } from './icons';
 import { Card, PageHeader, SectionTitle, AIInsight } from './components';
 import { HeatmapSentimentoBlock } from './dimensions';
 import {
-  VERSOES, PUBLICOS, PUBLICO_BY_ID, THEMES, ORG,
-  recalcEixoY, recalcSent, scoreboard, cobertura,
+  VERSOES, PUBLICOS, PUBLICO_BY_ID, THEMES, ORG, ALTA_LIDERANCA_N,
+  recalcEixoY, recalcEixoX, recalcSent, scoreboard, cobertura,
   sentColor, fmtSent, themeStatus, INICIATIVAS,
   type Theme, type Versao,
 } from './data';
@@ -14,6 +14,7 @@ import {
   Card as ShadCard,
   CardContent,
 } from '~/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
 
 /* ---------- Scorecard card ---------- */
@@ -88,9 +89,16 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
           {isOriginal ? 'Filtrar por público' : summary}
         </span>
         {!isOriginal && (
-          <span className="rounded-full bg-amber-100 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-amber-600">
-            filtrado
-          </span>
+          <Tooltip>
+            <TooltipTrigger render={<span className="cursor-help" />}>
+              <span className="rounded-full bg-amber-100 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-amber-600">
+                filtrado
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              A matriz está recalculada só com os públicos selecionados — não é a leitura oficial da matriz.
+            </TooltipContent>
+          </Tooltip>
         )}
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="var(--muted-foreground)"/>
       </button>
@@ -133,9 +141,16 @@ export function PublicosDropdown({ active, onToggle, onAll, onNone }: PublicosDr
                     {pub.label}
                   </span>
                   {pub.peso !== 1 && (
-                    <span className={cn('rounded-full px-1.5 py-[1px] text-[10px] font-bold', isActive ? 'bg-background text-primary' : 'bg-muted text-muted-foreground')}>
-                      {pub.peso}×
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger render={<span className="cursor-help" />}>
+                        <span className={cn('rounded-full px-1.5 py-[1px] text-[10px] font-bold', isActive ? 'bg-background text-primary' : 'bg-muted text-muted-foreground')}>
+                          {pub.peso}×
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Peso relativo no cálculo agregado dos eixos — quanto maior, mais influência esse público tem na média ponderada.
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               );
@@ -228,9 +243,18 @@ export function CompareDropdown({
           )}
         </span>
         {isComparing && (
-          <span className="rounded-full bg-primary/10 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-primary">
-            comparando
-          </span>
+          <Tooltip>
+            <TooltipTrigger render={<span className="cursor-help" />}>
+              <span className="rounded-full bg-primary/10 px-[7px] py-[2px] text-[10px] font-bold uppercase tracking-[0.06em] text-primary">
+                comparando
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isPubComparing
+                ? 'Comparando a leitura de dois públicos lado a lado para cada tema.'
+                : 'Comparando a posição dos temas entre duas versões da matriz.'}
+            </TooltipContent>
+          </Tooltip>
         )}
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} color="var(--muted-foreground)"/>
       </button>
@@ -437,7 +461,7 @@ export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick,
     const yLive = recalcEixoY(t, activePublicos);
     const usingFilter = !isPubCompareEarly && activePublicos.length > 0 && activePublicos.length < PUBLICOS.length;
     const base = basePos ? basePos(t) : { x: t.x, y: yLive };
-    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : base.x;
+    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : (usingFilter ? recalcEixoX(t, activePublicos) : base.x);
     const rawY = usingFilter ? yLive : base.y;
     _allX.push(rawX); _allY.push(rawY);
     const cmp = comparePos ? comparePos(t) : null;
@@ -476,7 +500,7 @@ export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick,
     const base = basePos ? basePos(t) : { x: t.x, y: yLive, sentimento: sLive };
     const cmp  = comparePos && xDimension === 'negocios' ? comparePos(t) : null;
 
-    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : (usingFilter ? t.x : base.x);
+    const rawX = xDimension === 'impacto' ? t.impacto : xDimension === 'financeira' ? t.financeira : (usingFilter ? recalcEixoX(t, activePublicos) : base.x);
 
     let pubCompare: MatrixPoint['pubCompare'];
     if (isPubCompare) {
@@ -558,8 +582,8 @@ export function MatrixSVG({ themes, activePublicos, basePos, comparePos, onPick,
       ))}
 
       {/* Axis titles */}
-      <text x={W - MR} y={H - 10} textAnchor="end" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância financeira →</text>
-      <text x={-py(minY) + 8} y={18} transform="rotate(-90)" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Relevância para os stakeholders →</text>
+      <text x={(px(minX) + px(maxX)) / 2} y={H - 10} textAnchor="middle" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Materialidade financeira →</text>
+      <text x={-(py(minY) + py(maxY)) / 2} y={18} transform="rotate(-90)" textAnchor="middle" fontSize="11" fontWeight="600" fill="#525252" fontFamily="Open Sans">Materialidade de impacto →</text>
 
       {/* Version compare arrows (existing feature) */}
       {!isPubCompare && points.map(p => p.cmp && (
@@ -860,6 +884,7 @@ function MatrixRankingSidebar({ themes, activePublicos, colorMode, hoverId, onHo
           {ranked.map((r, i) => {
             const isHover = hoverId === r.theme.id;
             const dotColor = colorMode === 'esg' ? ESG_COLOR[r.theme.esg] : sentColor(r.s);
+            const isMaterial = r.theme.x >= 75 && r.y >= 65;
             return (
               <div
                 key={r.theme.id}
@@ -873,7 +898,7 @@ function MatrixRankingSidebar({ themes, activePublicos, colorMode, hoverId, onHo
               >
                 <span className={cn(
                   'w-[22px] shrink-0 text-right font-display text-xs font-black tabular-nums leading-none',
-                  i < 3 ? 'text-primary' : 'text-muted-foreground/50',
+                  isMaterial ? 'text-primary' : 'text-muted-foreground/50',
                 )}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
@@ -891,6 +916,17 @@ function MatrixRankingSidebar({ themes, activePublicos, colorMode, hoverId, onHo
             );
           })}
         </div>
+      </div>
+
+      <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="font-display text-xs font-black tabular-nums text-primary">01</span>
+          tema no quadrante de prioridade máxima
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="font-display text-xs font-black tabular-nums text-muted-foreground/50">04</span>
+          demais temas
+        </span>
       </div>
     </div>
   );
@@ -941,10 +977,13 @@ export function Overview({ onPickTheme, activeCycle = 'v2025', externalActive, o
   const cob = cobertura(THEMES);
 
   const totalStakeholders = React.useMemo(() => {
-    const seen = new Map<string, number>();
-    THEMES.forEach(t => t.por_publico.forEach(pp => {
-      seen.set(pp.publico, Math.max(seen.get(pp.publico) ?? 0, pp.n_amostra));
-    }));
+    const seen = new Map<string, number>([['alta_lideranca', ALTA_LIDERANCA_N]]);
+    THEMES.forEach(t => {
+      t.por_publico.forEach(pp => {
+        seen.set(pp.publico, Math.max(seen.get(pp.publico) ?? 0, pp.n_amostra));
+      });
+      seen.set('investidores', Math.max(seen.get('investidores') ?? 0, t.investidores.n_amostra));
+    });
     return Array.from(seen.values()).reduce((s, v) => s + v, 0);
   }, []);
 
@@ -1021,7 +1060,7 @@ export function Overview({ onPickTheme, activeCycle = 'v2025', externalActive, o
                 baseId={baseVersion} compareId={compareVersion}
                 onVersionChange={(b, c) => { setBaseVersion(b); setCompareVersion(c); }}
                 pubCompareMode={pubCompareMode} pubActive={active}
-                onPubCompareModeChange={(enabled) => { setPubCompareMode(enabled); setActive(enabled ? [] : PUBLICOS.map(p => p.id)); }}
+                onPubCompareModeChange={(enabled) => { setPubCompareMode(enabled); if (enabled) selectNone(); else selectAll(); }}
                 onPubToggle={toggle}
               />
               <div className="min-w-0 flex-1"/>

@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -39,6 +40,12 @@ interface CommentItem {
   publico: string;
   texto: string;
 }
+
+const CLASSIFICACAO_DESC: Record<string, string> = {
+  Força:        'Ponto forte identificado nos comentários — algo que já funciona bem.',
+  Oportunidade: 'Sugestão de melhoria levantada nos comentários.',
+  Fraqueza:     'Ponto fraco ou fragilidade identificada nos comentários.',
+};
 
 const COMENTARIOS_INDIVIDUAIS: Record<number, CommentItem[]> = {
   1: [
@@ -195,13 +202,14 @@ function getComentariosIndividuais(themeId: number): CommentItem[] {
 export function ComentariosBlock({ theme }: { theme: Theme }) {
   const individuais = getComentariosIndividuais(theme.id);
   const [dimFilter, setDimFilter] = React.useState<'all' | 'Força' | 'Oportunidade' | 'Fraqueza'>('all');
+  const [pubFilter, setPubFilter] = React.useState('all');
   const [useful, setUseful] = React.useState<'up' | 'down' | null>(null);
 
-  const filtered = dimFilter === 'all'
-    ? individuais
-    : individuais.filter(c => c.classificacao === dimFilter);
-
   const publicos = [...new Set(individuais.map(c => c.publico))];
+
+  const filtered = individuais
+    .filter(c => dimFilter === 'all' || c.classificacao === dimFilter)
+    .filter(c => pubFilter === 'all' || c.publico === pubFilter);
 
   return (
     <div className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-3">
@@ -241,14 +249,19 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
                 if (count === 0) return null;
                 return (
                   <div key={cl} className="flex items-center gap-2 text-xs">
-                    <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[10px]"
-                      style={cl === 'Força' ? { background: '#EFE3F8', color: '#5B21B6' }
-                        : cl === 'Oportunidade' ? { background: '#DEF7EC', color: '#065F46' }
-                        : { background: '#FEF3C7', color: '#92400E' }}
-                    >
-                      {cl}
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger render={<span className="cursor-help" />}>
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[10px]"
+                          style={cl === 'Força' ? { background: '#EFE3F8', color: '#5B21B6' }
+                            : cl === 'Oportunidade' ? { background: '#DEF7EC', color: '#065F46' }
+                            : { background: '#FEF3C7', color: '#92400E' }}
+                        >
+                          {cl}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{CLASSIFICACAO_DESC[cl]}</TooltipContent>
+                    </Tooltip>
                     <span className="text-muted-foreground">{count} comentário{count === 1 ? '' : 's'}</span>
                   </div>
                 );
@@ -285,6 +298,8 @@ export function ComentariosBlock({ theme }: { theme: Theme }) {
         <div className="flex items-center gap-2.5 flex-wrap">
           <span className="text-sm font-medium text-muted-foreground">Dimensão:</span>
           <ClassificacaoFilter value={dimFilter} onChange={setDimFilter}/>
+          <span className="text-sm font-medium text-muted-foreground">Público:</span>
+          <PublicoFilter value={pubFilter} onChange={setPubFilter} options={publicos}/>
         </div>
         <div className="flex flex-col max-h-[600px] overflow-y-auto divide-y divide-border/60 rounded-lg border border-border">
           {filtered.length === 0 ? (
@@ -310,12 +325,17 @@ function ComentarioItem({ comment }: { comment: CommentItem }) {
   return (
     <div className="px-4 py-4 flex flex-col gap-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
-          style={{ background: s.bg, color: s.fg }}
-        >
-          {comment.classificacao}
-        </span>
+        <Tooltip>
+          <TooltipTrigger render={<span className="cursor-help" />}>
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+              style={{ background: s.bg, color: s.fg }}
+            >
+              {comment.classificacao}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{CLASSIFICACAO_DESC[comment.classificacao]}</TooltipContent>
+        </Tooltip>
         <span className="text-xs font-semibold text-muted-foreground">{comment.publico}</span>
       </div>
       <div className="text-sm leading-[1.6] text-foreground">{comment.texto}</div>
@@ -374,6 +394,64 @@ function ClassificacaoFilter({
                 )}
               >
                 {o.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PublicoFilter({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const opts = ['all', ...options];
+  const label = (id: string) => id === 'all' ? 'Todos os públicos' : id;
+  const cur = opts.includes(value) ? value : 'all';
+
+  return (
+    <div ref={ref} className="relative min-w-[180px]">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border bg-background cursor-pointer text-sm font-semibold text-foreground/70 w-full"
+      >
+        <span className="flex-1 text-left">{label(cur)}</span>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#AA95BE"/>
+      </button>
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 bg-background rounded-[10px] border border-border shadow-md p-1.5 z-30 min-w-full flex flex-col gap-0.5">
+          {opts.map(o => {
+            const isActive = o === value;
+            return (
+              <div
+                key={o}
+                onClick={() => { onChange(o); setOpen(false); }}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-md cursor-pointer text-sm hover:bg-muted/50 transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary/80 font-bold'
+                    : 'bg-transparent text-muted-foreground font-medium',
+                )}
+              >
+                {label(o)}
               </div>
             );
           })}
@@ -592,77 +670,50 @@ function FlatEmptyState({
 }
 
 function KPITable({ kpis }: { kpis: KPI[] }) {
-  const perspBg: Record<string, { bg: string; fg: string }> = {
-    Pessoas:          { bg: '#E8F8F1', fg: '#065F46' },
-    Financeiro:       { bg: '#E4F0FE', fg: '#1E40AF' },
-    Stakeholders:     { bg: '#EFE3F8', fg: '#5B21B6' },
-    Processos:        { bg: '#FFF7E6', fg: '#92400E' },
-    Sustentabilidade: { bg: '#E8F8F1', fg: '#065F46' },
-    Outros:           { bg: '#FAFAFA', fg: '#525252' },
-  };
-
-  const groups: Record<string, KPI[]> = {};
-  kpis.forEach(k => {
-    const persp = k.perspectiva || 'Outros';
-    (groups[persp] = groups[persp] || []).push(k);
-  });
-
   return (
     <div className="overflow-x-auto">
-      <Table style={{ minWidth: 1040 }}>
+      <Table style={{ minWidth: 960 }}>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            {['Perspectiva', 'Indicador', 'Responsável', 'Atualizado em', 'Polaridade', 'Atual', 'Meta', 'Diferença', 'Status']
+            {['Indicador', 'Responsável', 'Atualizado em', 'Polaridade', 'Atual', 'Meta', 'Diferença', 'Status']
               .map((h, i) => (
                 <TableHead
                   key={h}
                   className={cn(
                     'text-xs font-medium text-muted-foreground whitespace-nowrap py-3 px-4',
-                    (i >= 5 && i <= 7) && 'text-right',
+                    (i >= 4 && i <= 6) && 'text-right',
                   )}
                 >{h}</TableHead>
               ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Object.entries(groups).map(([persp, items]) => {
-            const palette = perspBg[persp] || perspBg['Outros'];
-            return items.map((k, i) => (
-              <TableRow key={k.id} className="border-b border-border/50">
-                {i === 0 && (
-                  <TableCell
-                    rowSpan={items.length}
-                    className="py-3.5 px-4 align-top"
-                    style={{ background: palette.bg }}
-                  >
-                    <div className="text-sm font-semibold" style={{ color: palette.fg }}>{persp}</div>
-                  </TableCell>
-                )}
-                <TableCell className="py-3.5 px-4 text-foreground font-semibold">{k.nome}</TableCell>
-                <TableCell className="py-3.5 px-4">
-                  <Resp resp={k.responsavel}/>
-                </TableCell>
-                <TableCell className="py-3.5 px-4 text-muted-foreground tabular-nums whitespace-nowrap">
-                  {k.atualizado || '—'}
-                </TableCell>
-                <TableCell className="py-3.5 px-4">
-                  <PolaridadeArrow dir={k.polaridade}/>
-                </TableCell>
-                <TableCell className="py-3.5 px-4 text-right font-bold text-sm text-foreground tabular-nums whitespace-nowrap">
-                  {k.atual}
-                </TableCell>
-                <TableCell className={cn('py-3.5 px-4 text-right tabular-nums whitespace-nowrap', k.sem_meta ? 'text-[#AA95BE]' : 'text-muted-foreground')}>
-                  {k.sem_meta ? '—' : k.meta}
-                </TableCell>
-                <TableCell className="py-3.5 px-4 text-right whitespace-nowrap">
-                  <DiffText text={k.diff} tone={k.diffTone}/>
-                </TableCell>
-                <TableCell className="py-3.5 px-4">
-                  <KPIStatusCell tone={k.status} label={kpiStatusText(k)}/>
-                </TableCell>
-              </TableRow>
-            ));
-          })}
+          {kpis.map(k => (
+            <TableRow key={k.id} className="border-b border-border/50">
+              <TableCell className="py-3.5 px-4 text-foreground font-semibold">{k.nome}</TableCell>
+              <TableCell className="py-3.5 px-4">
+                <Resp resp={k.responsavel}/>
+              </TableCell>
+              <TableCell className="py-3.5 px-4 text-muted-foreground tabular-nums whitespace-nowrap">
+                {k.atualizado || '—'}
+              </TableCell>
+              <TableCell className="py-3.5 px-4">
+                <PolaridadeArrow dir={k.polaridade}/>
+              </TableCell>
+              <TableCell className="py-3.5 px-4 text-right font-bold text-sm text-foreground tabular-nums whitespace-nowrap">
+                {k.atual}
+              </TableCell>
+              <TableCell className={cn('py-3.5 px-4 text-right tabular-nums whitespace-nowrap', k.sem_meta ? 'text-[#AA95BE]' : 'text-muted-foreground')}>
+                {k.sem_meta ? '—' : k.meta}
+              </TableCell>
+              <TableCell className="py-3.5 px-4 text-right whitespace-nowrap">
+                <DiffText text={k.diff} tone={k.diffTone}/>
+              </TableCell>
+              <TableCell className="py-3.5 px-4">
+                <KPIStatusCell tone={k.status} label={kpiStatusText(k)}/>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
@@ -670,29 +721,32 @@ function KPITable({ kpis }: { kpis: KPI[] }) {
 }
 
 function KPIStatusCell({ tone, label }: { tone: string; label: string }) {
-  const map: Record<string, { bg: string; fg: string; icon: string; outlined?: boolean }> = {
-    success: { bg: '#00A970', fg: '#00875a', icon: '✓' },
-    warning: { bg: '#F59E0B', fg: '#B45309', icon: '⚠' },
-    danger:  { bg: '#E03131', fg: '#C81E1E', icon: '✗' },
-    neutral: { bg: 'transparent', fg: '#737373', icon: '·', outlined: true },
+  const map: Record<string, { bg: string; fg: string; icon: string; outlined?: boolean; desc: string }> = {
+    success: { bg: '#00A970', fg: '#00875a', icon: '✓', desc: 'Indicador dentro da meta definida.' },
+    warning: { bg: '#F59E0B', fg: '#B45309', icon: '⚠', desc: 'Indicador com meta definida, mas em zona de atenção.' },
+    danger:  { bg: '#E03131', fg: '#C81E1E', icon: '✗', desc: 'Indicador fora da meta definida.' },
+    neutral: { bg: 'transparent', fg: '#737373', icon: '·', outlined: true, desc: 'Ainda não há meta definida para este indicador.' },
   };
   const c = map[tone] || map['neutral'];
   return (
-    <div className="inline-flex items-center gap-2">
-      <span
-        className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-bold leading-none"
-        style={{
-          background: c.bg,
-          color: c.outlined ? undefined : '#fff',
-          border: c.outlined ? '1.5px solid #AA95BE' : 'none',
-        }}
-      >
-        {c.outlined
-          ? <span className="text-[#AA95BE]">{c.icon}</span>
-          : c.icon}
-      </span>
-      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: c.fg }}>{label}</span>
-    </div>
+    <Tooltip>
+      <TooltipTrigger render={<div className="inline-flex cursor-help items-center gap-2" />}>
+        <span
+          className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-xs font-bold leading-none"
+          style={{
+            background: c.bg,
+            color: c.outlined ? undefined : '#fff',
+            border: c.outlined ? '1.5px solid #AA95BE' : 'none',
+          }}
+        >
+          {c.outlined
+            ? <span className="text-[#AA95BE]">{c.icon}</span>
+            : c.icon}
+        </span>
+        <span className="text-xs font-semibold whitespace-nowrap" style={{ color: c.fg }}>{label}</span>
+      </TooltipTrigger>
+      <TooltipContent>{c.desc}</TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -5,11 +5,18 @@ import { Card as ShadCard, CardContent } from '~/components/ui/card';
 import { MaterialidadeBreadcrumb } from '~/materialidade/components';
 import { THEMES } from '~/materialidade/data';
 import { cn } from '~/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 
 const ESG_COLOR: Record<string, string> = {
   E: 'bg-green-100 text-green-700',
   S: 'bg-blue-100 text-blue-700',
   G: 'bg-violet-100 text-violet-700',
+};
+
+const ESG_LABEL: Record<string, string> = {
+  E: 'Ambiental',
+  S: 'Social',
+  G: 'Governança',
 };
 
 function sentColor(v: number | null) {
@@ -67,33 +74,48 @@ export default function PrioritariosPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="text-sm font-semibold text-foreground">{t.nome}</span>
-                    <span className={cn('rounded px-1.5 py-px text-[10px] font-bold', ESG_COLOR[t.esg])}>
-                      {t.esg}
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger render={<span className="cursor-help" />}>
+                        <span className={cn('rounded px-1.5 py-px text-[10px] font-bold', ESG_COLOR[t.esg])}>
+                          {t.esg}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Dimensão ESG: {ESG_LABEL[t.esg] ?? t.esg}</TooltipContent>
+                    </Tooltip>
                   </div>
                   <div className="text-xs text-muted-foreground leading-snug">{t.descricao}</div>
                   {t.gri.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {t.gri.map(g => (
-                        <span key={g} className="rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground font-medium">
-                          {g}
-                        </span>
+                        <Tooltip key={g}>
+                          <TooltipTrigger render={<span className="cursor-help" />}>
+                            <span className="rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground font-medium">
+                              {g}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>Norma GRI (Global Reporting Initiative) referenciada por este tema.</TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className={cn('rounded px-2 py-0.5 text-xs font-bold tabular-nums', sentColor(t.sentimento))}>
-                    {t.sentimento == null ? 'Sem dado' : (t.sentimento > 0 ? `+${t.sentimento}` : String(t.sentimento))}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger render={<span className="cursor-help" />}>
+                      <span className={cn('rounded px-2 py-0.5 text-xs font-bold tabular-nums', sentColor(t.sentimento))}>
+                        {t.sentimento == null ? 'Sem dado' : (t.sentimento > 0 ? `+${t.sentimento}` : String(t.sentimento))}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Sentimento agregado dos stakeholders sobre este tema (escala −100 a +100).</TooltipContent>
+                  </Tooltip>
                   <div className="flex gap-3 text-xs text-muted-foreground">
                     <div className="text-center">
                       <div className="font-bold text-foreground tabular-nums">{t.x}</div>
-                      <div>Impacto</div>
+                      <div>Financeira</div>
                     </div>
                     <div className="text-center">
                       <div className="font-bold text-foreground tabular-nums">{t.y}</div>
-                      <div>Relevância</div>
+                      <div>Impacto</div>
                     </div>
                   </div>
                 </div>

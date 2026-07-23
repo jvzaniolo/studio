@@ -99,6 +99,7 @@ export interface Theme {
   por_publico: PerPublico[];
   por_cargo: PerCargo[] | null;
   alta_lideranca: { sentimento: number; impacto_negocio: number };
+  investidores: { sentimento: number | null; impacto_negocio: number; n_amostra: number };
 }
 
 const THEME_SEEDS = [
@@ -147,8 +148,8 @@ function makeProjection(theme: typeof THEME_SEEDS[0], _baseline: VersaoPos, rand
 }
 
 function makePerPublico(theme: typeof THEME_SEEDS[0], rand: () => number): PerPublico[] {
-  // alta_lideranca is stored in theme.alta_lideranca — exclude from por_publico
-  return PUBLICOS.filter(pub => pub.id !== 'alta_lideranca').map(pub => {
+  // alta_lideranca e investidores compõem a perspectiva do negócio (eixo X) — excluídos daqui
+  return PUBLICOS.filter(pub => pub.id !== 'alta_lideranca' && pub.id !== 'investidores').map(pub => {
     let relevancia = theme.y + Math.round((rand() - 0.5) * 16);
     let sentimento: number | null = theme.sentimento != null ? theme.sentimento + Math.round((rand() - 0.5) * 20) : null;
     let n_amostra = 20 + Math.round(rand() * 180);
@@ -164,24 +165,33 @@ function makePerPublico(theme: typeof THEME_SEEDS[0], rand: () => number): PerPu
     if (theme.id === 20 && pub.id === 'especialistas') impacto_negocio = 96;
     if (theme.id === 18 && pub.id === 'especialistas') impacto_negocio = 92;
 
-    // Investidores: foco em conformidade regulatória, governança e risco climático
-    if (pub.id === 'investidores') {
-      n_amostra = 8 + Math.round(rand() * 25);
-      if ([7, 3, 6, 11].includes(theme.id)) relevancia += 12;
-      if ([18, 20].includes(theme.id)) { relevancia += 15; if (sentimento != null) sentimento -= 12; }
-      if ([8, 10, 14, 17].includes(theme.id)) relevancia -= 10;
-      if (theme.id === 11 && sentimento != null) sentimento -= 25;
-      if (theme.id === 7  && sentimento != null) sentimento += 20;
-      if (theme.id === 20 && sentimento != null) sentimento -= 18;
-      if (theme.id === 1  && sentimento != null) sentimento -= 8;
-    }
-
     relevancia = Math.max(35, Math.min(100, relevancia));
     impacto_negocio = Math.max(30, Math.min(100, impacto_negocio));
     if (sentimento != null) sentimento = Math.max(-100, Math.min(100, sentimento));
 
     return { publico: pub.id, relevancia, sentimento, n_amostra, impacto_negocio };
   });
+}
+
+function makeInvestidores(theme: typeof THEME_SEEDS[0], rand: () => number) {
+  // Investidores compõem a perspectiva do negócio (eixo X), ao lado da Alta Liderança.
+  // Foco em conformidade regulatória, governança e risco climático.
+  let impacto_negocio = theme.x + Math.round((rand() - 0.5) * 14);
+  let sentimento: number | null = theme.sentimento != null ? theme.sentimento + Math.round((rand() - 0.5) * 16) : null;
+  const n_amostra = 8 + Math.round(rand() * 25);
+
+  if ([7, 3, 6, 11].includes(theme.id)) impacto_negocio += 6;
+  if ([18, 20].includes(theme.id)) { impacto_negocio += 8; if (sentimento != null) sentimento -= 12; }
+  if ([8, 10, 14, 17].includes(theme.id)) impacto_negocio -= 6;
+  if (theme.id === 11 && sentimento != null) sentimento -= 25;
+  if (theme.id === 7  && sentimento != null) sentimento += 20;
+  if (theme.id === 20 && sentimento != null) sentimento -= 18;
+  if (theme.id === 1  && sentimento != null) sentimento -= 8;
+
+  impacto_negocio = Math.max(30, Math.min(100, impacto_negocio));
+  if (sentimento != null) sentimento = Math.max(-100, Math.min(100, sentimento));
+
+  return { sentimento, impacto_negocio, n_amostra };
 }
 
 function makePerCargo(themeId: number, themeSent: number | null, rand: () => number): PerCargo[] | null {
@@ -238,6 +248,7 @@ export const THEMES: Theme[] = THEME_SEEDS.map(t => {
     por_publico: makePerPublico(t, rand),
     por_cargo: makePerCargo(t.id, t.sentimento, rand),
     alta_lideranca: makeAltaLideranca(t),
+    investidores: makeInvestidores(t, rand),
   };
 });
 
@@ -525,6 +536,20 @@ export const ORG = {
   setor: 'Construção civil',
 };
 
+// Quantidade de C-level consultados diretamente (perspectiva do negócio).
+export const ALTA_LIDERANCA_N = 9;
+
+// População estimada por público — usada para calcular o "atingimento" da amostra (dado ilustrativo de demo).
+export const POPULACAO_ESTIMADA: Record<string, number> = {
+  interno: 2400,
+  clientes: 850,
+  fornecedores: 620,
+  sociedade: 15000,
+  especialistas: 280,
+  investidores: 45,
+  alta_lideranca: 12,
+};
+
 export const USUARIO = {
   nome: 'Marcelo Santos',
   cargo: 'Diretor de Sustentabilidade',
@@ -637,6 +662,11 @@ export function getDimValue(theme: Theme, publicoId: string, dim: string): numbe
     if (dim === 'relevancia') return theme.alta_lideranca.impacto_negocio;
     return null;
   }
+  if (publicoId === 'investidores') {
+    if (dim === 'sentimento') return theme.investidores.sentimento;
+    if (dim === 'relevancia') return theme.investidores.impacto_negocio;
+    return null;
+  }
   if (publicoId === 'agregado') {
     let sum = 0, w = 0;
     theme.por_publico.forEach(pp => {
@@ -668,6 +698,23 @@ export function recalcEixoY(theme: Theme, activePublicos: string[]): number {
     }
   });
   return weight > 0 ? Math.round(sum / weight) : theme.y;
+}
+
+// Eixo X (perspectiva do negócio) — combina Alta Liderança e Investidores quando filtrados.
+// Sem nenhum dos dois selecionados, mantém o valor oficial estático (theme.x).
+export function recalcEixoX(theme: Theme, activePublicos: string[]): number {
+  const relevantes = activePublicos.filter(id => id === 'alta_lideranca' || id === 'investidores');
+  if (!relevantes.length) return theme.x;
+  let sum = 0, weight = 0;
+  if (relevantes.includes('alta_lideranca')) {
+    const w = PUBLICO_BY_ID['alta_lideranca']?.peso ?? 1.5;
+    sum += theme.alta_lideranca.impacto_negocio * w; weight += w;
+  }
+  if (relevantes.includes('investidores')) {
+    const w = PUBLICO_BY_ID['investidores']?.peso ?? 1;
+    sum += theme.investidores.impacto_negocio * w; weight += w;
+  }
+  return weight > 0 ? Math.round(sum / weight) : theme.x;
 }
 
 export function recalcSent(theme: Theme, activePublicos: string[]): number | null {

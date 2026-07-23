@@ -20,6 +20,7 @@ import {
   Card as ShadCard,
   CardContent,
 } from '~/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 
 /* ============================================================
    EVOLUÇÃO DO SENTIMENTO
@@ -252,6 +253,14 @@ export function EvolucaoBlock({ theme, sinais }: EvolucaoBlockProps) {
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: '#F59E0B' }}/>
                 Sinal operacional
+                <Tooltip>
+                  <TooltipTrigger render={<span className="cursor-help" />}>
+                    <Icon name="info" size={12} color="var(--muted-foreground)"/>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Dados operacionais contínuos entre rodadas oficiais da matriz (pesquisas pulse, ouvidoria, NPS etc.), usados para acompanhar a tendência entre uma matriz e outra.
+                  </TooltipContent>
+                </Tooltip>
               </span>
             )}
           </div>
@@ -361,7 +370,7 @@ export function TimelineSVG({ points, range = [-100, 100] as [number, number], d
   dim?: string;
 }) {
   const W = 720, H = 320;
-  const ML = 50, MR = 40, MT = 22, MB = 60;
+  const ML = 68, MR = 24, MT = 22, MB = 60;
   const [hover, setHover] = React.useState<number | null>(null);
 
   const [rMin, rMax] = range;
@@ -382,6 +391,27 @@ export function TimelineSVG({ points, range = [-100, 100] as [number, number], d
     return sentColor(p.value);
   };
 
+  // Quando pontos consecutivos ficam muito próximos no eixo X, os rótulos de mês/"MATRIZ"
+  // colidem — cada ponto de um cluster apertado ganha um nível extra de deslocamento vertical,
+  // reiniciando a contagem assim que o próximo ponto volta a ter espaço.
+  const offsetLevels: number[] = [];
+  points.forEach((p, i) => {
+    if (i === 0) { offsetLevels.push(0); return; }
+    const dx = Math.abs(px(p.data) - px(points[i - 1].data));
+    offsetLevels.push(dx < 45 ? offsetLevels[i - 1] + 1 : 0);
+  });
+
+  // O rótulo de valor acima de cada ponto usa a posição natural (baseada no valor), mas quando
+  // o ponto está no mesmo cluster horizontal do anterior, o texto empilha a partir da posição já
+  // ocupada pelo rótulo anterior — não apenas um múltiplo fixo — para nunca sobrepor, mesmo com
+  // valores próximos entre si.
+  const topLabelY: number[] = [];
+  points.forEach((p, i) => {
+    const r = p.kind === 'matrix' ? 7 : 5.5;
+    const naturalY = py(p.value) - r - 5;
+    topLabelY.push(offsetLevels[i] > 0 ? Math.min(naturalY, topLabelY[i - 1] - 13) : naturalY);
+  });
+
   return (
     <div className="relative">
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
@@ -391,10 +421,15 @@ export function TimelineSVG({ points, range = [-100, 100] as [number, number], d
               stroke={t === zeroVal ? '#AA95BE' : '#F0EBF4'}
               strokeWidth="1"
               strokeDasharray={t === zeroVal ? '4 4' : undefined}/>
-            <text x={W - MR + 6} y={py(t) + 4} fontSize="10" fill="#737373" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtAxis(t)}</text>
+            <text x={ML - 10} y={py(t) + 4} textAnchor="end" fontSize="10" fill="#737373" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtAxis(t)}</text>
           </g>
         ))}
         <line x1={ML} y1={H - MB} x2={W - MR} y2={H - MB} stroke="#E7E0EB" strokeWidth="1"/>
+
+        <text x={-(py(rMin) + py(rMax)) / 2} y={14} transform="rotate(-90)" textAnchor="middle"
+          fontSize="10" fontWeight="700" fill="#525252" letterSpacing="0.05em">
+          {(isSent ? 'Sentimento' : 'Relevância').toUpperCase()}
+        </text>
 
         <path d={points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${px(p.data)} ${py(p.value)}`).join(' ')}
           fill="none" stroke="var(--primary)" strokeWidth="1.8" opacity="0.4"/>
@@ -403,6 +438,12 @@ export function TimelineSVG({ points, range = [-100, 100] as [number, number], d
           const isMatrix = p.kind === 'matrix';
           const color = pointColor(p);
           const r = isMatrix ? 7 : 5.5;
+          const rowOffset = offsetLevels[i] * 13;
+          // Quando um ponto de sinal fica colado a um ponto de matriz, o mês cinza do sinal só
+          // duplica a informação do rótulo roxo "MATRIZ" ao lado — some com ele para não poluir.
+          const nearMatrixNeighbor = !isMatrix && points.some(o =>
+            o.kind === 'matrix' && Math.abs(px(p.data) - px(o.data)) < 45
+          );
           return (
             <g key={i}
               onMouseEnter={() => setHover(i)}
@@ -410,16 +451,18 @@ export function TimelineSVG({ points, range = [-100, 100] as [number, number], d
               style={{ cursor: 'pointer' }}>
               <circle cx={px(p.data)} cy={py(p.value)} r={isMatrix ? 14 : 11} fill={color} opacity="0.13"/>
               <circle cx={px(p.data)} cy={py(p.value)} r={r} fill={color} stroke="#fff" strokeWidth={isMatrix ? 2.2 : 1.8}/>
-              <text x={px(p.data)} y={py(p.value) - r - 5} textAnchor="middle"
+              <text x={px(p.data)} y={topLabelY[i]} textAnchor="middle"
                 fontFamily="Lato" fontWeight="900" fontSize="10.5" fill="#0A0A0A">
                 {fmtAxis(Math.round(p.value))}
               </text>
-              <text x={px(p.data)} y={H - MB + 16} textAnchor="middle"
-                fontSize="9.5" fill={isMatrix ? '#5A0992' : '#737373'} fontWeight={isMatrix ? '700' : '500'}>
-                {fmtShortMonth(p.data)}
-              </text>
+              {!nearMatrixNeighbor && (
+                <text x={px(p.data)} y={H - MB + 16 + rowOffset} textAnchor="middle"
+                  fontSize="9.5" fill={isMatrix ? '#5A0992' : '#737373'} fontWeight={isMatrix ? '700' : '500'}>
+                  {fmtShortMonth(p.data)}
+                </text>
+              )}
               {isMatrix && (
-                <text x={px(p.data)} y={H - MB + 30} textAnchor="middle"
+                <text x={px(p.data)} y={H - MB + 30 + rowOffset} textAnchor="middle"
                   fontSize="9" fill="#5A0992" fontWeight="700" letterSpacing="0.05em">
                   {p.label?.toUpperCase()}
                 </text>
@@ -551,7 +594,7 @@ export function PercepcaoBlock({ theme }: PercepcaoBlockProps) {
           <Icon name="shield" size={14} color="var(--primary)"/>
           <span>
             <b>Regra dos 5 · LGPD</b> — segmentos com menos de 5 respostas são mascarados como
-            <i> "amostra insuficiente"</i> para evitar reidentificação.
+            <i> "amostra insuficiente"</i> para evitar identificação.
           </span>
         </div>
       </Card>
